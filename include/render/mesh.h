@@ -4,20 +4,7 @@
 class Mesh
 {
 public:
-    // For chunks
-    Mesh(
-        const std::vector<uint32_t>& vertex_data,
-        const std::vector<uint8_t>& lighting_data
-    );
-
-    // For general geometry
-    Mesh(
-        const std::vector<float>& vertices,
-        const std::vector<unsigned int>& indices,
-        const std::vector<float>& texture_coords,
-        const std::optional<std::vector<uint8_t>>& lighting_values = {}
-    );
-
+    Mesh(const std::vector<float>& vertices);
     Mesh(const Mesh&) = delete;
     ~Mesh();
 

@@ -6,7 +6,10 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
 {
     // Setup GL state
     glCullFace(GL_BACK);
+    //glEnable(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // Init ImGui
     ImGui::CreateContext();
@@ -53,11 +56,17 @@ void Renderer::render_forward_pass(
 )
 {
     // Begin forward pass
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    (void)view_matrix;
-    (void)projection_matrix;
-    (void)world;
+    diffuse_shader.bind();
+
+    for (const Mesh* mesh : world.meshes)
+    {
+        Transform t = Transform();
+        t.scale = glm::vec3(1.0f / 128.0f);
+        diffuse_shader.set_uniform("matrix", projection_matrix * view_matrix);
+        mesh->bind();
+        mesh->draw();
+    }
 }
 
 Renderer::~Renderer() {}
