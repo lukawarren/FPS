@@ -6,6 +6,7 @@ class Mesh
 public:
     Mesh(
         const std::vector<float>& vertices,
+        const std::vector<float>& normals,
         const std::vector<unsigned int>& indices
     );
     Mesh(const Mesh&) = delete;

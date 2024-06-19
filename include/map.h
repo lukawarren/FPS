@@ -6,6 +6,7 @@ class Map
 public:
     Map(const std::string& filename);
     std::vector<float> vertices;
+    std::vector<float> normals;
     std::vector<unsigned int> indices;
 
 private:

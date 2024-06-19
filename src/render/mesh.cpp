@@ -2,6 +2,7 @@
 
 Mesh::Mesh(
     const std::vector<float>& vertices,
+    const std::vector<float>& normals,
     const std::vector<unsigned int>& indices
 )
 {
@@ -16,6 +17,7 @@ Mesh::Mesh(
 
     // Make VAOs
     make_vao(0, GL_FLOAT, 3, vertices);
+    make_vao(1, GL_FLOAT, 3, normals);
 
     // Unbind VAO but *not* EBO (as this is bound by the VAO for us)
     glBindVertexArray(0);

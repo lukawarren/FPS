@@ -48,9 +48,17 @@ Map::Map(const std::string& filename)
                 const size_t offset = vertices.size() / 3;
                 for (const auto& vertex : fragment.vertices)
                 {
-                    vertices.push_back(vertex.position.x * metres_per_unit);
+                    vertices.push_back(vertex.position.x * metres_per_unit * -1.0f);
                     vertices.push_back(vertex.position.z * metres_per_unit);
                     vertices.push_back(vertex.position.y * metres_per_unit);
+                }
+
+                // Record normals
+                for (size_t i = 0; i < fragment.vertices.size(); ++i)
+                {
+                    normals.push_back(face.plane->normal.x);
+                    normals.push_back(face.plane->normal.z);
+                    normals.push_back(face.plane->normal.y);
                 }
 
                 // Record indices
