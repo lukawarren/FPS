@@ -7,7 +7,7 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
     // Setup GL state
     glCullFace(GL_BACK);
     // glEnable(GL_CULL_FACE);
-    dbg("todo: cull");
+    dbg("todo: enable culling");
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -61,8 +61,7 @@ void Renderer::render_forward_pass(
 
     for (const Mesh* mesh : world.meshes)
     {
-        static Transform t = Transform();
-        diffuse_shader.set_uniform("matrix", projection_matrix * view_matrix * t.matrix());
+        diffuse_shader.set_uniform("matrix", projection_matrix * view_matrix);
         mesh->bind();
         mesh->draw();
     }

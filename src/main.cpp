@@ -3,7 +3,7 @@
 
 void run()
 {
-    Renderer renderer("FPS", 800, 600z);
+    Renderer renderer("FPS", 800, 600);
     Window& window = renderer.window;
     window.capture_mouse();
     World world;

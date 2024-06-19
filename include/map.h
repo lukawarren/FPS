@@ -15,6 +15,34 @@ private:
     void reorder_polygons();
     void convert_to_triangles();
 
+    struct Polygon
+    {
+        std::vector<glm::dvec3> vertices;
+        glm::dvec3 normal;
+        double distance;
+    };
+
+    struct Face
+    {
+        // Geometry
+        std::vector<Polygon> polygons = {};
+        glm::dvec3 normal;
+        double distance;
+
+        // Texture
+        std::string texture_name;
+        glm::vec2 texture_offset;
+        float texture_rotation;
+        glm::vec2 texture_scale;
+    };
+
+    struct Brush
+    {
+        std::vector<Face> faces;
+    };
+
+    std::vector<Brush> brushes;
+
     std::optional<glm::dvec3> get_intersection(
         const glm::dvec3& n1,
         const glm::dvec3& n2,
@@ -46,31 +74,4 @@ private:
         const double distance,
         const glm::dvec3& point
     ) const;
-
-    struct Polygon
-    {
-        std::vector<glm::dvec3> vertices;
-        glm::dvec3 normal;
-    };
-
-    struct Face
-    {
-        // Geometry
-        std::vector<Polygon> polygons = {};
-        glm::dvec3 normal;
-        double distance;
-
-        // Texture
-        std::string texture_name;
-        glm::vec2 texture_offset;
-        float texture_rotation;
-        glm::vec2 texture_scale;
-    };
-
-    struct Brush
-    {
-        std::vector<Face> faces;
-    };
-
-    std::vector<Brush> brushes;
 };

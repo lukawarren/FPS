@@ -39,7 +39,7 @@ std::vector<float> Map::get_vertices() const
                     // Positions
                     vertices.push_back(float(vertex.x * metres_per_unit));
                     vertices.push_back(float(vertex.z * metres_per_unit));
-                    vertices.push_back(float(vertex.y * metres_per_unit));
+                    vertices.push_back(float(vertex.y * metres_per_unit * -1));
                 }
             }
         }
@@ -195,13 +195,16 @@ void Map::build_polygons()
             brush.faces[i].polygons.push_back(polygons[i]);
     }
 
-    // Assign normals
+    // Assign planes
     for (auto& brush : brushes)
     {
         for (auto& face : brush.faces)
         {
             for (auto& polygon : face.polygons)
+            {
                 polygon.normal = face.normal;
+                polygon.distance = face.distance;
+            }
         }
     }
 
@@ -305,8 +308,7 @@ std::optional<glm::dvec3> Map::get_intersection(
     const glm::dvec3& n3,
     const double d1,
     const double d2,
-    const double d3
-) const
+    const double d3) const
 {
     const double denominator = glm::dot(n1, glm::cross(n2, n3));
     if (fabs(denominator) < epsilon) return std::nullopt;
@@ -323,8 +325,7 @@ std::optional<glm::dvec3> Map::get_intersection(
 std::pair<glm::dvec3, double> Map::plane_from_points(
     const glm::dvec3& p1,
     const glm::dvec3& p2,
-    const glm::dvec3& p3
-) const
+    const glm::dvec3& p3) const
 {
     const glm::dvec3 normal = glm::normalize(glm::cross(
         p3 - p2,
