@@ -6,6 +6,7 @@ class Mesh
 public:
     Mesh(
         const std::vector<float>& vertices,
+        const std::vector<float>& texture_coordinates,
         const std::vector<float>& normals,
         const std::vector<unsigned int>& indices
     );

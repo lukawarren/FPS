@@ -1,13 +1,14 @@
 #include "render/renderer.h"
 #include "transform.h"
 
+Texture* texture;
+
 Renderer::Renderer(const std::string& window_title, const int width, const int height) :
     window(window_title, width, height)
 {
     // Setup GL state
     glCullFace(GL_BACK);
-    // glEnable(GL_CULL_FACE);
-    dbg("todo: enable culling");
+    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -16,6 +17,9 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window.glfw_window, true);
     ImGui_ImplOpenGL3_Init("#version 150");
+
+    texture = new Texture("missing_texture.png");
+    texture->bind();
 }
 
 bool Renderer::should_render()

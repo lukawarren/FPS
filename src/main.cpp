@@ -11,9 +11,10 @@ void run()
     bool captured = true;
     glm::vec2 mouse_position = window.mouse_position();
 
-    Map map("unnamed");
-    Mesh mesh(map.vertices, map.normals, map.indices);
+    Map* map = new Map("test");
+    Mesh mesh(map->vertices, map->texture_coordinates, map->normals, map->indices);
     world.meshes.push_back(&mesh);
+    delete map;
 
     while (renderer.should_render())
     {
