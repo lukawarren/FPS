@@ -51,7 +51,7 @@ target_precompile_headers(${TARGET_NAME} PRIVATE
 if(MSVC)
     target_compile_options(${TARGET_NAME} PUBLIC /W4 /Wv:18)
 else()
-    target_compile_options(${TARGET_NAME} PRIVATE -O3 -g -Wall -Wextra -pedantic -fdiagnostics-color=always)
+    target_compile_options(${TARGET_NAME} PRIVATE -O0 -g -Wall -Wextra -pedantic -fdiagnostics-color=always)
 endif()
 
 # Dependencies

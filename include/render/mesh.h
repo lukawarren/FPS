@@ -4,7 +4,10 @@
 class Mesh
 {
 public:
-    Mesh(const std::vector<float>& vertices);
+    Mesh(
+        const std::vector<float>& vertices,
+        const std::vector<float>& normals
+    );
     Mesh(const Mesh&) = delete;
     ~Mesh();
 

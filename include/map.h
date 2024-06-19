@@ -6,6 +6,7 @@ class Map
 public:
     Map(const std::string& filename);
     std::vector<float> get_vertices() const;
+    std::vector<float> get_normals() const;
 
 private:
     void parse_entity(std::ifstream& stream);

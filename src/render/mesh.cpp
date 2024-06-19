@@ -1,7 +1,11 @@
 #include "render/mesh.h"
 
-Mesh::Mesh(const std::vector<float>& vertices)
+Mesh::Mesh(
+    const std::vector<float>& vertices,
+    const std::vector<float>& normals
+)
 {
+    dbg("TODO: use EBOs");
     // Create and bind VAO
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -14,6 +18,14 @@ Mesh::Mesh(const std::vector<float>& vertices)
         &vertices[0],
         sizeof(vertices[0]) * vertices.size(),
         sizeof(vertices[0])
+    );
+    make_vao(
+        1,
+        GL_FLOAT,
+        3,
+        &normals[0],
+        sizeof(normals[0]) * normals.size(),
+        sizeof(normals[0])
     );
 
     // Unbind VAO but *not* EBO (as this is bound by the VAO for us)

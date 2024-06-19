@@ -7,12 +7,16 @@ void run()
     World world;
     double frame_time = 0.0f;
 
-    std::vector<float> vertices = Map("simple").get_vertices();
-    Mesh mesh(vertices);
+    Map map("unnamed");
+    Mesh mesh(map.get_vertices(), map.get_normals());
     world.meshes.push_back(&mesh);
-    world.camera.position.z = 3;
-    world.camera.position.y = 2;
-    world.camera.pitch = 20.0f;
+    world.camera.position.z = 10;
+    world.camera.position.y = 4;
+    world.camera.position.x = -6.0f;
+    world.camera.pitch = 45.0f;
+    // world.camera.position.z = 5;
+    // world.camera.position.y = 2;
+    // world.camera.pitch = 20.0f;
 
     while (renderer.should_render())
     {
