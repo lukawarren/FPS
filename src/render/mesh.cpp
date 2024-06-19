@@ -2,58 +2,41 @@
 
 Mesh::Mesh(
     const std::vector<float>& vertices,
-    const std::vector<float>& normals
+    const std::vector<unsigned int>& indices
 )
 {
-    dbg("TODO: use EBOs");
     // Create and bind VAO
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
+    // Create, bind and upload indices' element buffer object (EBO)
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(indices[0]), &indices[0], GL_STATIC_DRAW);
+
     // Make VAOs
-    make_vao(
-        0,
-        GL_FLOAT,
-        3,
-        &vertices[0],
-        sizeof(vertices[0]) * vertices.size(),
-        sizeof(vertices[0])
-    );
-    make_vao(
-        1,
-        GL_FLOAT,
-        3,
-        &normals[0],
-        sizeof(normals[0]) * normals.size(),
-        sizeof(normals[0])
-    );
+    make_vao(0, GL_FLOAT, 3, vertices);
 
     // Unbind VAO but *not* EBO (as this is bound by the VAO for us)
     glBindVertexArray(0);
-    draw_count = vertices.size();
+    this->n_indices = indices.size();
 }
 
 void Mesh::make_vao(
     const unsigned int attribute,
     const unsigned int format,
     const unsigned int dimensions,
-    const void* data,
-    const size_t length,
-    const size_t unit_length
+    const std::vector<float>& data
 )
 {
     // Make and fill VBO
     unsigned int vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, length, data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(data[0]), &data[0], GL_STATIC_DRAW);
 
     // Inform OpenGL of the nature of the data - GL_FALSE disables normalisation of data
-    if (format == GL_FLOAT)
-        glVertexAttribPointer(attribute, dimensions, format, GL_FALSE, dimensions * unit_length, (void*)0);
-    else
-        glVertexAttribIPointer(attribute, dimensions, format, dimensions * unit_length, (void*)0);
-
+    glVertexAttribPointer(attribute, dimensions, format, GL_FALSE, dimensions * sizeof(data[0]), (void*)0);
     glEnableVertexAttribArray(attribute);
 
     // Unbind then keep track of VBO for future clean-up
@@ -73,10 +56,7 @@ void Mesh::unbind() const
 
 void Mesh::draw() const
 {
-    if (ebo.has_value())
-        glDrawElements(GL_TRIANGLES, draw_count, GL_UNSIGNED_INT, 0);
-    else
-        glDrawArrays(GL_TRIANGLES, 0, draw_count);
+    glDrawElements(GL_TRIANGLES, n_indices, GL_UNSIGNED_INT, 0);
 }
 
 Mesh::~Mesh()
@@ -86,6 +66,5 @@ Mesh::~Mesh()
     for (const auto vbo: vbos)
         glDeleteBuffers(1, &vbo);
 
-    if (ebo.has_value())
-        glDeleteBuffers(1, &ebo.value());
+    glDeleteBuffers(1, &ebo);
 }

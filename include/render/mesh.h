@@ -6,7 +6,7 @@ class Mesh
 public:
     Mesh(
         const std::vector<float>& vertices,
-        const std::vector<float>& normals
+        const std::vector<unsigned int>& indices
     );
     Mesh(const Mesh&) = delete;
     ~Mesh();
@@ -20,16 +20,12 @@ private:
         const unsigned int attribute,
         const unsigned int format,
         const unsigned int dimensions,
-        const void* data,
-        const size_t length,
-        const size_t unit_length
+        const std::vector<float>& data
     );
 
     // OpenGL state
     unsigned int vao;
     std::vector<unsigned int> vbos;
-    std::optional<unsigned int> ebo;
-
-    // Mesh info - number of vertices (or indices) for draw commands
-    size_t draw_count;
+    unsigned int ebo;
+    size_t n_indices;
 };

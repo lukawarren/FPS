@@ -24,6 +24,9 @@ file(GLOB SOURCES
     lib/imgui/*.cpp
     lib/imgui/backends/imgui_impl_opengl3.cpp
     lib/imgui/backends/imgui_impl_glfw.cpp
+    lib/tiny_csg/query*.cpp
+    lib/tiny_csg/csg.cpp
+    lib/tiny_csg/rebuild.cpp
 )
 
 # For Visual Studio, add header and shader files
@@ -42,6 +45,7 @@ target_include_directories(${TARGET_NAME} PRIVATE
     "${PROJECT_SOURCE_DIR}/lib/imgui"
     "${PROJECT_SOURCE_DIR}/lib/imgui/backends"
     "${PROJECT_SOURCE_DIR}/lib/dbg-macro/"
+    "${PROJECT_SOURCE_DIR}/lib/tiny_csg/"
 )
 target_precompile_headers(${TARGET_NAME} PRIVATE
     "${PROJECT_SOURCE_DIR}/include/pch.h"
@@ -51,7 +55,7 @@ target_precompile_headers(${TARGET_NAME} PRIVATE
 if(MSVC)
     target_compile_options(${TARGET_NAME} PUBLIC /W4 /Wv:18)
 else()
-    target_compile_options(${TARGET_NAME} PRIVATE -O0 -g -Wall -Wextra -pedantic -fdiagnostics-color=always)
+    target_compile_options(${TARGET_NAME} PRIVATE -O3 -g -Wall -Wextra -pedantic -fdiagnostics-color=always)
 endif()
 
 # Dependencies

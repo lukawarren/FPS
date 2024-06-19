@@ -1,3 +1,6 @@
 [submodule "lib/imgui"]
 	path = lib/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "lib/tiny_csg"]
+	path = lib/tiny_csg
+	url = https://github.com/laleksic/tiny_csg/

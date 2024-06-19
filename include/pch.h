@@ -13,6 +13,7 @@
 
 #include <glad/glad.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -27,3 +28,6 @@
 
 #define DBG_MACRO_NO_WARNING
 #include "dbg.h"
+
+#define module_private public
+#include "csg.hpp"

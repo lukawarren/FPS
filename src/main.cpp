@@ -12,7 +12,7 @@ void run()
     glm::vec2 mouse_position = window.mouse_position();
 
     Map map("unnamed");
-    Mesh mesh(map.get_vertices(), map.get_normals());
+    Mesh mesh(map.vertices, map.indices);
     world.meshes.push_back(&mesh);
 
     while (renderer.should_render())
