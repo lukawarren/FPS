@@ -62,7 +62,6 @@ void Renderer::render_forward_pass(
     for (const Mesh* mesh : world.meshes)
     {
         static Transform t = Transform();
-        t.rotation.y += 0.1f;
         diffuse_shader.set_uniform("matrix", projection_matrix * view_matrix * t.matrix());
         mesh->bind();
         mesh->draw();
