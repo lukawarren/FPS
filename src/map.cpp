@@ -1,5 +1,4 @@
 #include "map.h"
-#include "config.h"
 
 constexpr csg::volume_t volume_air = 0;
 constexpr csg::volume_t volume_solid = 1;
@@ -30,23 +29,54 @@ Map::Map(const std::string& filename)
 
 void Map::parse_entity(std::ifstream& stream)
 {
-    std::string line;
-    std::getline(stream, line);
-
     // Get properties
-    std::string class_name = line.substr(13, line.length() - 14);
-    dbg(class_name);
+    const auto get_property = [](auto& line)
+    {
+        std::istringstream iss(line);
+        std::string name, value;
+        iss >> name;
+        iss.ignore(1);
+        std::getline(iss, value);
 
+        // Remove surrounding quotes
+        if (name[0] == '"') name.erase(0, 1);
+        if (name[name.size() - 1] == '"') name.erase(name.size() - 1, 1);
+        if (value[0] == '"') value.erase(0, 1);
+        if (value[value.size() - 1] == '"') value.erase(value.size() - 1, 1);
+
+        return std::pair {
+            name,
+            value
+        };
+    };
+
+    Entity entity = {};
+
+    std::string line;
     while (std::getline(stream, line))
     {
+        // Comment
+        if (line.size() >= 2 && line[0] == '/' && line[1] == '/')
+            continue;
+
         // Brush data
         if (line == "{")
+        {
             parse_brush(stream);
+            continue;
+        }
 
         // End of entity
         if (line == "}")
-            return;
+            break;
+
+        // Property
+        const auto [name, value] = get_property(line);
+        entity.properties[name] = value;
     }
+
+    dbg(entity.properties);
+    entities.push_back(entity);
 }
 
 void Map::parse_brush(std::ifstream& stream)

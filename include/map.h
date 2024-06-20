@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "render/mesh.h"
 #include "render/texture.h"
+#include "config.h"
 
 class Map
 {
@@ -14,7 +15,29 @@ public:
         Mesh* mesh;
         Texture* texture;
     };
+
+    struct Entity
+    {
+        std::unordered_map<std::string, std::string> properties;
+
+        glm::vec3 parse_vec3(
+            const std::string& key,
+            const glm::vec3 default_value = glm::vec3(0.0f),
+            const bool scale = true
+        ) const
+        {
+            if (properties.count(key) == 0)
+                return default_value;
+
+            std::istringstream iss(properties.at(key));
+            float x, y, z;
+            iss >> x >> y >> z;
+            return glm::vec3 { x, z, -y } * (scale ? metres_per_unit : 1.0f);
+        }
+    };
+
     std::vector<DrawCall> draw_calls;
+    std::vector<Entity> entities;
 
 private:
     struct TextureInfo

@@ -11,7 +11,7 @@ void run()
     bool captured = true;
     glm::vec2 mouse_position = window.mouse_position();
 
-    world.load_map("test");
+    world.load_map("lab");
 
     while (renderer.should_render())
     {

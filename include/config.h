@@ -1,6 +1,6 @@
 #pragma once
 
-constexpr double metres_per_unit = 0.01905;
+constexpr float metres_per_unit = 0.01905;
 
 constexpr int texture_size = 128;
 constexpr int texture_atlas_size = 1024;
