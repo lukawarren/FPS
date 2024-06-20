@@ -28,6 +28,8 @@ void Renderer::load_world(const World& world)
     point_light_framebuffers.resize(world.point_lights.size());
     for (size_t i = 0; i < world.point_lights.size(); ++i)
         point_light_framebuffers[i] = new CubeFramebuffer();
+
+    render_point_light_pass(world);
 }
 
 bool Renderer::should_render()
@@ -51,9 +53,6 @@ void Renderer::render(const World& world)
         window.framebuffer_height
     );
     const glm::mat4 view_matrix = world.camera.view_matrix();
-
-    // Shadow passes
-    render_point_light_pass(world);
 
     // Render normal geometry
     render_forward_pass(world, view_matrix, projection_matrix);
