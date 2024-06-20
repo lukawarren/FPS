@@ -12,6 +12,7 @@ void run()
     glm::vec2 mouse_position = window.mouse_position();
 
     world.load_map("lab");
+    renderer.load_world(world);
 
     while (renderer.should_render())
     {

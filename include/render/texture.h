@@ -4,29 +4,26 @@
 class Texture
 {
 public:
+    // For regular textures
     Texture(
         const std::string& filename,
         const bool use_nearest_filtering = true,
         const bool is_srgb = true
     );
-    Texture(
-        const unsigned int width,
-        const unsigned int height,
-        const unsigned int internal_format,
-        const unsigned int format,
-        const unsigned int type,
-        const bool use_nearest_filtering,
-        const char* data
-    );
+
+    // For cubemaps
+    enum class Type { Cubemap };
+    Texture(const Type type, const unsigned int width, const unsigned int height);
+
     Texture(const Texture&) = delete;
     ~Texture();
 
-    void set_max_mipmap_level(const int max_mipmap_level) const;
     void bind(const unsigned int unit = 0) const;
     void unbind() const;
 
+    unsigned int handle() const { return texture_id; }
+
 private:
     unsigned int texture_id;
-    int width;
-    int height;
+    unsigned int texture_format;
 };

@@ -6,13 +6,14 @@ struct ShaderType
     unsigned int identifier;
 };
 
-static std::array<ShaderType, 2> shader_types =
+static std::array<ShaderType, 3> shader_types =
 {{
     { .extension = ".vert", .identifier = GL_VERTEX_SHADER   },
     { .extension = ".frag", .identifier = GL_FRAGMENT_SHADER },
+    { .extension = ".geom", .identifier = GL_GEOMETRY_SHADER }
 }};
 
-Shader::Shader(const std::string& filename)
+Shader::Shader(const std::string& filename, bool include_geometry_shader)
 {
     const auto read_file = [](const std::string path)
     {
@@ -29,7 +30,7 @@ Shader::Shader(const std::string& filename)
         ShaderType& shader_type;
     };
 
-    std::array<ShaderTarget, 2> targets =
+    std::vector<ShaderTarget> targets =
     {
         // Vertex
         ShaderTarget
@@ -45,6 +46,12 @@ Shader::Shader(const std::string& filename)
             .shader_type = shader_types[1]
         }
     };
+
+    if (include_geometry_shader)
+        targets.push_back(ShaderTarget {
+            .source = read_file(filename + shader_types[2].extension),
+            .shader_type = shader_types[2]
+        });
 
     // Upload source code
     for (auto& target : targets)

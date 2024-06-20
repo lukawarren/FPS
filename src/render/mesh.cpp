@@ -21,8 +21,6 @@ Mesh::Mesh(
     make_vao(1, GL_FLOAT, 2, texture_coordinates);
     make_vao(2, GL_FLOAT, 3, normals);
 
-    // Unbind VAO but *not* EBO (as this is bound by the VAO for us)
-    glBindVertexArray(0);
     this->n_indices = indices.size();
 }
 

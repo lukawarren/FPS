@@ -7,6 +7,7 @@ struct PointLight
 {
     glm::vec3 position;
     glm::vec3 colour;
+    float distance = 100.0f;
 };
 
 struct World

@@ -9,7 +9,7 @@ Texture::Texture(
 )
 {
     // Load from disk
-    int channels;
+    int channels, width, height;
     uint8_t* data = stbi_load(("../assets/textures/" + filename).c_str(), &width, &height, &channels, STBI_rgb);
     if (!data) throw std::runtime_error("failed to load texture " + filename);
 
@@ -46,45 +46,48 @@ Texture::Texture(
     // Unbind and free image from normal memory
     glBindTexture(GL_TEXTURE_2D, 0);
     stbi_image_free(data);
+    texture_format = GL_TEXTURE_2D;
 }
 
-Texture::Texture(
-    const unsigned int width,
-    const unsigned int height,
-    const unsigned int internal_format,
-    const unsigned int format,
-    const unsigned int type,
-    const bool use_nearest_filtering,
-    const char* data
-)
+Texture::Texture(const Type type, const unsigned int width, const unsigned int height)
 {
+    (void)type;
+
     glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, use_nearest_filtering ? GL_NEAREST : GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, use_nearest_filtering ? GL_NEAREST : GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
 
-void Texture::set_max_mipmap_level(const int max_mipmap_level) const
-{
-    // Limit mip-mapping so sub-textures don't go smaller than 1x1
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max_mipmap_level);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    for (unsigned int i = 0; i < 6; ++i)
+        glTexImage2D(
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+            0,
+            GL_DEPTH_COMPONENT,
+            width,
+            height,
+            0,
+            GL_DEPTH_COMPONENT,
+            GL_FLOAT,
+            NULL
+        );
+
+    dbg("TODO: hardware PCF");
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    texture_format = GL_TEXTURE_CUBE_MAP;
 }
 
 void Texture::bind(const unsigned int unit) const
 {
     glActiveTexture(GL_TEXTURE0 + unit);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glBindTexture(texture_format, texture_id);
 }
 
 void Texture::unbind() const
 {
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(texture_format, 0);
 }
 
 Texture::~Texture()

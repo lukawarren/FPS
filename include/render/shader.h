@@ -9,7 +9,7 @@
 class Shader
 {
 public:
-    Shader(const std::string& filename);
+    Shader(const std::string& filename, bool include_geometry_shader = false);
     Shader(const Shader&) = delete;
     ~Shader();
 
@@ -35,9 +35,10 @@ private:
 };
 
 // Shader classes
-#define SHADER(x, y) class x : public Shader {\
+#define SHADER(x, y, z) class x : public Shader {\
 public:\
-    x() : Shader(y) {}\
+    x() : Shader(y, z) {}\
 };
 
-SHADER(DiffuseShader, "diffuse")
+SHADER(DiffuseShader, "diffuse", false)
+SHADER(PointLightShader, "point_light", true)
