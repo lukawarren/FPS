@@ -58,7 +58,14 @@ void Renderer::render_forward_pass(
     // Begin forward pass
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     diffuse_shader.bind();
-    diffuse_shader.set_uniform("matrix", projection_matrix * view_matrix);
+    diffuse_shader.set_uniform("view_projection", projection_matrix * view_matrix);
+    diffuse_shader.set_uniform("model", glm::mat4(1.0f));
+
+    if (world.point_lights.size() > 0)
+    {
+        diffuse_shader.set_uniform("light_position", world.point_lights[0].position);
+        diffuse_shader.set_uniform("light_colour", world.point_lights[0].colour);
+    }
 
     for (const auto& draw_call : world.map->draw_calls)
     {

@@ -6,7 +6,7 @@
 struct PointLight
 {
     glm::vec3 position;
-    glm::vec3 color;
+    glm::vec3 colour;
 };
 
 struct World
@@ -33,15 +33,16 @@ struct World
             if (class_name == "light")
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
-                const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(1.0f), false);
-                dbg(position.x, position.y, position.z);
-                dbg(colour.x, colour.y, colour.z);
+                const glm::vec3 colour = entity.parse_vec3("light_colour", glm::vec3(1.0f), false);
+                dbg(colour.x);
+                dbg(colour.y);
+                dbg(colour.z);
+                point_lights.emplace_back(position, colour);
             }
 
             else if (class_name == "info_player_start")
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
-                dbg(position.x, position.y, position.z);
                 camera.position = position;
             }
         }
