@@ -28,7 +28,7 @@ std::array<glm::mat4, 6> CubeFramebuffer::get_matrices(
 ) const
 {
     const float aspect = (float)shadow_size / (float)shadow_size;
-    const float near = 0.01f;
+    const float near = 1.0f;
     const glm::mat4 projection = glm::perspective(glm::radians(90.0f), aspect, near, far_plane);
 
     std::array<glm::mat4, 6> matrices;
