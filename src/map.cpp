@@ -75,7 +75,6 @@ void Map::parse_entity(std::ifstream& stream)
         entity.properties[name] = value;
     }
 
-    dbg(entity.properties);
     entities.push_back(entity);
 }
 
@@ -218,7 +217,7 @@ void Map::build_meshes()
                 {
                     mesh.normals.push_back(face.plane->normal.x);
                     mesh.normals.push_back(face.plane->normal.z);
-                    mesh.normals.push_back(face.plane->normal.y);
+                    mesh.normals.push_back(face.plane->normal.y * -1.0f);
                 }
 
                 // Record indices

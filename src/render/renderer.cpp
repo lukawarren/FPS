@@ -20,7 +20,6 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
     // Texture units
     diffuse_shader.bind();
     diffuse_shader.set_uniform("diffuse", 0);
-    diffuse_shader.set_uniform("point_depth", 1);
 }
 
 void Renderer::load_world(const World& world)
@@ -112,13 +111,50 @@ void Renderer::render_forward_pass(
     diffuse_shader.bind();
     diffuse_shader.set_uniform("view_projection", projection_matrix * view_matrix);
     diffuse_shader.set_uniform("model", glm::mat4(1.0f));
+    diffuse_shader.set_uniform("n_point_lights", std::min(
+        (int)world.point_lights.size(),
+        max_point_lights)
+    );
 
-    if (world.point_lights.size() > 0)
+    // Get nearest N lights
+    std::vector<size_t> light_indices;
+    light_indices.resize(world.point_lights.size());
+    for (size_t i = 0; i < world.point_lights.size(); ++i)
+        light_indices[i] = i;
+
+    if (world.point_lights.size() > max_point_lights)
     {
-        diffuse_shader.set_uniform("light_position", world.point_lights[0].position);
-        diffuse_shader.set_uniform("light_colour", world.point_lights[0].colour);
-        diffuse_shader.set_uniform("light_far_plane", world.point_lights[0].distance);
-        point_light_framebuffers[0]->cubemap.bind(1);
+        std::partial_sort(
+            light_indices.begin(),
+            light_indices.begin() + max_point_lights,
+            light_indices.end(),
+            [&](size_t a, size_t b)
+            {
+                const glm::vec3 pos_a = world.point_lights[a].position;
+                const glm::vec3 pos_b = world.point_lights[b].position;
+                return  glm::length2(pos_a - world.camera.position) <
+                        glm::length2(pos_b - world.camera.position);
+            }
+        );
+    }
+
+    for (size_t i = 0; i < max_point_lights; ++i)
+    {
+        std::string s = std::to_string(i);
+        if (i < world.point_lights.size())
+        {
+            const PointLight& light = world.point_lights[light_indices[i]];
+            diffuse_shader.set_uniform("point_lights[" + s + "].position", light.position);
+            diffuse_shader.set_uniform("point_lights[" + s + "].colour", light.colour);
+            diffuse_shader.set_uniform("point_lights[" + s + "].far_plane", light.distance);
+            diffuse_shader.set_uniform("point_lights[" + s + "].depth", 1 + (int)i);
+            point_light_framebuffers[i]->cubemap.bind(1 + i);
+        }
+        else
+        {
+            // Must set texture to cubemap, but 0 isn't
+            diffuse_shader.set_uniform("point_lights[" + s + "].depth", 1);
+        }
     }
 
     for (const auto& draw_call : world.map->draw_calls)

@@ -7,7 +7,7 @@ struct PointLight
 {
     glm::vec3 position;
     glm::vec3 colour;
-    float distance = 25.0f;
+    float distance = 24.0f;
 };
 
 struct World
@@ -35,9 +35,6 @@ struct World
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
                 const glm::vec3 colour = entity.parse_vec3("light_colour", glm::vec3(1.0f), false);
-                dbg(colour.x);
-                dbg(colour.y);
-                dbg(colour.z);
                 point_lights.emplace_back(position, colour);
             }
 
