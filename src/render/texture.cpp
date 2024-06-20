@@ -17,6 +17,7 @@ Texture::Texture(
     glBindTexture(GL_TEXTURE_2D, texture_id);
 
     // Upload data
+    dbg("todo: SRGB");
     const auto format = (channels == 3 ? GL_RGB : GL_RGBA);
     const auto formatInternal = (channels == 3 ? GL_RGB8 : GL_RGBA8);
     glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, width, height, 0, format, GL_UNSIGNED_BYTE, data);
@@ -45,6 +46,26 @@ Texture::Texture(
     // Unbind and free image from normal memory
     glBindTexture(GL_TEXTURE_2D, 0);
     stbi_image_free(data);
+}
+
+Texture::Texture(
+    const unsigned int width,
+    const unsigned int height,
+    const unsigned int internal_format,
+    const unsigned int format,
+    const unsigned int type,
+    const bool use_nearest_filtering,
+    const char* data
+)
+{
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, type, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, use_nearest_filtering ? GL_NEAREST : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, use_nearest_filtering ? GL_NEAREST : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Texture::set_max_mipmap_level(const int max_mipmap_level) const

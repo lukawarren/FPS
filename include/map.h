@@ -1,14 +1,20 @@
 #pragma once
 #include "pch.h"
+#include "render/mesh.h"
+#include "render/texture.h"
 
 class Map
 {
 public:
     Map(const std::string& filename);
-    std::vector<float> vertices;
-    std::vector<float> normals;
-    std::vector<float> texture_coordinates;
-    std::vector<unsigned int> indices;
+    ~Map();
+
+    struct DrawCall
+    {
+        Mesh* mesh;
+        Texture* texture;
+    };
+    std::vector<DrawCall> draw_calls;
 
 private:
     struct TextureInfo
@@ -20,11 +26,17 @@ private:
 
     void parse_entity(std::ifstream& stream);
     void parse_brush(std::ifstream& stream);
-    void build_mesh();
-    void calculate_uvs(const std::vector<csg::vertex_t>& vertices, const TextureInfo& info);
+    void build_meshes();
+    void calculate_uvs(
+        std::vector<float>& texture_coordinates,
+        const std::vector<csg::vertex_t>& vertices,
+        const TextureInfo& info
+    );
 
     csg::world_t world;
 
+    // Temporary variables
+    std::set<std::string> textures;
     std::vector<TextureInfo> texture_infos;
 
     std::pair<glm::vec3, float> plane_from_points(

@@ -8,6 +8,15 @@ public:
         const std::string& filename,
         const bool use_nearest_filtering = true
     );
+    Texture(
+        const unsigned int width,
+        const unsigned int height,
+        const unsigned int internal_format,
+        const unsigned int format,
+        const unsigned int type,
+        const bool use_nearest_filtering,
+        const char* data
+    );
     Texture(const Texture&) = delete;
     ~Texture();
 

@@ -1,9 +1,8 @@
 #include "map.h"
+#include "config.h"
 
-constexpr double metres_per_unit = 0.01905;
 constexpr csg::volume_t volume_air = 0;
 constexpr csg::volume_t volume_solid = 1;
-constexpr float texture_size = 128.0f;
 
 Map::Map(const std::string& filename)
 {
@@ -24,7 +23,9 @@ Map::Map(const std::string& filename)
         continue;
     }
 
-    build_mesh();
+    build_meshes();
+    textures.clear();
+    texture_infos.clear();
 }
 
 void Map::parse_entity(std::ifstream& stream)
@@ -123,16 +124,28 @@ void Map::parse_brush(std::ifstream& stream)
                 .scale = { scale_x, scale_y },
             });
 
+            textures.insert(texture_name);
+
             texture_info_indices.push_back(texture_infos.size() - 1);
         }
     }
 }
 
-void Map::build_mesh()
+void Map::build_meshes()
 {
     world.rebuild();
     csg::brush_t* brush = world.first();
     size_t face_index = 0;
+
+    // Build separates mesh per texture
+    struct TexturedMesh
+    {
+        std::vector<float> vertices;
+        std::vector<float> normals;
+        std::vector<float> texture_coordinates;
+        std::vector<unsigned int> indices;
+    };
+    std::unordered_map<std::string, TexturedMesh> meshes;
 
     while (brush != nullptr)
     {
@@ -142,6 +155,12 @@ void Map::build_mesh()
         auto faces = brush->get_faces();
         for (const csg::face_t& face : faces)
         {
+            // Identify (or create) correct mesh
+            const TextureInfo& info  = texture_infos[face_index];
+            if (meshes.count(info.name) == 0)
+                meshes[info.name] = TexturedMesh {};
+            TexturedMesh& mesh = meshes[info.name];
+
             for (const csg::fragment_t& fragment : face.fragments)
             {
                 csg::volume_t front = fragment.front_volume;
@@ -156,33 +175,32 @@ void Map::build_mesh()
                     continue;
 
                 // Record vertices
-                const size_t offset = vertices.size() / 3;
+                const size_t offset = mesh.vertices.size() / 3;
                 for (const auto& vertex : fragment.vertices)
                 {
-                    vertices.push_back(vertex.position.x * metres_per_unit);
-                    vertices.push_back(vertex.position.z * metres_per_unit);
-                    vertices.push_back(vertex.position.y * metres_per_unit * -1.0f);
+                    mesh.vertices.push_back(vertex.position.x * metres_per_unit);
+                    mesh.vertices.push_back(vertex.position.z * metres_per_unit);
+                    mesh.vertices.push_back(vertex.position.y * metres_per_unit * -1.0f);
                 }
 
                 // Record normals
                 for (size_t i = 0; i < fragment.vertices.size(); ++i)
                 {
-                    normals.push_back(face.plane->normal.x);
-                    normals.push_back(face.plane->normal.z);
-                    normals.push_back(face.plane->normal.y);
+                    mesh.normals.push_back(face.plane->normal.x);
+                    mesh.normals.push_back(face.plane->normal.z);
+                    mesh.normals.push_back(face.plane->normal.y);
                 }
 
                 // Record indices
                 std::vector<csg::triangle_t> triangles = csg::triangulate(fragment);
                 for (const auto& triangle : triangles)
                 {
-                    indices.push_back(triangle.i + offset);
-                    indices.push_back(triangle.j + offset);
-                    indices.push_back(triangle.k + offset);
+                    mesh.indices.push_back(triangle.i + offset);
+                    mesh.indices.push_back(triangle.j + offset);
+                    mesh.indices.push_back(triangle.k + offset);
                 }
 
-                const TextureInfo& info  = texture_infos[face_index];
-                calculate_uvs(fragment.vertices, info);
+                calculate_uvs(mesh.texture_coordinates, fragment.vertices, info);
             }
 
             face_index++;
@@ -190,9 +208,26 @@ void Map::build_mesh()
 
         brush = world.next(brush);
     }
+
+    for (const auto &[key, value] : meshes)
+    {
+        draw_calls.emplace_back(DrawCall {
+            .mesh = new Mesh(
+                value.vertices,
+                value.texture_coordinates,
+                value.normals,
+                value.indices
+            ),
+            .texture = new Texture(key + ".png")
+        });
+    }
 }
 
-void Map::calculate_uvs(const std::vector<csg::vertex_t>& vertices, const TextureInfo& info)
+void Map::calculate_uvs(
+    std::vector<float>& texture_coordinates,
+    const std::vector<csg::vertex_t>& vertices,
+    const TextureInfo& info
+)
 {
     const glm::vec3 u_axis = info.axes[0].normal / info.scale.x;
     const glm::vec3 v_axis = info.axes[1].normal / info.scale.y;
@@ -203,8 +238,8 @@ void Map::calculate_uvs(const std::vector<csg::vertex_t>& vertices, const Textur
         float v = glm::dot(vertex.position, v_axis);
         u += info.axes[0].offset;
         v += info.axes[1].offset;
-        u /= texture_size;
-        v /= texture_size;
+        u /= (float)texture_size;
+        v /= (float)texture_size;
 
         texture_coordinates.emplace_back(u);
         texture_coordinates.emplace_back(v);
@@ -222,4 +257,13 @@ std::pair<glm::vec3, float> Map::plane_from_points(
     ));
     const float distance = -glm::dot(normal, p1);
     return { normal, distance };
+}
+
+Map::~Map()
+{
+    for (auto& draw_call : draw_calls)
+    {
+        delete draw_call.mesh;
+        delete draw_call.texture;
+    }
 }

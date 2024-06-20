@@ -1,8 +1,6 @@
 #include "render/renderer.h"
 #include "transform.h"
 
-Texture* texture;
-
 Renderer::Renderer(const std::string& window_title, const int width, const int height) :
     window(window_title, width, height)
 {
@@ -17,9 +15,6 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window.glfw_window, true);
     ImGui_ImplOpenGL3_Init("#version 150");
-
-    texture = new Texture("missing_texture.png");
-    texture->bind();
 }
 
 bool Renderer::should_render()
@@ -62,12 +57,13 @@ void Renderer::render_forward_pass(
     // Begin forward pass
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     diffuse_shader.bind();
+    diffuse_shader.set_uniform("matrix", projection_matrix * view_matrix);
 
-    for (const Mesh* mesh : world.meshes)
+    for (const auto& draw_call : world.map->draw_calls)
     {
-        diffuse_shader.set_uniform("matrix", projection_matrix * view_matrix);
-        mesh->bind();
-        mesh->draw();
+        draw_call.texture->bind();
+        draw_call.mesh->bind();
+        draw_call.mesh->draw();
     }
 }
 
