@@ -8,6 +8,7 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
     glCullFace(GL_BACK);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // Init ImGui

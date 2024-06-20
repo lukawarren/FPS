@@ -6,7 +6,8 @@ class Texture
 public:
     Texture(
         const std::string& filename,
-        const bool use_nearest_filtering = true
+        const bool use_nearest_filtering = true,
+        const bool is_srgb = true
     );
     Texture(
         const unsigned int width,

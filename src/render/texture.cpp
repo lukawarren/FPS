@@ -4,12 +4,13 @@
 
 Texture::Texture(
     const std::string& filename,
-    const bool use_nearest_filtering
+    const bool use_nearest_filtering,
+    const bool is_srgb
 )
 {
     // Load from disk
     int channels;
-    uint8_t* data = stbi_load(("../assets/textures/" + filename).c_str(), &width, &height, &channels, 0);
+    uint8_t* data = stbi_load(("../assets/textures/" + filename).c_str(), &width, &height, &channels, STBI_rgb);
     if (!data) throw std::runtime_error("failed to load texture " + filename);
 
     // Create and bind texture
@@ -17,9 +18,8 @@ Texture::Texture(
     glBindTexture(GL_TEXTURE_2D, texture_id);
 
     // Upload data
-    dbg("todo: SRGB");
-    const auto format = (channels == 3 ? GL_RGB : GL_RGBA);
-    const auto formatInternal = (channels == 3 ? GL_RGB8 : GL_RGBA8);
+    const auto format = GL_RGB;
+    const auto formatInternal = is_srgb ? GL_SRGB : GL_RGB;
     glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
     // Mipmaps
