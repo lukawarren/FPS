@@ -267,8 +267,8 @@ void Map::calculate_uvs(
         float v = glm::dot(vertex.position, v_axis);
         u += info.axes[0].offset;
         v += info.axes[1].offset;
-        u /= (float)texture_size;
-        v /= (float)texture_size;
+        u /= (float)trenchbroom_texture_size;
+        v /= (float)trenchbroom_texture_size;
 
         texture_coordinates.emplace_back(u);
         texture_coordinates.emplace_back(v);

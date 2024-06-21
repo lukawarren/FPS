@@ -32,7 +32,11 @@ public:
             std::istringstream iss(properties.at(key));
             float x, y, z;
             iss >> x >> y >> z;
-            return glm::vec3 { x, z, -y } * (scale ? metres_per_unit : 1.0f);
+
+            if (scale)
+                return glm::vec3 { x, z, -y } * metres_per_unit;
+
+            return { x, y, z };
         }
     };
 

@@ -49,6 +49,7 @@ vec3 lighting(int i, vec3 normal)
     vec3 light_direction = point_lights[i].position - out_position.xyz;
     float attenuation = attenuate(light_direction);
     float diffuse = dot(normal, normalize(light_direction)) * attenuation;
+    diffuse = max(diffuse, 0);
     float shadow = get_shadow(i);
     return point_lights[i].colour * diffuse * (1.0 - shadow);
 }

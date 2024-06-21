@@ -1,6 +1,9 @@
 #include "render/texture.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb/stb_image_resize2.h>
+#include "config.h"
 
 Texture::Texture(
     const std::string& filename,
@@ -12,6 +15,13 @@ Texture::Texture(
     int channels, width, height;
     uint8_t* data = stbi_load(("../assets/textures/" + filename).c_str(), &width, &height, &channels, STBI_rgb);
     if (!data) throw std::runtime_error("failed to load texture " + filename);
+
+    // TODO: remove when texture size is decided :)
+    if (width != texture_size || height != texture_size)
+    {
+        stbir_resize_uint8_srgb(data, width, height, 0, data, texture_size, texture_size, 0, STBIR_RGB);
+        width = height = texture_size;
+    }
 
     // Create and bind texture
     glGenTextures(1, &texture_id);

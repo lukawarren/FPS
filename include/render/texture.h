@@ -7,7 +7,7 @@ public:
     // For regular textures
     Texture(
         const std::string& filename,
-        const bool use_nearest_filtering = true,
+        const bool use_nearest_filtering = false,
         const bool is_srgb = true
     );
 

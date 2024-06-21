@@ -34,7 +34,7 @@ struct World
             if (class_name == "light")
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
-                const glm::vec3 colour = entity.parse_vec3("light_colour", glm::vec3(1.0f), false);
+                const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(1.0f), false);
                 point_lights.emplace_back(position, colour);
             }
 

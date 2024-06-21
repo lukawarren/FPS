@@ -3,7 +3,7 @@
 
 void run()
 {
-    Renderer renderer("FPS", 800, 600);
+    Renderer renderer("FPS", 1600, 900);
     Window& window = renderer.window;
     window.capture_mouse();
     World world;
@@ -11,7 +11,7 @@ void run()
     bool captured = true;
     glm::vec2 mouse_position = window.mouse_position();
 
-    world.load_map("lab");
+    world.load_map("office");
     renderer.load_world(world);
 
     while (renderer.should_render())

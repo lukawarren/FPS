@@ -5,5 +5,5 @@
 @PointClass base(PlayerClass) = info_player_start : "Player 1 start" []
 
 @PointClass size(-4 -4 -4, 4 4 4) color(255 255 0) = light : "Light" [
-	light_colour(color1) : "Colour" : "1.0 1.0 1.0"
+	colour(color1) : "Colour" : "1.0 1.0 1.0"
 ]
