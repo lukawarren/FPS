@@ -184,8 +184,15 @@ void Map::build_meshes()
         auto faces = brush->get_faces();
         for (const csg::face_t& face : faces)
         {
-            // Identify (or create) correct mesh
+            // "No-draw" faces
             const TextureInfo& info  = texture_infos[face_index];
+            if (info.name == "__TB_empty")
+            {
+                face_index++;
+                continue;
+            }
+
+            // Identify (or create) correct mesh
             if (meshes.count(info.name) == 0)
                 meshes[info.name] = TexturedMesh {};
             TexturedMesh& mesh = meshes[info.name];
