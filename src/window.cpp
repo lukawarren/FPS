@@ -18,6 +18,7 @@ Window::Window(const std::string& name, const int _width, const int _height) :
 #endif
 
     window = this;
+    cached_mouse_position = mouse_position();
 }
 
 bool Window::update()
@@ -35,6 +36,8 @@ bool Window::update()
     // Keyboard state
     for (int i = 0; i <= GLFW_KEY_LAST; ++i)
         cached_keyboard_buttons[i] = glfwGetKey(glfw_window, i) == GLFW_PRESS;
+
+    cached_mouse_position = mouse_position();
 
     glfwSwapBuffers(glfw_window);
     glfwPollEvents();
@@ -72,6 +75,11 @@ glm::vec2 Window::mouse_position() const
     double x, y;
     glfwGetCursorPos(glfw_window, &x, &y);
     return { x, y };
+}
+
+glm::vec2 Window::mouse_movement() const
+{
+    return mouse_position() - cached_mouse_position;
 }
 
 void Window::capture_mouse() const

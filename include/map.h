@@ -42,6 +42,7 @@ public:
 
     std::vector<DrawCall> draw_calls;
     std::vector<Entity> entities;
+    csg::world_t world;
 
 private:
     struct TextureInfo
@@ -59,8 +60,6 @@ private:
         const std::vector<csg::vertex_t>& vertices,
         const TextureInfo& info
     );
-
-    csg::world_t world;
 
     // Temporary variables
     std::set<std::string> textures;

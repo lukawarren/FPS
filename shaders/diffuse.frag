@@ -25,28 +25,6 @@ float get_shadow(int i)
     float current_depth = length(frag_to_light);
     current_depth /= point_lights[i].far_plane;
 
-    // // Perform PCF depth test
-    // float shadow  = 0.0;
-    // float bias    = 0.005;
-    // float samples = 4.0;
-    // float offset  = 0.01;
-    // for(float x = -offset; x < offset; x += offset / (samples * 0.5))
-    // {
-    //     for(float y = -offset; y < offset; y += offset / (samples * 0.5))
-    //     {
-    //         for(float z = -offset; z < offset; z += offset / (samples * 0.5))
-    //         {
-    //             float closest_depth = texture(
-    //                 point_lights[i].depth,
-    //                 vec4(frag_to_light + vec3(x, y, z), current_depth - bias)
-    //             );
-    //             shadow += closest_depth;
-    //         }
-    //     }
-    // }
-    // shadow /= (samples * samples * samples);
-    // return shadow;
-
     float bias = 0.005;
     float shadow = texture(point_lights[i].depth, vec4(frag_to_light, current_depth - bias));
     return shadow;
@@ -68,8 +46,7 @@ vec3 lighting(int i, vec3 normal)
     float diffuse = dot(normal, normalize(light_direction)) * attenuation;
     diffuse = max(diffuse, 0);
     float shadow = get_shadow(i);
-    return vec3(1,1,1) * shadow;
-    return point_lights[i].colour * diffuse * (1.0 - shadow);
+    return point_lights[i].colour * diffuse * shadow;
 }
 
 void main()
@@ -81,7 +58,7 @@ void main()
     for (int i = 0; i < n_point_lights; ++i)
         total_lighting += lighting(i, normal);
 
-    const vec3 ambient = vec3(0.75, 1.0, 1.0) * 0.3;
+    const vec3 ambient = vec3(0.75, 1.0, 1.0) * 0.05;
     total_lighting += ambient;
 
     diffuse_colour.rgb *= total_lighting;

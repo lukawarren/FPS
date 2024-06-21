@@ -14,6 +14,7 @@ public:
     bool get_key(const int key, const bool repeat = true) const;
     bool get_mouse_button(const int button, const bool repeat = true) const;
     glm::vec2 mouse_position() const;
+    glm::vec2 mouse_movement() const;
     void capture_mouse() const;
     void uncapture_mouse() const;
 
@@ -32,4 +33,5 @@ private:
 
     bool cached_mouse_buttons[3] = {};
     bool cached_keyboard_buttons[GLFW_KEY_LAST + 1] = {};
+    glm::vec2 cached_mouse_position;
 };

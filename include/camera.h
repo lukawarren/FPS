@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include "window.h"
 
 constexpr float z_near = 0.01f;
 constexpr float z_far = 1000.0f;
@@ -47,6 +48,36 @@ public:
         glm::vec4 world_ray_xyzw = glm::inverse(view_matrix()) * eye;
         glm::vec3 world_ray_xyz = { world_ray_xyzw.x, world_ray_xyzw.y, world_ray_xyzw.z };
         return glm::normalize(world_ray_xyz);
+    }
+
+    void update_freecam(const float delta)
+    {
+        Window& window = *Window::window;
+
+        // WASD
+        const float speed = 10.0f * delta;
+        glm::vec3 movement = {};
+        if (window.get_key(GLFW_KEY_W)) movement.z += 1.0f;
+        if (window.get_key(GLFW_KEY_S)) movement.z -= 1.0f;
+        if (window.get_key(GLFW_KEY_A)) movement.x -= 1.0f;
+        if (window.get_key(GLFW_KEY_D)) movement.x += 1.0f;
+
+        // Apply relative to rotation
+        position += glm::vec3 { sin(glm::radians(yaw)), 0, -cos(glm::radians(yaw)) } * movement.z * speed;
+        position += glm::vec3 { cos(glm::radians(yaw)), 0,  sin(glm::radians(yaw)) } * movement.x * speed;
+
+        // Vertical movement
+        if (window.get_key(GLFW_KEY_SPACE)) position.y += 1.0f * speed;
+        if (window.get_key(GLFW_KEY_LEFT_SHIFT)) position.y -= 1.0f * speed;
+
+        // Mouse
+        const float sensitivity = 0.1f;
+        const glm::vec2 mouse_movement = window.mouse_movement();
+        yaw += mouse_movement.x * sensitivity;
+        pitch += mouse_movement.y * sensitivity;
+
+        // Confine rotation
+        pitch = std::max(std::min(pitch, 90.0f), -90.0f);
     }
 
     glm::vec3 position = {};

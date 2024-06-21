@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "map.h"
 #include "config.h"
+#include "player.h"
 
 struct PointLight
 {
@@ -12,7 +13,8 @@ struct PointLight
 
 struct World
 {
-    Camera camera;
+    Camera camera = {};
+    Player player = {};
     Map* map = nullptr;
     std::vector<PointLight> point_lights;
 
