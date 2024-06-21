@@ -3,7 +3,7 @@
 #include "config.h"
 
 constexpr float gravity = 9.81f;
-constexpr float walk_speed = 10.0f;
+constexpr float walk_speed = 5.0f;
 constexpr float jump_height = 1.2f;
 constexpr float height = 1.72;
 constexpr float eye_height = height - 0.1;
@@ -14,7 +14,6 @@ const float jump_speed = std::sqrtf(2.0f * gravity * jump_height);
 Player::Player()
 {
     mouse_position = Window::window->mouse_position();
-    position.y = 20;
 }
 
 void Player::update(
@@ -49,7 +48,11 @@ void Player::handle_input(const Camera& camera, const float delta)
     velocity += glm::vec3 { cos(glm::radians(camera.yaw)), 0,  sin(glm::radians(camera.yaw)) } * movement.x * walk_speed;
 
     // Vertical movement
-    if (window.get_key(GLFW_KEY_SPACE)) velocity.y = jump_speed;
+    if (window.get_key(GLFW_KEY_SPACE) && grounded)
+    {
+        velocity.y = jump_speed;
+        grounded = false;
+    }
 
     // Mouse
     const float sensitivity = 0.1f;
@@ -63,70 +66,74 @@ void Player::handle_input(const Camera& camera, const float delta)
 
 void Player::handle_physics(csg::world_t& world, const float delta)
 {
+    // Restrict physics time-scale to minimum of 10 FPS
+    const float physics_delta = std::min(delta, 1.0f / 10.0f);
+
     // Gravity
     velocity.y -= gravity * delta;
 
     // Resolve collisions
-    auto resolve_axis = [&](const glm::vec3& direction)
+    const int steps = 32;
+    const float epsilon = 0.0000001f;
+    bool clipped_stairs = false;
+    const auto resolve = [&](const glm::vec3 direction)
     {
-        glm::vec3 adjusted_position = position;
-
-        // Adjust origin based on player's size and direction
-        if (direction.x > 0) adjusted_position.x += radius;
-        if (direction.x < 0) adjusted_position.x -= radius;
-        if (direction.z > 0) adjusted_position.z += radius;
-        if (direction.z < 0) adjusted_position.z -= radius;
-        if (direction.y > 0) adjusted_position.y += height;
-        if (direction.y < 0) adjusted_position.y -= 0.0f;
-
-        // Find nearest collision
-        const auto hits = world.query_ray(csg::ray_t{
-            .origin = {
-                adjusted_position.x / metres_per_unit,
-                adjusted_position.z / metres_per_unit * -1.0f,
-                adjusted_position.y / metres_per_unit
+        const glm::vec3 new_position = position + velocity * direction * physics_delta;
+        const csg::box_t bounds = {
+            .min = {
+                (new_position.x - radius) / metres_per_unit,
+                (new_position.z + radius) / metres_per_unit * -1.0f,
+                (new_position.y) / metres_per_unit,
             },
-            .direction = {
-                direction.x / metres_per_unit,
-                direction.z / metres_per_unit * -1.0f,
-                direction.y / metres_per_unit
+            .max = {
+                (new_position.x + radius) / metres_per_unit,
+                (new_position.z - radius) / metres_per_unit * -1.0f,
+                (new_position.y + height) / metres_per_unit,
             }
-        });
-        if (hits.empty()) return;
-        const auto& hit = hits[0];
-
-        // Scale to normal size
-        const glm::vec3 collision_position = {
-            hit.position.x * metres_per_unit,
-            hit.position.z * metres_per_unit,
-            hit.position.y * metres_per_unit * -1.0f
         };
+        const std::vector<csg::brush_t*> collisions = world.query_box(bounds);
+        if (collisions.size() != 0)
+        {
+            if (direction.y == 0.0f)
+            {
+                // Allow stair clipping
+                if (collisions[0]->box.max.z * metres_per_unit - position.y < 16 * metres_per_unit &&
+                    !clipped_stairs)
+                {
+                    position.y = collisions[0]->box.max.z * metres_per_unit + 0.05f;
+                    clipped_stairs = true;
+                }
 
-        // Work out time until collision
-        if (direction.x != 0)
-        {
-            const float distance = collision_position.x - adjusted_position.x;
-            const float time = distance / direction.x;
-            if (time >= 0 && time <= delta) velocity.x = 0.0f;
-        }
-        if (direction.y != 0)
-        {
-            const float distance = collision_position.y - adjusted_position.y;
-            const float time = distance / direction.y;
-            if (time >= 0 && time <= delta) velocity.y = 0.0f;
-        }
-        if (direction.z != 0)
-        {
-            const float distance = collision_position.z - adjusted_position.z;
-            const float time = distance / direction.z;
-            if (time >= 0 && time <= delta) velocity.z = 0.0f;
+                if (direction.x != 0.0f)
+                {
+                    velocity.x = 0.0f;
+                    position.x += velocity.x <= 0.0f ? epsilon : -epsilon;
+                }
+
+                if (direction.z != 0.0f)
+                {
+                    velocity.z = 0.0f;
+                    position.z += velocity.z <= 0.0f ? epsilon : -epsilon;
+                }
+            }
+
+            if (direction.y != 0.0f)
+            {
+                velocity.y = 0.0f;
+                position.y += velocity.y <= 0.0f ? epsilon : -epsilon;
+                if (velocity.y <= 0.0f)
+                    grounded = true;
+            }
         }
     };
-    resolve_axis({ velocity.x, 0.0f, 0.0f });
-    resolve_axis({ 0.0f, velocity.y, 0.0f });
-    resolve_axis({ 0.0f, 0.0f, velocity.z });
+    for (int i = 0; i < steps; ++i)
+    {
+        resolve(glm::vec3 { 1.0f, 0.0f, 0.0f } * (float)i / (float)steps);
+        resolve(glm::vec3 { 0.0f, 1.0f, 0.0f } * (float)i / (float)steps);
+        resolve(glm::vec3 { 0.0f, 0.0f, 1.0f } * (float)i / (float)steps);
+    }
 
-    position += velocity * delta;
+    position += velocity * physics_delta;
 }
 
 void Player::update_camera(Camera& camera) const

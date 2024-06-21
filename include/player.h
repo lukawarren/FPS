@@ -18,4 +18,5 @@ private:
     float head_pitch = 0.0f;
     float head_yaw = 0.0f;
     glm::vec2 mouse_position;
+    bool grounded = false;
 };
