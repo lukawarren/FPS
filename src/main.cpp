@@ -11,6 +11,7 @@ void run()
     World world;
     world.load_map("lights");
     renderer.load_world(world);
+    world.player.setup_physics(world.map->world);
 
     double frame_time = 0.0f;
     bool captured = true;

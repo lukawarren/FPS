@@ -2,7 +2,7 @@
 #include "window.h"
 #include "config.h"
 
-constexpr float gravity = 9.81f;
+constexpr float gravity = 15.0f;
 constexpr float walk_speed = 5.0f;
 constexpr float jump_height = 1.2f;
 constexpr float height = 1.72;
@@ -14,6 +14,76 @@ const float jump_speed = std::sqrtf(2.0f * gravity * jump_height);
 Player::Player()
 {
     mouse_position = Window::window->mouse_position();
+    position.y = 10;
+}
+
+void Player::setup_physics(csg::world_t& world)
+{
+    physics_world = physics_common.createPhysicsWorld();
+    physics_world->setGravity({ 0.0f, -gravity, 0.0f });
+
+    // Player rigidbody
+    rp3d::Vector3 rb_position(position.x, position.y, position.z);
+    rp3d::Quaternion rb_orientation = rp3d::Quaternion::identity();
+    rp3d::Transform rb_transform(rb_position, rb_orientation);
+    rigid_body = physics_world->createRigidBody(rb_transform);
+
+    // Player collider
+    rp3d::CapsuleShape* collider = physics_common.createCapsuleShape(radius, height);
+    rp3d::Transform collider_transform = rp3d::Transform::identity();
+    rigid_body->addCollider(collider, collider_transform);
+
+    // Stop bounciness!
+    rigid_body->getCollider(0)->getMaterial().setBounciness(0.0f);
+
+    // Stop rotation
+    rigid_body->setAngularLockAxisFactor(rp3d::Vector3(0, 0, 0));
+
+    // Level geometry
+    csg::brush_t* brush = world.first();
+    while (brush != nullptr)
+    {
+        std::vector<float> vertices;
+        for (const auto& face : brush->faces)
+        {
+            for (const auto& vertex : face.vertices)
+            {
+                vertices.push_back(vertex.position.x * metres_per_unit);
+                vertices.push_back(vertex.position.z * metres_per_unit);
+                vertices.push_back(vertex.position.y * metres_per_unit * -1.0f);
+            }
+        }
+
+        const rp3d::VertexArray vertex_array(
+            vertices.data(),
+            3 * sizeof(float),
+            vertices.size() / 3,
+            rp3d::VertexArray::DataType::VERTEX_FLOAT_TYPE
+        );
+
+        std::vector<rp3d::Message> messages;
+        physics_common.createConvexMesh(vertex_array, messages);
+        if (messages.size() != 0)
+            dbg("unexpected rp3d message");
+        messages.clear();
+
+        rp3d::ConvexMesh* convex_mesh = physics_common.createConvexMesh(vertex_array, messages);
+        if (messages.size() != 0)
+            dbg("unexpected rp3d message");
+
+        rp3d::ConvexMeshShape* convex_mesh_shape = physics_common.createConvexMeshShape(convex_mesh);
+
+        const rp3d::Transform transform = rp3d::Transform::identity();
+        rp3d::RigidBody* brush_body = physics_world->createRigidBody(transform);
+        brush_body->setType(rp3d::BodyType::STATIC);
+        brush_body->addCollider(convex_mesh_shape, transform);
+
+        // Material settings
+        brush_body->getCollider(0)->getMaterial().setBounciness(0.0f);
+        brush_body->getCollider(0)->getMaterial().setFrictionCoefficient(1.0f);
+
+        brush = world.next(brush);
+    }
 }
 
 void Player::update(
@@ -22,7 +92,7 @@ void Player::update(
     const float delta
 )
 {
-    handle_input(camera, delta);
+    handle_input(camera);
     handle_physics(world, delta);
 
     ImGui::Begin("player");
@@ -30,29 +100,47 @@ void Player::update(
     ImGui::End();
 }
 
-void Player::handle_input(const Camera& camera, const float delta)
+void Player::handle_input(const Camera& camera)
 {
     Window& window = *Window::window;
 
     // WASD
-    glm::vec3 movement = {};
-    if (window.get_key(GLFW_KEY_W)) movement.z += 1.0f;
-    if (window.get_key(GLFW_KEY_S)) movement.z -= 1.0f;
+    glm::vec2 movement = {};
+    if (window.get_key(GLFW_KEY_W)) movement.y += 1.0f;
+    if (window.get_key(GLFW_KEY_S)) movement.y -= 1.0f;
     if (window.get_key(GLFW_KEY_A)) movement.x -= 1.0f;
     if (window.get_key(GLFW_KEY_D)) movement.x += 1.0f;
+    if (movement.x != 0 || movement.y != 0)
+        movement = glm::normalize(movement);
 
     // Apply relative to rotation
-    velocity.x = 0;
-    velocity.z = 0;
-    velocity += glm::vec3 { sin(glm::radians(camera.yaw)), 0, -cos(glm::radians(camera.yaw)) } * movement.z * walk_speed;
+    glm::vec3 velocity = { 0.0f, rigid_body->getLinearVelocity().y, 0.0f };
+    velocity += glm::vec3 { sin(glm::radians(camera.yaw)), 0, -cos(glm::radians(camera.yaw)) } * movement.y * walk_speed;
     velocity += glm::vec3 { cos(glm::radians(camera.yaw)), 0,  sin(glm::radians(camera.yaw)) } * movement.x * walk_speed;
 
     // Vertical movement
-    if (window.get_key(GLFW_KEY_SPACE) && grounded)
-    {
+    RaycastCallback callback;
+    rp3d::RaycastInfo info;
+    physics_world->raycast({
+        {
+            position.x,
+            position.y - height / 2.0f - 0.001f,
+            position.z
+        },
+        {
+            position.x,
+            position.y - height / 2.0f - radius - 0.01f,
+            position.z
+        },
+    }, &callback);
+    if (window.get_key(GLFW_KEY_SPACE) && callback.hit)
         velocity.y = jump_speed;
-        grounded = false;
-    }
+
+    rigid_body->setLinearVelocity({
+        velocity.x,
+        velocity.y,
+        velocity.z
+    });
 
     // Mouse
     const float sensitivity = 0.1f;
@@ -66,74 +154,16 @@ void Player::handle_input(const Camera& camera, const float delta)
 
 void Player::handle_physics(csg::world_t& world, const float delta)
 {
-    // Restrict physics time-scale to minimum of 10 FPS
-    const float physics_delta = std::min(delta, 1.0f / 10.0f);
+    // Restrict physics time-scale to minimum of 60 FPS
+    const float physics_delta = std::min(delta, 1.0f / 60.0f);
+    (void)world;
 
-    // Gravity
-    velocity.y -= gravity * delta;
+    physics_world->update(physics_delta);
 
-    // Resolve collisions
-    const int steps = 32;
-    const float epsilon = 0.0000001f;
-    bool clipped_stairs = false;
-    const auto resolve = [&](const glm::vec3 direction)
-    {
-        const glm::vec3 new_position = position + velocity * direction * physics_delta;
-        const csg::box_t bounds = {
-            .min = {
-                (new_position.x - radius) / metres_per_unit,
-                (new_position.z + radius) / metres_per_unit * -1.0f,
-                (new_position.y) / metres_per_unit,
-            },
-            .max = {
-                (new_position.x + radius) / metres_per_unit,
-                (new_position.z - radius) / metres_per_unit * -1.0f,
-                (new_position.y + height) / metres_per_unit,
-            }
-        };
-        const std::vector<csg::brush_t*> collisions = world.query_box(bounds);
-        if (collisions.size() != 0)
-        {
-            if (direction.y == 0.0f)
-            {
-                // Allow stair clipping
-                if (collisions[0]->box.max.z * metres_per_unit - position.y < 16 * metres_per_unit &&
-                    !clipped_stairs)
-                {
-                    position.y = collisions[0]->box.max.z * metres_per_unit + 0.05f;
-                    clipped_stairs = true;
-                }
-
-                if (direction.x != 0.0f)
-                {
-                    velocity.x = 0.0f;
-                    position.x += velocity.x <= 0.0f ? epsilon : -epsilon;
-                }
-
-                if (direction.z != 0.0f)
-                {
-                    velocity.z = 0.0f;
-                    position.z += velocity.z <= 0.0f ? epsilon : -epsilon;
-                }
-            }
-
-            if (direction.y != 0.0f)
-            {
-                velocity.y = 0.0f;
-                position.y += velocity.y <= 0.0f ? epsilon : -epsilon;
-                if (velocity.y <= 0.0f)
-                    grounded = true;
-            }
-        }
-    };
-    for (int i = 0; i < steps; ++i)
-    {
-        resolve(glm::vec3 { 1.0f, 0.0f, 0.0f } * (float)i / (float)steps);
-        resolve(glm::vec3 { 0.0f, 1.0f, 0.0f } * (float)i / (float)steps);
-        resolve(glm::vec3 { 0.0f, 0.0f, 1.0f } * (float)i / (float)steps);
-    }
-
-    position += velocity * physics_delta;
+    const rp3d::Vector3 rb_position = rigid_body->getTransform().getPosition();
+    position.x = rb_position.x;
+    position.y = rb_position.y;
+    position.z = rb_position.z;
 }
 
 void Player::update_camera(Camera& camera) const
@@ -142,7 +172,7 @@ void Player::update_camera(Camera& camera) const
     camera.yaw = head_yaw;
     camera.position = {
         position.x,
-        position.y + eye_height,
+        position.y + eye_height / 2.0f,
         position.z
     };
 }

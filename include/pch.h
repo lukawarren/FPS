@@ -32,3 +32,5 @@
 
 #define module_private public
 #include "csg.hpp"
+
+#include <reactphysics3d/reactphysics3d.h>
