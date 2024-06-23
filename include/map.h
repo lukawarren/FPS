@@ -38,6 +38,20 @@ public:
 
             return { x, y, z };
         }
+
+        float parse_float(
+            const std::string& key,
+            const float default_value = 0.0f
+        ) const
+        {
+            if (properties.count(key) == 0)
+                return default_value;
+
+            std::istringstream iss(properties.at(key));
+            float x;
+            iss >> x;
+            return x;
+        }
     };
 
     std::vector<DrawCall> draw_calls;

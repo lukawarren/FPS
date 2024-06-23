@@ -1,8 +1,6 @@
 #include "render/texture.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include <stb/stb_image_resize2.h>
 #include "config.h"
 
 Texture::Texture(
@@ -16,13 +14,6 @@ Texture::Texture(
     uint8_t* data = stbi_load(("../assets/textures/" + filename).c_str(), &width, &height, &channels, STBI_rgb);
     if (!data) throw std::runtime_error("failed to load texture " + filename);
 
-    // TODO: remove when texture size is decided :)
-    if (width != texture_size || height != texture_size)
-    {
-        stbir_resize_uint8_srgb(data, width, height, 0, data, texture_size, texture_size, 0, STBIR_RGB);
-        width = height = texture_size;
-    }
-
     // Create and bind texture
     glGenTextures(1, &texture_id);
     glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -30,6 +21,10 @@ Texture::Texture(
     // Upload data
     const auto format = GL_RGB;
     const auto formatInternal = is_srgb ? GL_SRGB : GL_RGB;
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, formatInternal, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
     // Mipmaps

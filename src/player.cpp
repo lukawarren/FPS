@@ -6,15 +6,15 @@ constexpr float gravity = 15.0f;
 constexpr float walk_speed = 5.0f;
 constexpr float jump_height = 1.2f;
 constexpr float height = 1.72;
-constexpr float eye_height = height - 0.1;
-constexpr float radius = 0.25f;
+constexpr float eye_height = height - 0.5;
+constexpr float radius = 0.35f;
 
 const float jump_speed = std::sqrtf(2.0f * gravity * jump_height);
 
 Player::Player()
 {
     mouse_position = Window::window->mouse_position();
-    position.y = 10;
+    position.y += height / 2.0f;
 }
 
 void Player::setup_physics(csg::world_t& world)
@@ -29,7 +29,7 @@ void Player::setup_physics(csg::world_t& world)
     rigid_body = physics_world->createRigidBody(rb_transform);
 
     // Player collider
-    rp3d::CapsuleShape* collider = physics_common.createCapsuleShape(radius, height);
+    rp3d::CapsuleShape* collider = physics_common.createCapsuleShape(radius, height - radius * 2.0f);
     rp3d::Transform collider_transform = rp3d::Transform::identity();
     rigid_body->addCollider(collider, collider_transform);
 
@@ -124,12 +124,12 @@ void Player::handle_input(const Camera& camera)
     physics_world->raycast({
         {
             position.x,
-            position.y - height / 2.0f - 0.001f,
+            position.y - height / 2.0f + 0.05f,
             position.z
         },
         {
             position.x,
-            position.y - height / 2.0f - radius - 0.01f,
+            position.y - height / 2.0f - 0.1f,
             position.z
         },
     }, &callback);

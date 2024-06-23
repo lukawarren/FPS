@@ -30,4 +30,6 @@ private:
 
     // Resources
     std::vector<CubeFramebuffer*> point_light_framebuffers;
+    std::unordered_map<const char*, Texture*> textures;
+    std::unordered_map<const char*, Mesh*> meshes;
 };

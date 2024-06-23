@@ -10,6 +10,7 @@ public:
         const std::vector<float>& normals,
         const std::vector<unsigned int>& indices
     );
+    Mesh(const std::string& filename);
     Mesh(const Mesh&) = delete;
     ~Mesh();
 
@@ -18,12 +19,21 @@ public:
     void draw() const;
 
 private:
+    void construct(
+        const std::vector<float>& vertices,
+        const std::vector<float>& texture_coordinates,
+        const std::vector<float>& normals,
+        const std::vector<unsigned int>& indices
+    );
+
     void make_vao(
         const unsigned int attribute,
         const unsigned int format,
         const unsigned int dimensions,
         const std::vector<float>& data
     );
+
+    void make_mesh_from_assimp(const aiMesh* assimp_mesh);
 
     // OpenGL state
     unsigned int vao;

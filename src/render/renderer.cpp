@@ -24,9 +24,23 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
 
 void Renderer::load_world(const World& world)
 {
+    // Setup lighting
     point_light_framebuffers.resize(world.point_lights.size());
     for (size_t i = 0; i < world.point_lights.size(); ++i)
         point_light_framebuffers[i] = new CubeFramebuffer();
+
+    // Load models
+    for (const auto& entity : world.entities)
+    {
+        const char* mesh_path = entity.get_mesh();
+        const char* texture_path = entity.get_texture();
+
+        if (meshes.count(mesh_path) == 0)
+            meshes[mesh_path] = new Mesh(mesh_path);
+
+        if (textures.count(texture_path) == 0)
+            textures[texture_path] = new Texture(texture_path);
+    }
 
     render_point_light_pass(world);
 }
@@ -53,7 +67,7 @@ void Renderer::render(const World& world)
     );
     const glm::mat4 view_matrix = world.camera.view_matrix();
 
-    // Render normal geometry
+    render_point_light_pass(world);
     render_forward_pass(world, view_matrix, projection_matrix);
 
     // Render ImGui
@@ -87,12 +101,20 @@ void Renderer::render_point_light_pass(const World& world)
         point_light_shader.set_uniform("matrices[5]", matrices[5]);
         point_light_shader.set_uniform("model", glm::mat4(1.0f));
 
-        // Render
+        // Render map
         glClear(GL_DEPTH_BUFFER_BIT);
         for (const auto& draw_call : world.map->draw_calls)
         {
             draw_call.mesh->bind();
             draw_call.mesh->draw();
+        }
+
+        // Render entities
+        for (const auto& entity : world.entities)
+        {
+            point_light_shader.set_uniform("model", entity.transform.matrix());
+            meshes[entity.get_mesh()]->bind();
+            meshes[entity.get_mesh()]->draw();
         }
     }
 
@@ -157,11 +179,23 @@ void Renderer::render_forward_pass(
         }
     }
 
+    // Render map
     for (const auto& draw_call : world.map->draw_calls)
     {
         draw_call.texture->bind();
         draw_call.mesh->bind();
         draw_call.mesh->draw();
+    }
+
+    // Render entities
+    for (const auto& entity : world.entities)
+    {
+        const glm::mat4 model = entity.transform.matrix();
+        diffuse_shader.set_uniform("model", model);
+        diffuse_shader.set_uniform("normal", glm::mat3(glm::transpose(glm::inverse(model))));
+        textures[entity.get_texture()]->bind();
+        meshes[entity.get_mesh()]->bind();
+        meshes[entity.get_mesh()]->draw();
     }
 }
 
@@ -169,4 +203,10 @@ Renderer::~Renderer()
 {
     for (CubeFramebuffer* fb : point_light_framebuffers)
         delete fb;
+
+    for (const auto& [_, texture] : textures)
+        delete texture;
+
+    for (const auto& [_, mesh] : meshes)
+        delete mesh;
 }

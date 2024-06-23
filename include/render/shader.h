@@ -17,6 +17,7 @@ public:
     void unbind() const;
 
     DEFINE_SHADER_UNIFORM(const glm::mat4& matrix);
+    DEFINE_SHADER_UNIFORM(const glm::mat3& matrix);
     DEFINE_SHADER_UNIFORM(const glm::vec4& vector);
     DEFINE_SHADER_UNIFORM(const glm::vec3& vector);
     DEFINE_SHADER_UNIFORM(const glm::vec2& vector);

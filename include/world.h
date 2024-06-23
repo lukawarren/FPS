@@ -3,6 +3,7 @@
 #include "map.h"
 #include "config.h"
 #include "player.h"
+#include "transform.h"
 
 struct PointLight
 {
@@ -11,12 +12,20 @@ struct PointLight
     float distance = 24.0f;
 };
 
+struct Entity
+{
+    Transform transform = {};
+    static auto get_mesh() { return "door.obj"; }
+    static auto get_texture() { return "door.jpg"; }
+};
+
 struct World
 {
     Camera camera = {};
     Player player = {};
     Map* map = nullptr;
     std::vector<PointLight> point_lights;
+    std::vector<Entity> entities;
 
     World() {}
 
@@ -44,6 +53,16 @@ struct World
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
                 camera.position = position;
+            }
+
+            else if (class_name == "door")
+            {
+                const glm::vec3 position = entity.parse_vec3("origin");
+                const float angle = entity.parse_float("angle");
+
+                Entity& e = entities.emplace_back();
+                e.transform.position = position;
+                e.transform.rotation.y = angle;
             }
         }
     }

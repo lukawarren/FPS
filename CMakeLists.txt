@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 find_package(ReactPhysics3D REQUIRED)
+find_package(assimp REQUIRED)
 
 # Add glad (separate target to not break PCH)
 add_library(glad STATIC lib/glad/src/glad.c)
@@ -60,4 +61,4 @@ else()
 endif()
 
 # Dependencies
-target_link_libraries(${TARGET_NAME} glad glfw glm ReactPhysics3D::ReactPhysics3D)
+target_link_libraries(${TARGET_NAME} glad glfw glm ReactPhysics3D::ReactPhysics3D assimp)

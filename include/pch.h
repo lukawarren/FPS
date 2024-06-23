@@ -34,3 +34,7 @@
 #include "csg.hpp"
 
 #include <reactphysics3d/reactphysics3d.h>
+
+#include <assimp/scene.h>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>

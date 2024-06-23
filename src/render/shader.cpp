@@ -99,6 +99,7 @@ void Shader::unbind() const
 }
 
 SHADER_UNIFORM(const glm::mat4& matrix) { glUniformMatrix4fv(NAME, 1, GL_FALSE, glm::value_ptr(matrix)); }
+SHADER_UNIFORM(const glm::mat3& matrix) { glUniformMatrix3fv(NAME, 1, GL_FALSE, glm::value_ptr(matrix)); }
 SHADER_UNIFORM(const glm::vec4& vector) { glUniform4f(NAME, vector.x, vector.y, vector.z, vector.w); }
 SHADER_UNIFORM(const glm::vec3& vector) { glUniform3f(NAME, vector.x, vector.y, vector.z); }
 SHADER_UNIFORM(const glm::vec2& vector) { glUniform2f(NAME, vector.x, vector.y); }
