@@ -6,6 +6,7 @@
 
 @PointClass size(-4 -4 -4, 4 4 4) color(255 255 0) = light : "Light" [
 	colour(color1) : "Colour" : "1.0 1.0 1.0"
+	dynamic(boolean) : "Dynamic" : 0
 ]
 
 @PointClass model({"path": "models/door.obj", "scale": 1.0/0.01905}) size(0 0 0, 0 0 0) = door : "Door" []

@@ -52,6 +52,20 @@ public:
             iss >> x;
             return x;
         }
+
+        bool parse_bool(
+            const std::string& key,
+            const bool default_value
+        ) const
+        {
+            if (properties.count(key) == 0)
+                return default_value;
+
+            std::istringstream iss(properties.at(key));
+            bool x;
+            iss >> x;
+            return x;
+        }
     };
 
     std::vector<DrawCall> draw_calls;

@@ -17,7 +17,7 @@ public:
 
     Window window;
 private:
-    void render_point_light_pass(const World& world);
+    void render_point_light_pass(const World& world, const bool render_only_dynamic);
     void render_forward_pass(
         const World& world,
         const glm::mat4& view_matrix,

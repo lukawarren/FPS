@@ -9,6 +9,7 @@ struct PointLight
 {
     glm::vec3 position;
     glm::vec3 colour;
+    bool dynamic;
     float distance = 24.0f;
 };
 
@@ -46,7 +47,8 @@ struct World
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
                 const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(1.0f), false);
-                point_lights.emplace_back(position, colour);
+                const bool dynamic = entity.parse_bool("dynamic", false);
+                point_lights.emplace_back(position, colour, dynamic);
             }
 
             else if (class_name == "info_player_start")

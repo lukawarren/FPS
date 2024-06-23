@@ -42,7 +42,7 @@ void Renderer::load_world(const World& world)
             textures[texture_path] = new Texture(texture_path);
     }
 
-    render_point_light_pass(world);
+    render_point_light_pass(world, false);
 }
 
 bool Renderer::should_render()
@@ -67,7 +67,7 @@ void Renderer::render(const World& world)
     );
     const glm::mat4 view_matrix = world.camera.view_matrix();
 
-    render_point_light_pass(world);
+    render_point_light_pass(world, true);
     render_forward_pass(world, view_matrix, projection_matrix);
 
     // Render ImGui
@@ -75,13 +75,30 @@ void Renderer::render(const World& world)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void Renderer::render_point_light_pass(const World& world)
+void Renderer::render_point_light_pass(const World& world, const bool render_only_dynamic)
 {
+    // Possible early exit to avoid state changes
+    if (render_only_dynamic)
+    {
+        bool all_static = true;
+        for (const auto& light : world.point_lights)
+        {
+            if (light.dynamic)
+            {
+                all_static = false;
+                break;
+            }
+        }
+        if (all_static) return;
+    }
+
     assert(world.point_lights.size() == point_light_framebuffers.size());
     point_light_shader.bind();
 
     for (size_t i = 0; i < world.point_lights.size(); ++i)
     {
+        if (render_only_dynamic && !world.point_lights[i].dynamic) continue;
+
         CubeFramebuffer* framebuffer = point_light_framebuffers[i];
         framebuffer->bind();
 
