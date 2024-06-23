@@ -15,6 +15,8 @@ struct PointLight
 uniform sampler2D diffuse;
 uniform PointLight point_lights[MAX_POINT_LIGHTS];
 uniform int n_point_lights;
+uniform vec3 ambient;
+uniform float min_shadow;
 
 out vec4 out_colour;
 
@@ -45,7 +47,7 @@ vec3 lighting(int i, vec3 normal)
     float attenuation = attenuate(light_direction);
     float diffuse = dot(normal, normalize(light_direction)) * attenuation;
     diffuse = max(diffuse, 0);
-    float shadow = get_shadow(i);
+    float shadow = max(get_shadow(i), min_shadow);
     return point_lights[i].colour * diffuse * shadow;
 }
 
@@ -54,12 +56,9 @@ void main()
     vec4 diffuse_colour = texture(diffuse, out_texture_coordinates);
     vec3 normal = normalize(out_normal);
 
-    vec3 total_lighting = vec3(0, 0, 0);
+    vec3 total_lighting = ambient;
     for (int i = 0; i < n_point_lights; ++i)
         total_lighting += lighting(i, normal);
-
-    const vec3 ambient = vec3(0.75, 1.0, 1.0) * 0.05;
-    total_lighting += ambient;
 
     diffuse_colour.rgb *= total_lighting;
     out_colour = diffuse_colour;

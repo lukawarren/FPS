@@ -10,3 +10,8 @@
 ]
 
 @PointClass model({"path": "models/door.obj", "scale": 1.0/0.01905}) size(0 0 0, 0 0 0) = door : "Door" []
+
+@PointClass size(-4 -4 -4, 4 4 4) color(0 0 255) = environment : "Environment" [
+	ambient_lighting(float) : "Ambient lighting" : 0.2
+	min_shadow(float) : "Minimum shadow" : 0.5
+]

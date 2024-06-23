@@ -28,6 +28,11 @@ struct World
     std::vector<PointLight> point_lights;
     std::vector<Entity> entities;
 
+    // Lighting
+    float ambient_lighting = 0.0f;
+    float min_shadow = 0.0f;
+    bool has_sky = false;
+
     World() {}
 
     World(const World&) = delete;
@@ -65,6 +70,13 @@ struct World
                 Entity& e = entities.emplace_back();
                 e.transform.position = position;
                 e.transform.rotation.y = angle;
+            }
+
+            else if (class_name == "environment")
+            {
+                ambient_lighting = entity.parse_float("ambient_lighting", 0.2f);
+                min_shadow = entity.parse_float("min_shadow", 0.5f);
+                has_sky = true;
             }
         }
     }

@@ -43,3 +43,4 @@ public:\
 
 SHADER(DiffuseShader, "diffuse", false)
 SHADER(PointLightShader, "point_light", true)
+SHADER(SkyShader, "sky", false)

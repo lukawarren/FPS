@@ -1,8 +1,13 @@
 #include "render/renderer.h"
+#include "render/quad.h"
 #include "transform.h"
 
+constexpr glm::vec3 zenith_colour = { 0.4f, 0.54f, 0.71f };
+constexpr glm::vec3 horizon_colour = { 0.26f, 0.57f, 0.91f };
+
 Renderer::Renderer(const std::string& window_title, const int width, const int height) :
-    window(window_title, width, height)
+    window(window_title, width, height),
+    quad(quad_vertices, quad_indices)
 {
     // Setup GL state
     glCullFace(GL_BACK);
@@ -20,6 +25,12 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
     // Texture units
     diffuse_shader.bind();
     diffuse_shader.set_uniform("diffuse", 0);
+
+    // Constant uniforms
+    sky_shader.bind();
+    sky_shader.set_uniform("zenith_colour", zenith_colour);
+    sky_shader.set_uniform("horizon_colour", horizon_colour);
+
 }
 
 void Renderer::load_world(const World& world)
@@ -41,6 +52,11 @@ void Renderer::load_world(const World& world)
         if (textures.count(texture_path) == 0)
             textures[texture_path] = new Texture(texture_path);
     }
+
+    // Environment
+    diffuse_shader.bind();
+    diffuse_shader.set_uniform("ambient", horizon_colour * world.ambient_lighting);
+    diffuse_shader.set_uniform("min_shadow", world.min_shadow);
 
     render_point_light_pass(world, false);
 }
@@ -68,6 +84,12 @@ void Renderer::render(const World& world)
     const glm::mat4 view_matrix = world.camera.view_matrix();
 
     render_point_light_pass(world, true);
+
+    if (world.has_sky)
+        render_sky_pass(glm::inverse(projection_matrix * view_matrix));
+    else
+        glClear(GL_COLOR_BUFFER_BIT);
+
     render_forward_pass(world, view_matrix, projection_matrix);
 
     // Render ImGui
@@ -146,7 +168,7 @@ void Renderer::render_forward_pass(
 {
     // Begin forward pass
     glViewport(0, 0, window.framebuffer_width, window.framebuffer_height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
     diffuse_shader.bind();
     diffuse_shader.set_uniform("view_projection", projection_matrix * view_matrix);
     diffuse_shader.set_uniform("n_point_lights", std::min(
@@ -215,6 +237,15 @@ void Renderer::render_forward_pass(
         meshes[entity.get_mesh()]->bind();
         meshes[entity.get_mesh()]->draw();
     }
+}
+
+void Renderer::render_sky_pass(const glm::mat4& inverse_view)
+{
+    sky_shader.bind();
+    sky_shader.set_uniform("screen_size", glm::vec2 { window.framebuffer_width, window.framebuffer_height });
+    sky_shader.set_uniform("inverse_view", inverse_view);
+    quad.bind();
+    quad.draw();
 }
 
 Renderer::~Renderer()

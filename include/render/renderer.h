@@ -23,13 +23,16 @@ private:
         const glm::mat4& view_matrix,
         const glm::mat4& projection_matrix
     );
+    void render_sky_pass(const glm::mat4& inverse_projection_view);
 
     // Shaders
     DiffuseShader diffuse_shader;
     PointLightShader point_light_shader;
+    SkyShader sky_shader;
 
     // Resources
     std::vector<CubeFramebuffer*> point_light_framebuffers;
     std::unordered_map<const char*, Texture*> textures;
     std::unordered_map<const char*, Mesh*> meshes;
+    Mesh quad;
 };

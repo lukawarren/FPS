@@ -10,6 +10,10 @@ public:
         const std::vector<float>& normals,
         const std::vector<unsigned int>& indices
     );
+    Mesh(
+        const std::vector<float>& vertices,
+        const std::vector<unsigned int>& indices
+    );
     Mesh(const std::string& filename);
     Mesh(const Mesh&) = delete;
     ~Mesh();

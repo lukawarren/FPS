@@ -10,6 +10,14 @@ Mesh::Mesh(
     construct(vertices, texture_coordinates, normals, indices);
 }
 
+Mesh::Mesh(
+    const std::vector<float>& vertices,
+    const std::vector<unsigned int>& indices
+)
+{
+    construct(vertices, {}, {}, indices);
+}
+
 void Mesh::construct(
     const std::vector<float>& vertices,
     const std::vector<float>& texture_coordinates,
@@ -28,8 +36,8 @@ void Mesh::construct(
 
     // Make VAOs
     make_vao(0, GL_FLOAT, 3, vertices);
-    make_vao(1, GL_FLOAT, 2, texture_coordinates);
-    make_vao(2, GL_FLOAT, 3, normals);
+    if (!texture_coordinates.empty()) make_vao(1, GL_FLOAT, 2, texture_coordinates);
+    if (!normals.empty()) make_vao(2, GL_FLOAT, 3, normals);
 
     this->n_indices = indices.size();
 }
