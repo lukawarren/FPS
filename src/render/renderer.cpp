@@ -132,7 +132,6 @@ void Renderer::render_forward_pass(
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     diffuse_shader.bind();
     diffuse_shader.set_uniform("view_projection", projection_matrix * view_matrix);
-    diffuse_shader.set_uniform("model", glm::mat4(1.0f));
     diffuse_shader.set_uniform("n_point_lights", std::min(
         (int)world.point_lights.size(),
         max_point_lights)
@@ -180,6 +179,8 @@ void Renderer::render_forward_pass(
     }
 
     // Render map
+    diffuse_shader.set_uniform("model", glm::mat4(1.0f));
+    diffuse_shader.set_uniform("normal", glm::mat3(1.0f));
     for (const auto& draw_call : world.map->draw_calls)
     {
         draw_call.texture->bind();
