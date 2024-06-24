@@ -11,8 +11,8 @@ public:
         const bool is_srgb = true
     );
 
-    // For cubemaps
-    enum class Type { Cubemap };
+    // For shadows
+    enum class Type { Cubemap, Flat };
     Texture(const Type type, const unsigned int width, const unsigned int height);
 
     Texture(const Texture&) = delete;

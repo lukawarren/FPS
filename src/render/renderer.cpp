@@ -25,6 +25,7 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
     // Texture units
     diffuse_shader.bind();
     diffuse_shader.set_uniform("diffuse", 0);
+    diffuse_shader.set_uniform("directional_light.depth", 1);
 
     // Constant uniforms
     sky_shader.bind();
@@ -35,10 +36,33 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
 
 void Renderer::load_world(const World& world)
 {
-    // Setup lighting
+    // Point lights
     point_light_framebuffers.resize(world.point_lights.size());
     for (size_t i = 0; i < world.point_lights.size(); ++i)
-        point_light_framebuffers[i] = new CubeFramebuffer();
+        point_light_framebuffers[i] = new Framebuffer(true);
+
+    // Directional light
+    diffuse_shader.bind();
+    if (world.directional_light.has_value())
+    {
+        diffuse_shader.set_uniform("directional_light.position", world.directional_light->position);
+        diffuse_shader.set_uniform("directional_light.colour", world.directional_light->colour);
+        directional_light_framebuffer.emplace();
+
+        min_world_bounds = { -20.0f, -20.0f, -20.0f };
+        max_world_bounds = -min_world_bounds;
+
+        diffuse_shader.set_uniform("directional_light.matrix", directional_light_framebuffer->get_matrix(
+            min_world_bounds,
+            max_world_bounds,
+            world.directional_light->position
+        ));
+    }
+    else
+    {
+        diffuse_shader.set_uniform("directional_light.position", glm::vec3(0.0f));
+        diffuse_shader.set_uniform("directional_light.colour", glm::vec3(0.0f));
+    }
 
     // Load models
     for (const auto& entity : world.entities)
@@ -54,11 +78,11 @@ void Renderer::load_world(const World& world)
     }
 
     // Environment
-    diffuse_shader.bind();
     diffuse_shader.set_uniform("ambient", horizon_colour * world.ambient_lighting);
     diffuse_shader.set_uniform("min_shadow", world.min_shadow);
 
     render_point_light_pass(world, false);
+    render_directional_light_pass(world, false);
 }
 
 bool Renderer::should_render()
@@ -84,6 +108,7 @@ void Renderer::render(const World& world)
     const glm::mat4 view_matrix = world.camera.view_matrix();
 
     render_point_light_pass(world, true);
+    render_directional_light_pass(world, true);
 
     if (world.has_sky)
         render_sky_pass(glm::inverse(projection_matrix * view_matrix));
@@ -121,7 +146,7 @@ void Renderer::render_point_light_pass(const World& world, const bool render_onl
     {
         if (render_only_dynamic && !world.point_lights[i].dynamic) continue;
 
-        CubeFramebuffer* framebuffer = point_light_framebuffers[i];
+        Framebuffer* framebuffer = point_light_framebuffers[i];
         framebuffer->bind();
 
         const auto matrices = framebuffer->get_matrices(
@@ -155,6 +180,39 @@ void Renderer::render_point_light_pass(const World& world, const bool render_onl
             meshes[entity.get_mesh()]->bind();
             meshes[entity.get_mesh()]->draw();
         }
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::render_directional_light_pass(const World& world, const bool render_only_dynamic)
+{
+    if (!world.directional_light.has_value()) return;
+    if (!world.directional_light->dynamic && render_only_dynamic) return;
+
+    directional_light_shader.bind();
+    directional_light_framebuffer->bind();
+    const glm::mat4 matrix = directional_light_framebuffer->get_matrix(
+        min_world_bounds,
+        max_world_bounds,
+        world.directional_light->position
+    );
+
+    // Render map
+    glClear(GL_DEPTH_BUFFER_BIT);
+    directional_light_shader.set_uniform("matrix", matrix);
+    for (const auto& draw_call : world.map->draw_calls)
+    {
+        draw_call.mesh->bind();
+        draw_call.mesh->draw();
+    }
+
+    // Render entities
+    for (const auto& entity : world.entities)
+    {
+        directional_light_shader.set_uniform("matrix", matrix * entity.transform.matrix());
+        meshes[entity.get_mesh()]->bind();
+        meshes[entity.get_mesh()]->draw();
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -198,6 +256,7 @@ void Renderer::render_forward_pass(
         );
     }
 
+    // Point lights
     for (size_t i = 0; i < max_point_lights; ++i)
     {
         std::string s = std::to_string(i);
@@ -207,15 +266,19 @@ void Renderer::render_forward_pass(
             diffuse_shader.set_uniform("point_lights[" + s + "].position", light.position);
             diffuse_shader.set_uniform("point_lights[" + s + "].colour", light.colour);
             diffuse_shader.set_uniform("point_lights[" + s + "].far_plane", light.distance);
-            diffuse_shader.set_uniform("point_lights[" + s + "].depth", 1 + (int)i);
-            point_light_framebuffers[i]->cubemap.bind(1 + i);
+            diffuse_shader.set_uniform("point_lights[" + s + "].depth", 2 + (int)i);
+            point_light_framebuffers[i]->texture->bind(2 + i);
         }
         else
         {
             // Must set texture to cubemap, but 0 isn't
-            diffuse_shader.set_uniform("point_lights[" + s + "].depth", 1);
+            diffuse_shader.set_uniform("point_lights[" + s + "].depth", 2);
         }
     }
+
+    // Directional light
+    if (world.directional_light.has_value())
+        directional_light_framebuffer->texture->bind(1);
 
     // Render map
     diffuse_shader.set_uniform("model", glm::mat4(1.0f));
@@ -250,7 +313,7 @@ void Renderer::render_sky_pass(const glm::mat4& inverse_view)
 
 Renderer::~Renderer()
 {
-    for (CubeFramebuffer* fb : point_light_framebuffers)
+    for (Framebuffer* fb : point_light_framebuffers)
         delete fb;
 
     for (const auto& [_, texture] : textures)

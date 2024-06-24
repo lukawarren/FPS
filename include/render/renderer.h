@@ -3,7 +3,7 @@
 #include "world.h"
 #include "render/shader.h"
 #include "render/texture.h"
-#include "render/cube_framebuffer.h"
+#include "render/framebuffer.h"
 
 class Renderer
 {
@@ -18,6 +18,7 @@ public:
     Window window;
 private:
     void render_point_light_pass(const World& world, const bool render_only_dynamic);
+    void render_directional_light_pass(const World& world, const bool render_only_dynamic);
     void render_forward_pass(
         const World& world,
         const glm::mat4& view_matrix,
@@ -28,11 +29,17 @@ private:
     // Shaders
     DiffuseShader diffuse_shader;
     PointLightShader point_light_shader;
+    DirectionalLightShader directional_light_shader;
     SkyShader sky_shader;
 
     // Resources
-    std::vector<CubeFramebuffer*> point_light_framebuffers;
+    std::optional<Framebuffer> directional_light_framebuffer;
+    std::vector<Framebuffer*> point_light_framebuffers;
     std::unordered_map<const char*, Texture*> textures;
     std::unordered_map<const char*, Mesh*> meshes;
     Mesh quad;
+
+    // Cached info
+    glm::vec3 min_world_bounds;
+    glm::vec3 max_world_bounds;
 };

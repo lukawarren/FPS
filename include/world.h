@@ -5,11 +5,15 @@
 #include "player.h"
 #include "transform.h"
 
-struct PointLight
+struct DirectionalLight
 {
     glm::vec3 position;
     glm::vec3 colour;
     bool dynamic;
+};
+
+struct PointLight : DirectionalLight
+{
     float distance = 24.0f;
 };
 
@@ -25,10 +29,11 @@ struct World
     Camera camera = {};
     Player player = {};
     Map* map = nullptr;
-    std::vector<PointLight> point_lights;
     std::vector<Entity> entities;
 
     // Lighting
+    std::vector<PointLight> point_lights;
+    std::optional<DirectionalLight> directional_light;
     float ambient_lighting = 0.0f;
     float min_shadow = 0.0f;
     bool has_sky = false;
@@ -48,12 +53,26 @@ struct World
             if (entity.properties.count("classname") == 0) continue;
             const std::string& class_name = entity.properties.at("classname");
 
-            if (class_name == "light")
+            if (class_name == "directional_light")
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
                 const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(1.0f), false);
                 const bool dynamic = entity.parse_bool("dynamic", false);
-                point_lights.emplace_back(position, colour, dynamic);
+                directional_light = DirectionalLight {
+                    position,
+                    colour,
+                    dynamic
+                };
+            }
+
+            else if (class_name == "point_light")
+            {
+                const glm::vec3 position = entity.parse_vec3("origin");
+                const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(1.0f), false);
+                const bool dynamic = entity.parse_bool("dynamic", false);
+                point_lights.emplace_back(PointLight {
+                    position, colour, dynamic
+                });
             }
 
             else if (class_name == "info_player_start")

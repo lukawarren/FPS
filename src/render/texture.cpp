@@ -56,14 +56,30 @@ Texture::Texture(
 
 Texture::Texture(const Type type, const unsigned int width, const unsigned int height)
 {
-    (void)type;
+    texture_format = (type == Type::Cubemap) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
     glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+    glBindTexture(texture_format, texture_id);
 
-    for (unsigned int i = 0; i < 6; ++i)
+    if (type == Type::Cubemap)
+    {
+        for (unsigned int i = 0; i < 6; ++i)
+            glTexImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                0,
+                GL_DEPTH_COMPONENT,
+                width,
+                height,
+                0,
+                GL_DEPTH_COMPONENT,
+                GL_FLOAT,
+                NULL
+            );
+    }
+    else
+    {
         glTexImage2D(
-            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+            GL_TEXTURE_2D,
             0,
             GL_DEPTH_COMPONENT,
             width,
@@ -73,18 +89,17 @@ Texture::Texture(const Type type, const unsigned int width, const unsigned int h
             GL_FLOAT,
             NULL
         );
+    }
 
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(texture_format, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(texture_format, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(texture_format, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(texture_format, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(texture_format, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     // Enable depth comparison
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-
-    texture_format = GL_TEXTURE_CUBE_MAP;
+    glTexParameteri(texture_format, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(texture_format, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 }
 
 void Texture::bind(const unsigned int unit) const
