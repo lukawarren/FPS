@@ -80,7 +80,6 @@ vec3 directional_lighting(vec3 normal)
     float diffuse = dot(normal, normalize(light_direction));
     diffuse = max(diffuse, 0);
     float shadow = max(get_directional_shadow(), min_shadow);
-    return vec3(1, 1, 1) * shadow;
     return directional_light.colour * diffuse * shadow;
 }
 
