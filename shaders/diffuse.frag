@@ -48,7 +48,7 @@ float get_directional_shadow()
     vec3 projected_coords = out_position_directional_light_space.xyz / out_position_directional_light_space.w;
     projected_coords = projected_coords * 0.5 + 0.5;
 
-    float bias = 0.001;
+    float bias = 0.0007;
     projected_coords.z -= bias;
 
     float shadow = texture(directional_light.depth, projected_coords);

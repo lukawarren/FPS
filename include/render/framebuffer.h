@@ -29,4 +29,6 @@ public:
 
 private:
     unsigned int framebuffer;
+    unsigned int width;
+    unsigned int height;
 };

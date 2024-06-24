@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <stdexcept>
+#include <limits.h>
 #include <optional>
 #include <fstream>
 #include <sstream>

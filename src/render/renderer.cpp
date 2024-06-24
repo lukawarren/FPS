@@ -7,6 +7,7 @@ constexpr glm::vec3 horizon_colour = { 0.26f, 0.57f, 0.91f };
 
 Renderer::Renderer(const std::string& window_title, const int width, const int height) :
     window(window_title, width, height),
+    dummy_cubemap(Texture::Type::Cubemap, 2, 2),
     quad(quad_vertices, quad_indices)
 {
     // Setup GL state
@@ -49,8 +50,8 @@ void Renderer::load_world(const World& world)
         diffuse_shader.set_uniform("directional_light.colour", world.directional_light->colour);
         directional_light_framebuffer.emplace();
 
-        min_world_bounds = { -20.0f, -20.0f, -20.0f };
-        max_world_bounds = -min_world_bounds;
+        min_world_bounds = world.map->get_min_bounds();
+        max_world_bounds = world.map->get_max_bounds();
 
         diffuse_shader.set_uniform("directional_light.matrix", directional_light_framebuffer->get_matrix(
             min_world_bounds,
@@ -275,6 +276,10 @@ void Renderer::render_forward_pass(
             diffuse_shader.set_uniform("point_lights[" + s + "].depth", 2);
         }
     }
+
+    // Must have at least one valid cubemap for them all the point to
+    if (world.point_lights.empty())
+        dummy_cubemap.bind(2);
 
     // Directional light
     if (world.directional_light.has_value())

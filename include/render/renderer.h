@@ -37,6 +37,7 @@ private:
     std::vector<Framebuffer*> point_light_framebuffers;
     std::unordered_map<const char*, Texture*> textures;
     std::unordered_map<const char*, Mesh*> meshes;
+    Texture dummy_cubemap;
     Mesh quad;
 
     // Cached info

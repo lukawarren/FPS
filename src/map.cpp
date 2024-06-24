@@ -27,6 +27,58 @@ Map::Map(const std::string& filename)
     texture_infos.clear();
 }
 
+glm::vec3 Map::get_min_bounds()
+{
+    csg::brush_t* brush = world.first();
+    glm::vec3 min = {
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max()
+    };
+
+    while (brush != nullptr)
+    {
+        for (const auto& face : brush->faces)
+        {
+            for (const auto& vertex : face.vertices)
+            {
+                min.x = std::min(min.x, vertex.position.x * metres_per_unit);
+                min.y = std::min(min.y, vertex.position.z * metres_per_unit);
+                min.z = std::min(min.z, vertex.position.y * metres_per_unit * -1.0f);
+            }
+        }
+        brush = world.next(brush);
+    }
+
+    return min;
+}
+
+glm::vec3 Map::get_max_bounds()
+{
+    csg::brush_t* brush = world.first();
+    glm::vec3 max = {
+        std::numeric_limits<float>::min(),
+        std::numeric_limits<float>::min(),
+        std::numeric_limits<float>::min()
+    };
+
+    while (brush != nullptr)
+    {
+        for (const auto& face : brush->faces)
+        {
+            for (const auto& vertex : face.vertices)
+            {
+                max.x = std::max(max.x, vertex.position.x * metres_per_unit);
+                max.y = std::max(max.y, vertex.position.z * metres_per_unit);
+                max.z = std::max(max.z, vertex.position.y * metres_per_unit * -1.0f);
+            }
+        }
+        brush = world.next(brush);
+    }
+
+    return max;
+}
+
 void Map::parse_entity(std::ifstream& stream)
 {
     // Get properties

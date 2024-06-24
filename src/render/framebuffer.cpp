@@ -8,12 +8,14 @@ Framebuffer::Framebuffer(const bool is_cubemap)
 
     if (is_cubemap)
     {
-        texture = new Texture(Texture::Type::Cubemap, shadow_size, shadow_size);
+        width = height = point_shadow_size;
+        texture = new Texture(Texture::Type::Cubemap, width, height);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture->handle(), 0);
     }
     else
     {
-        texture = new Texture(Texture::Type::Flat, shadow_size, shadow_size);
+        width = height = directional_shadow_size;
+        texture = new Texture(Texture::Type::Flat, width, height);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->handle(), 0);
     }
 
@@ -25,7 +27,7 @@ Framebuffer::Framebuffer(const bool is_cubemap)
 void Framebuffer::bind() const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    glViewport(0, 0, shadow_size, shadow_size);
+    glViewport(0, 0, width, height);
 }
 
 void Framebuffer::unbind() const
@@ -38,7 +40,7 @@ std::array<glm::mat4, 6> Framebuffer::get_matrices(
     const float far_plane
 ) const
 {
-    const float aspect = (float)shadow_size / (float)shadow_size;
+    const float aspect = (float)width / (float)height;
     const float near = 1.0f;
     const glm::mat4 projection = glm::perspective(glm::radians(90.0f), aspect, near, far_plane);
 
@@ -59,26 +61,20 @@ glm::mat4 Framebuffer::get_matrix(
     const glm::vec3& light_position
 ) const
 {
-    // Centre of world
-    const glm::vec3 centre = (min_bounds + max_bounds) * 0.5f;
+    // View
+    const float margin = 10.0f;
+    const glm::mat4 view = glm::lookAt(light_position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::vec3 min_view = view * glm::vec4(min_bounds, 1.0f) + glm::vec4(margin);
+    const glm::vec3 max_view = view * glm::vec4(max_bounds, 1.0f) - glm::vec4(margin);
 
-    // View matrix
-    const float distance = 1.0f;
-    const glm::mat4 view = glm::lookAt(
-        light_position * distance,
-        centre,
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    // Projection matrix
-    dbg("this is wrong");
-    const float left = min_bounds.x;
-    const float right = max_bounds.x;
-    const float bottom = min_bounds.y;
-    const float top = max_bounds.y;
-    const float near_plane = 0.01f;
-    const float far_plane = 100.0f;
-    const glm::mat4 projection = glm::ortho(left, right, bottom, top, near_plane, far_plane);
+    // Projection
+    const float near_z = -max_view.z - margin;
+    const float far_z = -min_view.z + margin;
+    const float left = min_view.x;
+    const float right = max_view.x;
+    const float bottom = min_view.y;
+    const float top = max_view.y;
+    const glm::mat4 projection = glm::ortho(left, right, bottom, top, near_z, far_z);
 
     return projection * view;
 }

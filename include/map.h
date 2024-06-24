@@ -10,6 +10,9 @@ public:
     Map(const std::string& filename);
     ~Map();
 
+    glm::vec3 get_min_bounds();
+    glm::vec3 get_max_bounds();
+
     struct DrawCall
     {
         Mesh* mesh;

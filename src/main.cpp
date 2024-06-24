@@ -56,7 +56,7 @@ void run()
                 world.player.update_camera(world.camera);
         }
 
-        world.entities[0].transform.rotation.y += 20.0f * delta;
+        //world.entities[0].transform.rotation.y += 20.0f * delta;
 
         renderer.render(world);
 
