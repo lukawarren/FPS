@@ -62,19 +62,38 @@ glm::mat4 Framebuffer::get_matrix(
 ) const
 {
     // View
-    const float margin = 20.0f;
-    const glm::mat4 view = glm::lookAt(light_position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    const glm::vec3 min_view = view * glm::vec4(min_bounds, 1.0f) + glm::vec4(margin);
-    const glm::vec3 max_view = view * glm::vec4(max_bounds, 1.0f) - glm::vec4(margin);
+    const glm::vec3 center(0.0f);
+    const glm::mat4 view = glm::lookAt(light_position, center, glm::vec3(0.0f, 1.0f, 0.0f));
 
-    // Projection
-    const float near_z = 0.01f;
-    const float far_z = 100.0f;
-    const float left = min_view.x;
-    const float right = max_view.x;
-    const float bottom = min_view.y;
-    const float top = max_view.y;
-    dbg(near_z, far_z, left, right, bottom, top);
+    // Define the eight corners of the bounding box in world space
+    glm::vec3 corners[8] = {
+        { min_bounds.x, min_bounds.y, min_bounds.z },
+        { max_bounds.x, min_bounds.y, min_bounds.z },
+        { min_bounds.x, max_bounds.y, min_bounds.z },
+        { max_bounds.x, max_bounds.y, min_bounds.z },
+        { min_bounds.x, min_bounds.y, max_bounds.z },
+        { max_bounds.x, min_bounds.y, max_bounds.z },
+        { min_bounds.x, max_bounds.y, max_bounds.z },
+        { max_bounds.x, max_bounds.y, max_bounds.z }
+    };
+
+    // Transform the corners to light space
+    glm::vec3 min_light(FLT_MAX), max_light(-FLT_MAX);
+    for (int i = 0; i < 8; ++i)
+    {
+        glm::vec4 transformed = view * glm::vec4(corners[i], 1.0f);
+        min_light = glm::min(min_light, glm::vec3(transformed));
+        max_light = glm::max(max_light, glm::vec3(transformed));
+    }
+
+    // Create the orthographic projection matrix
+    const float left = min_light.x;
+    const float right = max_light.x;
+    const float bottom = min_light.y;
+    const float top = max_light.y;
+    const float near_z = -50.0f;
+    const float far_z = 50.0f;
+
     const glm::mat4 projection = glm::ortho(left, right, bottom, top, near_z, far_z);
 
     return projection * view;
