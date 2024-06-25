@@ -14,7 +14,6 @@ const float jump_speed = std::sqrtf(2.0f * gravity * jump_height);
 Player::Player()
 {
     mouse_position = Window::window->mouse_position();
-    position.y += height / 2.0f;
 }
 
 void Player::setup_physics(csg::world_t& world)
@@ -175,4 +174,10 @@ void Player::update_camera(Camera& camera) const
         position.y + eye_height / 2.0f,
         position.z
     };
+}
+
+void Player::set_position(const glm::vec3& pos)
+{
+    position = pos;
+    position.y += radius;
 }

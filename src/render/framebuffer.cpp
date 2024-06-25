@@ -41,7 +41,7 @@ std::array<glm::mat4, 6> Framebuffer::get_matrices(
 ) const
 {
     const float aspect = (float)width / (float)height;
-    const float near = 1.0f;
+    const float near = 0.01f;
     const glm::mat4 projection = glm::perspective(glm::radians(90.0f), aspect, near, far_plane);
 
     std::array<glm::mat4, 6> matrices;
@@ -62,18 +62,19 @@ glm::mat4 Framebuffer::get_matrix(
 ) const
 {
     // View
-    const float margin = 10.0f;
+    const float margin = 20.0f;
     const glm::mat4 view = glm::lookAt(light_position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     const glm::vec3 min_view = view * glm::vec4(min_bounds, 1.0f) + glm::vec4(margin);
     const glm::vec3 max_view = view * glm::vec4(max_bounds, 1.0f) - glm::vec4(margin);
 
     // Projection
-    const float near_z = -max_view.z - margin;
-    const float far_z = -min_view.z + margin;
+    const float near_z = 0.01f;
+    const float far_z = 100.0f;
     const float left = min_view.x;
     const float right = max_view.x;
     const float bottom = min_view.y;
     const float top = max_view.y;
+    dbg(near_z, far_z, left, right, bottom, top);
     const glm::mat4 projection = glm::ortho(left, right, bottom, top, near_z, far_z);
 
     return projection * view;

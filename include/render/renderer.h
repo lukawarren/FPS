@@ -38,6 +38,7 @@ private:
     std::unordered_map<const char*, Texture*> textures;
     std::unordered_map<const char*, Mesh*> meshes;
     Texture dummy_cubemap;
+    Texture dummy_texture;
     Mesh quad;
 
     // Cached info

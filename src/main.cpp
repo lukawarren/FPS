@@ -9,7 +9,7 @@ void run()
 
     // Load world
     World world;
-    world.load_map("lights");
+    world.load_map("buildings");
     renderer.load_world(world);
     world.player.setup_physics(world.map->world);
 

@@ -8,6 +8,7 @@ constexpr glm::vec3 horizon_colour = { 0.26f, 0.57f, 0.91f };
 Renderer::Renderer(const std::string& window_title, const int width, const int height) :
     window(window_title, width, height),
     dummy_cubemap(Texture::Type::Cubemap, 2, 2),
+    dummy_texture(Texture::Type::Flat, 2, 2),
     quad(quad_vertices, quad_indices)
 {
     // Setup GL state
@@ -32,7 +33,6 @@ Renderer::Renderer(const std::string& window_title, const int width, const int h
     sky_shader.bind();
     sky_shader.set_uniform("zenith_colour", zenith_colour);
     sky_shader.set_uniform("horizon_colour", horizon_colour);
-
 }
 
 void Renderer::load_world(const World& world)
@@ -277,9 +277,11 @@ void Renderer::render_forward_pass(
         }
     }
 
-    // Must have at least one valid cubemap for them all the point to
+    // Must have at least one valid shadow sampler for them all the point to
     if (world.point_lights.empty())
         dummy_cubemap.bind(2);
+    if (!world.directional_light.has_value())
+        dummy_texture.bind(1);
 
     // Directional light
     if (world.directional_light.has_value())

@@ -56,7 +56,6 @@ struct World
             if (class_name == "directional_light")
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
-                dbg(position.x, position.y, position.z);
                 const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(1.0f), false);
                 const bool dynamic = entity.parse_bool("dynamic", false);
                 directional_light = DirectionalLight {
@@ -79,7 +78,7 @@ struct World
             else if (class_name == "info_player_start")
             {
                 const glm::vec3 position = entity.parse_vec3("origin");
-                camera.position = position;
+                player.set_position(position);
             }
 
             else if (class_name == "door")
