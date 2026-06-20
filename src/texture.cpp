@@ -6,11 +6,14 @@ Texture::Texture(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopy
 {
     // Load image
     int channels, width, height;
-    uint8_t* pixels = stbi_load(filename.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    const std::string path = TEXTURE_ROOT + filename;
+    uint8_t* pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    if (pixels == nullptr)
+        throw std::runtime_error("Failed to load texture " + path);
 
     texture = SDL_CreateGPUTexture(device, &(SDL_GPUTextureCreateInfo){
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
         .width = (u32)width,
         .height = (u32)height,
@@ -61,6 +64,7 @@ Texture::Texture(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopy
     // Destroy transfer buffer
     SDL_ReleaseGPUTransferBuffer(device, transfer_buffer);
     stbi_image_free(pixels);
+    this->device = device;
 }
 
 void Texture::bind(SDL_GPURenderPass* render_pass, SDL_GPUSampler* sampler)

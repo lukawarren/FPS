@@ -25,8 +25,8 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
 
     depth_texture = create_depth_texture();
 
-    vertex_shader = compile_shader("../res/shaders/main.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
-    fragment_shader = compile_shader("../res/shaders/main.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    vertex_shader = compile_shader("main.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    fragment_shader = compile_shader("main.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
 
     pipeline = create_graphics_pipeline(
         vertex_shader,
@@ -53,68 +53,15 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
         }
     );
 
-    float a[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-
-    std::vector<Mesh::Vertex> vertices;
-    for (int i = 0; i < sizeof(a) / sizeof(a[0]) / 5; i++)
-    {
-        int j = i % 3;
-        vertices.emplace_back(Mesh::Vertex {
-            .position = { a[i * 5 + 0], a[i * 5 + 1], a[i * 5 + 2] },
-            .uv = { a[i * 5 + 3], a[i * 5 + 4] }
-        });
-    }
-
     SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device);
     SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
-    mesh = new Mesh(vertices, device, copy_pass);
-    texture = new Texture("../res/image.png", device, copy_pass);
+    map = new Map("map.map", device, copy_pass);
     SDL_EndGPUCopyPass(copy_pass);
     SDL_SubmitGPUCommandBuffer(command_buffer);
 
     camera.position.z = 3;
+    camera.position.y = 2;
+    camera.pitch = 30.0f;
 }
 
 Renderer::~Renderer()
@@ -126,8 +73,7 @@ Renderer::~Renderer()
     SDL_ReleaseGPUTexture(device, depth_texture);
     SDL_ReleaseGPUSampler(device, sampler);
 
-    delete mesh;
-    delete texture;
+    delete map;
 
     SDL_DestroyGPUDevice(device);
     SDL_ShaderCross_Quit();
@@ -216,20 +162,23 @@ void Renderer::render()
         sizeof(float) * 16
     );
 
-    texture->bind(render_pass, sampler);
-    mesh->bind(render_pass);
-    mesh->draw(render_pass);
+    for (const auto& draw_call : map->draw_calls)
+    {
+        draw_call.texture->bind(render_pass, sampler);
+        draw_call.mesh->bind(render_pass);
+        draw_call.mesh->draw(render_pass);
+    }
 
     SDL_EndGPURenderPass(render_pass);
     SDL_SubmitGPUCommandBuffer(command_buffer);
 }
 
 SDL_GPUShader* Renderer::compile_shader(
-    const char* path,
+    const std::string& path,
     const SDL_ShaderCross_ShaderStage stage
 )
 {
-    u8* source = io_read_file(path);
+    u8* source = io_read_file(SHADER_ROOT + path);
 
     SDL_ShaderCross_HLSL_Info hlsl_info = {};
     hlsl_info.source = (const char*)source;

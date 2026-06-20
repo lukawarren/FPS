@@ -5,6 +5,7 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <unordered_map>
 
 #include <SDL3/SDL.h>
 #include <SDL3_shadercross/SDL_shadercross.h>
@@ -19,6 +20,9 @@
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define module_private public
+#include "csg.hpp"
+
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>
 
@@ -31,3 +35,7 @@ using i8 = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
+
+inline std::string SHADER_ROOT = "../res/shaders/";
+inline std::string TEXTURE_ROOT = "../res/trenchbroom/textures/";
+inline std::string MAP_ROOT = "../res/maps/";

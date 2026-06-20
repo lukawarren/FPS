@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "transform.h"
 #include "texture.h"
+#include "map.h"
 
 class Renderer
 {
@@ -25,7 +26,7 @@ private:
     SDL_GPUTextureFormat framebuffer_texture_format;
 
     SDL_GPUShader* compile_shader(
-        const char* path,
+        const std::string& path,
         const SDL_ShaderCross_ShaderStage stage
     );
 
@@ -46,8 +47,7 @@ private:
 
     SDL_GPUSampler* sampler;
 
-    Mesh* mesh;
-    Texture* texture;
     Camera camera;
     Transform transform;
+    Map* map;
 };
