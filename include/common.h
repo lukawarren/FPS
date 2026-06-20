@@ -21,7 +21,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #define module_private public
-#include "csg.hpp"
+#include <csg.hpp>
 
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>
