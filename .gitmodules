@@ -1,0 +1,18 @@
+[submodule "lib/tiny_csg"]
+	path = lib/tiny_csg
+	url = https://github.com/laleksic/tiny_csg.git
+[submodule "lib/stb"]
+	path = lib/stb
+	url = https://github.com/nothings/stb
+[submodule "lib/dbg-macro"]
+	path = lib/dbg-macro
+	url = https://github.com/sharkdp/dbg-macro
+[submodule "lib/SDL"]
+	path = lib/SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "lib/SDL_shadercross"]
+	path = lib/SDL_shadercross
+	url = https://github.com/libsdl-org/SDL_shadercross.git
+[submodule "lib/glm"]
+	path = lib/glm
+	url = https://github.com/g-truc/glm.git
