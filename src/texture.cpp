@@ -11,14 +11,15 @@ Texture::Texture(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopy
     if (pixels == nullptr)
         throw std::runtime_error("Failed to load texture " + path);
 
+    // Need colour target for mipmap generation
     texture = SDL_CreateGPUTexture(device, &(SDL_GPUTextureCreateInfo){
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-        .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
+        .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET,
         .width = (u32)width,
         .height = (u32)height,
         .layer_count_or_depth = 1,
-        .num_levels = 1,
+        .num_levels = (u32)std::floor(std::log2(std::max(width, height))) + 1,
         .sample_count = SDL_GPU_SAMPLECOUNT_1,
         .props = 0
     });
@@ -78,6 +79,11 @@ void Texture::bind(SDL_GPURenderPass* render_pass, SDL_GPUSampler* sampler)
         },
         1
     );
+}
+
+void Texture::generate_mipmaps(SDL_GPUCommandBuffer* command_buffer)
+{
+    SDL_GenerateMipmapsForGPUTexture(command_buffer, texture);
 }
 
 Texture::~Texture()

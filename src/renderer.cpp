@@ -36,18 +36,18 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
     sampler = SDL_CreateGPUSampler(
         device,
         &(SDL_GPUSamplerCreateInfo) {
-            .min_filter = SDL_GPU_FILTER_LINEAR,
-            .mag_filter = SDL_GPU_FILTER_LINEAR,
+            .min_filter = SDL_GPU_FILTER_NEAREST,
+            .mag_filter = SDL_GPU_FILTER_NEAREST,
             .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
             .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
             .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
             .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
             .mip_lod_bias = 0.0f,
-            .max_anisotropy = 0.0f,
+            .max_anisotropy = 16.0f,
             .compare_op = SDL_GPU_COMPAREOP_ALWAYS,
             .min_lod = 0.0f,
-            .max_lod = 0.0f,
-            .enable_anisotropy = false,
+            .max_lod = FLT_MAX,
+            .enable_anisotropy = true,
             .enable_compare = false,
             .props = 0
         }
@@ -57,6 +57,10 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
     SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
     map = new Map("map.map", device, copy_pass);
     SDL_EndGPUCopyPass(copy_pass);
+    for (const auto& draw_call : map->draw_calls)
+    {
+        draw_call.texture->generate_mipmaps(command_buffer);
+    }
     SDL_SubmitGPUCommandBuffer(command_buffer);
 
     camera.position.z = 3;
@@ -118,7 +122,7 @@ void Renderer::render()
             .texture = swapchain_texture,
             .mip_level = 0,
             .layer_or_depth_plane = 0,
-            .clear_color = { .r = 1.0f, .g = 1.0f, .b = 1.0f, .a = 1.0f },
+            .clear_color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f },
             .load_op = SDL_GPU_LOADOP_CLEAR,
             .store_op = SDL_GPU_STOREOP_STORE,
             .resolve_texture = NULL,

@@ -11,6 +11,7 @@ public:
     Texture& operator=(const Texture&) = delete;
 
     void bind(SDL_GPURenderPass* render_pass, SDL_GPUSampler* sampler);
+    void generate_mipmaps(SDL_GPUCommandBuffer* command_buffer);
 
 private:
     SDL_GPUDevice* device;
