@@ -66,6 +66,8 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
     camera.position.z = 3;
     camera.position.y = 2;
     camera.pitch = 30.0f;
+    player = new Player(window);
+    player->setup_physics(map->world);
 }
 
 Renderer::~Renderer()
@@ -77,6 +79,7 @@ Renderer::~Renderer()
     SDL_ReleaseGPUTexture(device, depth_texture);
     SDL_ReleaseGPUSampler(device, sampler);
 
+    delete player;
     delete map;
 
     SDL_DestroyGPUDevice(device);
@@ -86,7 +89,8 @@ Renderer::~Renderer()
 bool Renderer::update()
 {
     window->update();
-    transform.rotation.y += 1.0f;
+    player->update(map->world, camera, 1.0f / 60.0f);
+    player->update_camera(camera);
     return !window->should_close();
 }
 
@@ -156,8 +160,7 @@ void Renderer::render()
 
     const glm::mat4 m =
         camera.projection_matrix(swapchain_width, swapchain_height) *
-        camera.view_matrix() *
-        transform.matrix();
+        camera.view_matrix();
 
     SDL_PushGPUVertexUniformData(
         command_buffer,

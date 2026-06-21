@@ -15,8 +15,15 @@ public:
     bool should_close() const { return closed; }
     SDL_Window* get_window() const { return window; }
 
+    void capture_mouse();
+    void uncapture_mouse();
+    glm::vec2 get_mouse_position();
+    glm::vec2 get_mouse_movement();
+    bool get_key(const SDL_Scancode scancode);
+
 private:
     SDL_GPUDevice* device;
     SDL_Window* window = nullptr;
     bool closed = false;
+    const bool* key_states;
 };

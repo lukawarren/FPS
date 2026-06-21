@@ -6,6 +6,7 @@
 #include "transform.h"
 #include "texture.h"
 #include "map.h"
+#include "player.h"
 
 class Renderer
 {
@@ -48,6 +49,6 @@ private:
     SDL_GPUSampler* sampler;
 
     Camera camera;
-    Transform transform;
     Map* map;
+    Player* player;
 };
