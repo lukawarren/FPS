@@ -14,7 +14,7 @@ Texture::Texture(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopy
     // Need colour target for mipmap generation
     texture = SDL_CreateGPUTexture(device, &(SDL_GPUTextureCreateInfo){
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET,
         .width = (u32)width,
         .height = (u32)height,
