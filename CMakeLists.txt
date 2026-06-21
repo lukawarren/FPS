@@ -6,6 +6,11 @@ project(FPS LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# reactphysics3d will choose release by default
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 # Cache options to configure dependencies before adding their subdirectories
 set(SDL_TESTS OFF CACHE INTERNAL "")
 set(SDL_EXAMPLES OFF CACHE INTERNAL "")

@@ -12,6 +12,11 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
     if (!SDL_ShaderCross_Init())
         throw std::runtime_error("Failed to initialise SDL_ShaderCross: " + std::string(SDL_GetError()));
 
+#ifdef __APPLE__
+    if (is_debug())
+        setenv("MTL_HUD_ENABLED", "1", 1);
+#endif
+
     device = SDL_CreateGPUDevice(get_shader_format(), is_debug(), get_backend());
     if (!device)
         throw std::runtime_error(

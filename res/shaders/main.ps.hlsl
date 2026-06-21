@@ -10,5 +10,9 @@ struct VertexOutput
 
 float4 main(VertexOutput input) : SV_TARGET
 {
-    return texture.Sample(texture_sampler, input.uv);
+    float3 light_dir = normalize(float3(5.0f, 3.0f, 5.0f));
+    float3 norm = normalize(input.normal);
+    float amount = max(dot(light_dir, norm), 0.3f);
+    float3 light = amount * float3(1.0f, 1.0f, 1.0f) * 2.0f;
+    return texture.Sample(texture_sampler, input.uv) * float4(light, 1.0f);
 }

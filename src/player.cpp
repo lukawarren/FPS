@@ -15,6 +15,7 @@ Player::Player(Window* window) : window(window)
 {
     mouse_position = window->get_mouse_position();
     window->capture_mouse();
+    position.y = 1.0f;
 }
 
 void Player::setup_physics(csg::world_t& world)
@@ -22,68 +23,87 @@ void Player::setup_physics(csg::world_t& world)
     physics_world = physics_common.createPhysicsWorld();
     physics_world->setGravity({ 0.0f, -gravity, 0.0f });
 
-    // Player rigidbody
+    // Player body
     rp3d::Vector3 rb_position(position.x, position.y, position.z);
     rp3d::Quaternion rb_orientation = rp3d::Quaternion::identity();
     rp3d::Transform rb_transform(rb_position, rb_orientation);
     rigid_body = physics_world->createRigidBody(rb_transform);
 
-    // Player collider
     rp3d::CapsuleShape* collider = physics_common.createCapsuleShape(radius, height - radius * 2.0f);
-    rp3d::Transform collider_transform = rp3d::Transform::identity();
-    rigid_body->addCollider(collider, collider_transform);
-
-    // Stop bounciness!
+    rigid_body->addCollider(collider, rp3d::Transform::identity());
     rigid_body->getCollider(0)->getMaterial().setBounciness(0.0f);
-
-    // Stop rotation
     rigid_body->setAngularLockAxisFactor(rp3d::Vector3(0, 0, 0));
 
-    // Level geometry
+    // Build triangle mesh for level geometry
+    std::vector<rp3d::Vector3> vertices;
+    std::vector<u32> indices;
+
     csg::brush_t* brush = world.first();
     while (brush != nullptr)
     {
-        std::vector<float> vertices;
         for (const auto& face : brush->faces)
         {
+            if (face.vertices.size() < 3)
+                continue;
+
+            const u32 base_index = (u32)vertices.size();
+
+            // Add vertices
             for (const auto& vertex : face.vertices)
             {
-                vertices.push_back(vertex.position.x * METRES_PER_UNIT);
-                vertices.push_back(vertex.position.z * METRES_PER_UNIT);
-                vertices.push_back(vertex.position.y * METRES_PER_UNIT * -1.0f);
+                vertices.emplace_back(
+                    vertex.position.x * METRES_PER_UNIT,
+                    vertex.position.z * METRES_PER_UNIT,
+                    -vertex.position.y * METRES_PER_UNIT
+                );
+            }
+
+            // Fan triangulation
+            for (size_t i = 1; i + 1 < face.vertices.size(); ++i)
+            {
+                indices.push_back(base_index);
+                indices.push_back(base_index + i);
+                indices.push_back(base_index + i + 1);
             }
         }
-
-        const rp3d::VertexArray vertex_array(
-            vertices.data(),
-            3 * sizeof(float),
-            vertices.size() / 3,
-            rp3d::VertexArray::DataType::VERTEX_FLOAT_TYPE
-        );
-
-        std::vector<rp3d::Message> messages;
-        physics_common.createConvexMesh(vertex_array, messages);
-        if (messages.size() != 0)
-            dbg("unexpected rp3d message");
-        messages.clear();
-
-        rp3d::ConvexMesh* convex_mesh = physics_common.createConvexMesh(vertex_array, messages);
-        if (messages.size() != 0)
-            dbg("unexpected rp3d message");
-
-        rp3d::ConvexMeshShape* convex_mesh_shape = physics_common.createConvexMeshShape(convex_mesh);
-
-        const rp3d::Transform transform = rp3d::Transform::identity();
-        rp3d::RigidBody* brush_body = physics_world->createRigidBody(transform);
-        brush_body->setType(rp3d::BodyType::STATIC);
-        brush_body->addCollider(convex_mesh_shape, transform);
-
-        // Material settings
-        brush_body->getCollider(0)->getMaterial().setBounciness(0.0f);
-        brush_body->getCollider(0)->getMaterial().setFrictionCoefficient(1.0f);
-
         brush = world.next(brush);
     }
+
+    if (vertices.empty())
+    {
+        dbg("No level geometry found!");
+        return;
+    }
+
+    // Create TriangleVertexArray
+    rp3d::TriangleVertexArray vertexArray(
+        vertices.size(),
+        vertices.data(),
+        3 * sizeof(float),
+        indices.size() / 3,
+        indices.data(),
+        3 * sizeof(u32),
+        rp3d::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE,
+        rp3d::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE
+    );
+
+    // Create TriangleMesh from the vertex array
+    std::vector<rp3d::Message> messages;
+    rp3d::TriangleMesh* triangleMesh = physics_common.createTriangleMesh(vertexArray, messages);
+
+    if (!messages.empty())
+        for (const auto& msg : messages)
+            dbg(msg.text);
+
+    // Create ConcaveMeshShape
+    rp3d::ConcaveMeshShape* meshShape = physics_common.createConcaveMeshShape(triangleMesh);
+
+    // Create static rigid body for the level
+    rp3d::RigidBody* levelBody = physics_world->createRigidBody(rp3d::Transform::identity());
+    levelBody->setType(rp3d::BodyType::STATIC);
+    levelBody->addCollider(meshShape, rp3d::Transform::identity());
+    levelBody->getCollider(0)->getMaterial().setFrictionCoefficient(1.0f);
+    levelBody->getCollider(0)->getMaterial().setBounciness(0.0f);
 }
 
 void Player::update(
