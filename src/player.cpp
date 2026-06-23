@@ -114,6 +114,7 @@ void Player::update(
 {
     handle_input(camera);
     handle_physics(world, delta);
+    flashlight.update(position, camera.pitch, camera.yaw);
 }
 
 void Player::handle_input(const Camera& camera)

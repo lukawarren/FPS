@@ -2,6 +2,7 @@
 #include "common.h"
 #include "camera.h"
 #include "window.h"
+#include "flashlight.h"
 
 class Player
 {
@@ -12,6 +13,8 @@ public:
     void update_camera(Camera& camera) const;
     void set_position(const glm::vec3& pos);
 
+    Flashlight flashlight;
+
 private:
     void handle_input(const Camera& camera);
     void handle_physics(csg::world_t& world, const float delta);
@@ -20,7 +23,6 @@ private:
     float head_pitch = 0.0f;
     float head_yaw = 0.0f;
     glm::vec2 mouse_position;
-
     // Physics
     rp3d::PhysicsCommon physics_common;
     rp3d::PhysicsWorld* physics_world;

@@ -65,8 +65,8 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
     sampler = SDL_CreateGPUSampler(
         device,
         &(SDL_GPUSamplerCreateInfo) {
-            .min_filter = SDL_GPU_FILTER_NEAREST,
-            .mag_filter = SDL_GPU_FILTER_NEAREST,
+            .min_filter = SDL_GPU_FILTER_LINEAR,
+            .mag_filter = SDL_GPU_FILTER_LINEAR,
             .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
             .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
             .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
@@ -150,12 +150,12 @@ void Renderer::render()
     const glm::mat4 camera_projection = world->camera.projection_matrix(framebuffer_width, framebuffer_height);
     const glm::mat4 camera_view = world->camera.view_matrix();
 
-    const auto light_matrix = world->spotlights[0].get_matrix();
+    const auto light_matrix = world->player.flashlight.get_matrix();
 
     // Set uniforms
     diffuse_shader_uniforms_vertex.view = camera_view;
     diffuse_shader_uniforms_vertex.projection = camera_projection;
-    diffuse_shader_uniforms_fragment.spotlight = world->spotlights[0].get_uniform_buffer(light_matrix);
+    diffuse_shader_uniforms_fragment.spotlight = world->player.flashlight.get_uniform_buffer(light_matrix);
 
     {
         SDL_GPURenderPass* depth_pass = SDL_BeginGPURenderPass(
