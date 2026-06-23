@@ -1,13 +1,7 @@
 #pragma once
 #include "common.h"
 #include "window.h"
-#include "mesh.h"
-#include "camera.h"
-#include "transform.h"
-#include "texture.h"
-#include "map.h"
-#include "player.h"
-#include "spotlight.h"
+#include "world.h"
 
 class Renderer
 {
@@ -57,7 +51,7 @@ private:
 
     struct DiffuseShaderUniformsFragment
     {
-        glm::mat4 light_matrices[QUALITY_SETTINGS.max_shadows];
+        Spotlight::UniformBuffer spotlight;
     } diffuse_shader_uniforms_fragment;
 
     SDL_GPUShader* depth_vertex_shader;
@@ -68,8 +62,5 @@ private:
 
     SDL_GPUSampler* sampler;
 
-    Camera camera;
-    Map* map;
-    Player* player;
-    Spotlight light;
+    World* world;
 };

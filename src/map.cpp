@@ -309,3 +309,50 @@ Map::~Map()
         delete draw_call.texture;
     }
 }
+
+glm::vec3 Map::Entity::parse_vec3(
+    const std::string& key,
+    const glm::vec3 default_value,
+    const bool scale
+) const
+{
+    if (properties.count(key) == 0)
+        return default_value;
+
+    std::istringstream iss(properties.at(key));
+    float x, y, z;
+    iss >> x >> y >> z;
+
+    if (scale)
+        return glm::vec3 { x, z, -y } * METRES_PER_UNIT;
+
+    return { x, y, z };
+}
+
+float Map::Entity::parse_float(
+    const std::string& key,
+    const float default_value
+) const
+{
+    if (properties.count(key) == 0)
+        return default_value;
+
+    std::istringstream iss(properties.at(key));
+    float x;
+    iss >> x;
+    return x;
+}
+
+bool Map::Entity::parse_bool(
+    const std::string& key,
+    const bool default_value
+) const
+{
+    if (properties.count(key) == 0)
+        return default_value;
+
+    std::istringstream iss(properties.at(key));
+    bool x;
+    iss >> x;
+    return x;
+}

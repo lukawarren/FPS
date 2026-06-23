@@ -1,15 +1,7 @@
 #include "renderer.h"
 #include "io.h"
 
-Renderer::Renderer(const std::string& title, const u32 width, const u32 height) :
-    light(
-        glm::vec3(0.0f, 10.0f, 0.0f),
-        glm::normalize(glm::vec3(0.3f, -1.0f, 0.0f)),
-        glm::vec3(1.0f),
-        0.01f,
-        10.0f,
-        30.0f
-    )
+Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
 {
     // Init SDL
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
@@ -92,19 +84,13 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
 
     SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device);
     SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
-    map = new Map("map.map", device, copy_pass);
+    world = new World("map.map", window, device, copy_pass);
     SDL_EndGPUCopyPass(copy_pass);
-    for (const auto& draw_call : map->draw_calls)
+    for (const auto& draw_call : world->map->draw_calls)
     {
         draw_call.texture->generate_mipmaps(command_buffer);
     }
     SDL_SubmitGPUCommandBuffer(command_buffer);
-
-    camera.position.z = 3;
-    camera.position.y = 2;
-    camera.pitch = 30.0f;
-    player = new Player(window);
-    player->setup_physics(map->world);
 }
 
 Renderer::~Renderer()
@@ -119,8 +105,7 @@ Renderer::~Renderer()
     SDL_ReleaseGPUSampler(device, shadow_map_sampler);
     SDL_ReleaseGPUSampler(device, sampler);
 
-    delete player;
-    delete map;
+    delete world;
 
     SDL_DestroyGPUDevice(device);
     SDL_ShaderCross_Quit();
@@ -129,8 +114,8 @@ Renderer::~Renderer()
 bool Renderer::update()
 {
     window->update();
-    player->update(map->world, camera, 1.0f / 60.0f);
-    player->update_camera(camera);
+    world->player.update(world->map->world, world->camera, 1.0f / 60.0f);
+    world->player.update_camera(world->camera);
     return !window->should_close();
 }
 
@@ -162,15 +147,15 @@ void Renderer::render()
         depth_texture = create_depth_texture();
     }
 
-    const glm::mat4 camera_projection = camera.projection_matrix(framebuffer_width, framebuffer_height);
-    const glm::mat4 camera_view = camera.view_matrix();
+    const glm::mat4 camera_projection = world->camera.projection_matrix(framebuffer_width, framebuffer_height);
+    const glm::mat4 camera_view = world->camera.view_matrix();
 
-    const auto light_matrix = light.get_matrix();
+    const auto light_matrix = world->spotlights[0].get_matrix();
 
     // Set uniforms
     diffuse_shader_uniforms_vertex.view = camera_view;
     diffuse_shader_uniforms_vertex.projection = camera_projection;
-    diffuse_shader_uniforms_fragment.light_matrices[0] = light_matrix;
+    diffuse_shader_uniforms_fragment.spotlight = world->spotlights[0].get_uniform_buffer(light_matrix);
 
     {
         SDL_GPURenderPass* depth_pass = SDL_BeginGPURenderPass(
@@ -209,7 +194,7 @@ void Renderer::render()
             sizeof(float) * 16
         );
 
-        for (const auto& draw_call : map->draw_calls)
+        for (const auto& draw_call : world->map->draw_calls)
         {
             draw_call.mesh->bind(depth_pass);
             draw_call.mesh->draw(depth_pass);
@@ -283,7 +268,7 @@ void Renderer::render()
         1
     );
 
-    for (const auto& draw_call : map->draw_calls)
+    for (const auto& draw_call : world->map->draw_calls)
     {
         draw_call.texture->bind(diffuse_pass, sampler);
         draw_call.mesh->bind(diffuse_pass);

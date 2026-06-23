@@ -26,48 +26,17 @@ public:
             const std::string& key,
             const glm::vec3 default_value = glm::vec3(0.0f),
             const bool scale = true
-        ) const
-        {
-            if (properties.count(key) == 0)
-                return default_value;
-
-            std::istringstream iss(properties.at(key));
-            float x, y, z;
-            iss >> x >> y >> z;
-
-            if (scale)
-                return glm::vec3 { x, z, -y } * METRES_PER_UNIT;
-
-            return { x, y, z };
-        }
+        ) const;
 
         float parse_float(
             const std::string& key,
             const float default_value = 0.0f
-        ) const
-        {
-            if (properties.count(key) == 0)
-                return default_value;
-
-            std::istringstream iss(properties.at(key));
-            float x;
-            iss >> x;
-            return x;
-        }
+        ) const;
 
         bool parse_bool(
             const std::string& key,
             const bool default_value
-        ) const
-        {
-            if (properties.count(key) == 0)
-                return default_value;
-
-            std::istringstream iss(properties.at(key));
-            bool x;
-            iss >> x;
-            return x;
-        }
+        ) const;
     };
 
     std::vector<DrawCall> draw_calls;

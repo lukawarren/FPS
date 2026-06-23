@@ -1,0 +1,15 @@
+@SolidClass = worldspawn : "World entity" []
+
+@baseclass size(-16 -16 -24, 16 16 32) color(0 255 0) = PlayerClass []
+
+@PointClass base(PlayerClass) = info_player_start : "Player 1 start" []
+
+@PointClass size(-8 -8 -8, 8 8 8) color(255 255 0) = light_spotlight : "Directional Spotlight"
+[
+    colour(color255) : "Light Colour" : "255 255 255" : "The RGB colour of the spotlight."
+    intensity(float) : "Intensity" : "10.0" : "Light intensity."
+    angles(angle) : "Pitch Yaw Roll" : "0 -1 0" : "The direction the spotlight is pointing."
+    near(float) : "Near Plane" : "0.1" : "The near clipping distance for shadow mapping/attenuation."
+    far(float) : "Far Plane" : "10.0" : "The maximum reach distance of the light."
+    angle(float) : "Cone Angle" : "60.0" : "The outer cone inner/outer angle in degrees."
+]

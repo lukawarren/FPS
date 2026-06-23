@@ -13,7 +13,7 @@ Spotlight::Spotlight(
 
 glm::mat4 Spotlight::get_matrix() const
 {
-    const float fov = glm::radians(angle) * 2.0f;
+    const float fov = angle * 2.0f;
     const glm::mat4 projection = glm::perspective(fov, 1.0f, near, far);
 
     const glm::vec3 target = position + direction;
@@ -26,4 +26,16 @@ glm::mat4 Spotlight::get_matrix() const
 
     const glm::mat4 view = glm::lookAt(position, target, up);
     return projection * view;
+}
+
+Spotlight::UniformBuffer Spotlight::get_uniform_buffer(const glm::mat4& matrix) const
+{
+    dbg(colour.x, colour.y, colour.z);
+    return {
+        .shadow = matrix,
+        .position = glm::vec4(position, 0.0f),
+        .colour = glm::vec4(colour, 0.0f),
+        .direction = glm::vec4(direction, 0.0f),
+        .params = { std::cos(angle * 0.85f), std::cos(angle), 0.0f, 0.0f }
+    };
 }
