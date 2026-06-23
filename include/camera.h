@@ -1,17 +1,13 @@
 #pragma once
 #include "common.h"
 
-constexpr inline float z_near = 0.01f;
-constexpr inline float z_far = 1000.0f;
-constexpr inline float fov = glm::radians(90.0f);
-
 class Camera
 {
 public:
     Camera() {}
 
-    Camera(glm::vec3 _position, float _pitch, float _yaw, float _roll) :
-        position(_position), pitch(_pitch), yaw(_yaw), roll(_roll) {}
+    Camera(glm::vec3 position, float pitch, float yaw, float roll, float fov) :
+        position(position), pitch(pitch), yaw(yaw), roll(roll), fov(fov) {}
 
     glm::mat4 view_matrix() const
     {
@@ -30,12 +26,11 @@ public:
     glm::mat4 projection_matrix(
         const float width,
         const float height,
-        const float field_of_view = fov,
-        const float near = z_near,
-        const float far = z_far
+        const float near = Z_NEAR,
+        const float far = Z_FAR
     ) const
     {
-        return glm::perspective(field_of_view, width / height, near, far);
+        return glm::perspective(fov, width / height, near, far);
     }
 
     glm::vec3 direction_vector() const
@@ -54,4 +49,8 @@ public:
     float pitch = 0.0f;
     float yaw = 0.0f;
     float roll = 0.0f;
+    float fov = glm::radians(90.0f);
+
+    static inline float Z_NEAR = 0.01f;
+    static inline float Z_FAR = 1000.0f;
 };

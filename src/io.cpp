@@ -28,7 +28,8 @@ std::pair<std::ifstream, std::streamsize> io_read_file(
 u8* io_read_file(const std::string& filename)
 {
     auto file = io_read_file(filename, 0);
-    u8* buffer = new u8[file.second];
+    u8* buffer = new u8[file.second + 1];
+    buffer[file.second] = '\0';
     file.first.read(reinterpret_cast<char*>(buffer), file.second);
     file.first.close();
     return buffer;

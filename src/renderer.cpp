@@ -1,7 +1,15 @@
 #include "renderer.h"
 #include "io.h"
 
-Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
+Renderer::Renderer(const std::string& title, const u32 width, const u32 height) :
+    light(
+        glm::vec3(0.0f, 10.0f, 0.0f),
+        glm::normalize(glm::vec3(0.3f, -1.0f, 0.0f)),
+        glm::vec3(1.0f),
+        0.01f,
+        10.0f,
+        30.0f
+    )
 {
     // Init SDL
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
@@ -23,19 +31,43 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
             "Failed to create GPU device: " + std::string(SDL_GetError())
         );
 
+    // Fetch true width and height after window creation (e.g. for high-DPI)
+    int w, h;
     window = new Window(title, width, height, device);
-    this->width = width;
-    this->height = height;
+    SDL_GetWindowSizeInPixels(window->get_window(), &w, &h);
+    this->framebuffer_width = w;
+    this->framebuffer_height = h;
     framebuffer_texture_format = SDL_GetGPUSwapchainTextureFormat(device, window->get_window());
 
     depth_texture = create_depth_texture();
 
-    vertex_shader = compile_shader("main.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
-    fragment_shader = compile_shader("main.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    diffuse_vertex_shader = compile_shader("diffuse.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    diffuse_fragment_shader = compile_shader("diffuse.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    diffuse_pipeline = create_diffuse_pipeline();
 
-    pipeline = create_graphics_pipeline(
-        vertex_shader,
-        fragment_shader
+    depth_vertex_shader = compile_shader("depth.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    depth_fragment_shader = compile_shader("depth.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    depth_pipeline = create_depth_pipeline();
+    shadow_map = create_shadow_map();
+
+    shadow_map_sampler = SDL_CreateGPUSampler(
+        device,
+        &(SDL_GPUSamplerCreateInfo) {
+            .min_filter = SDL_GPU_FILTER_LINEAR,
+            .mag_filter = SDL_GPU_FILTER_LINEAR,
+            .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+            .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+            .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+            .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+            .mip_lod_bias = 0.0f,
+            .max_anisotropy = 0.0f,
+            .compare_op = SDL_GPU_COMPAREOP_ALWAYS,
+            .min_lod = 0.0f,
+            .max_lod = FLT_MAX,
+            .enable_anisotropy = false,
+            .enable_compare = false,
+            .props = 0
+        }
     );
 
     sampler = SDL_CreateGPUSampler(
@@ -78,10 +110,13 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height)
 Renderer::~Renderer()
 {
     SDL_WaitForGPUIdle(device);
-    SDL_ReleaseGPUShader(device, vertex_shader);
-    SDL_ReleaseGPUShader(device, fragment_shader);
-    SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
+    SDL_ReleaseGPUShader(device, diffuse_vertex_shader);
+    SDL_ReleaseGPUShader(device, diffuse_fragment_shader);
+    SDL_ReleaseGPUGraphicsPipeline(device, diffuse_pipeline);
+    SDL_ReleaseGPUGraphicsPipeline(device, depth_pipeline);
     SDL_ReleaseGPUTexture(device, depth_texture);
+    SDL_ReleaseGPUTexture(device, shadow_map);
+    SDL_ReleaseGPUSampler(device, shadow_map_sampler);
     SDL_ReleaseGPUSampler(device, sampler);
 
     delete player;
@@ -112,20 +147,78 @@ void Renderer::render()
 
     // Check if dimensions or format has changed
     SDL_GPUTextureFormat new_format = SDL_GetGPUSwapchainTextureFormat(device, window->get_window());
-    if (swapchain_width != width || swapchain_height != height || new_format != framebuffer_texture_format)
+    if (swapchain_width != framebuffer_width ||
+        swapchain_height != framebuffer_height ||
+        new_format != framebuffer_texture_format)
     {
         SDL_ReleaseGPUTexture(device, depth_texture);
-        SDL_ReleaseGPUGraphicsPipeline(device, pipeline);
+        SDL_ReleaseGPUGraphicsPipeline(device, diffuse_pipeline);
 
-        width = swapchain_width;
-        height = swapchain_height;
+        framebuffer_width = swapchain_width;
+        framebuffer_height = swapchain_height;
         framebuffer_texture_format = new_format;
 
-        pipeline = create_graphics_pipeline(vertex_shader, fragment_shader);
+        diffuse_pipeline = create_diffuse_pipeline();
         depth_texture = create_depth_texture();
     }
 
-    SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(
+    const glm::mat4 camera_projection = camera.projection_matrix(framebuffer_width, framebuffer_height);
+    const glm::mat4 camera_view = camera.view_matrix();
+
+    const auto light_matrix = light.get_matrix();
+
+    // Set uniforms
+    diffuse_shader_uniforms_vertex.view = camera_view;
+    diffuse_shader_uniforms_vertex.projection = camera_projection;
+    diffuse_shader_uniforms_fragment.light_matrices[0] = light_matrix;
+
+    {
+        SDL_GPURenderPass* depth_pass = SDL_BeginGPURenderPass(
+            command_buffer,
+            NULL,
+            0,
+            &(SDL_GPUDepthStencilTargetInfo) {
+                .texture = shadow_map,
+                .clear_depth = 1.0f,
+                .load_op = SDL_GPU_LOADOP_CLEAR,
+                .store_op = SDL_GPU_STOREOP_STORE,
+                .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
+                .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
+                .cycle = false,
+                .clear_stencil = 0,
+                .mip_level = 0,
+                .layer = 0
+            }
+        );
+
+        SDL_BindGPUGraphicsPipeline(depth_pass, depth_pipeline);
+
+        SDL_SetGPUViewport(depth_pass, &(SDL_GPUViewport) {
+            .x = 0.0f,
+            .y = 0.0f,
+            .w = (float)QUALITY_SETTINGS.shadow_map_width,
+            .h = (float)QUALITY_SETTINGS.shadow_map_height,
+            .min_depth = 0.0f,
+            .max_depth = 1.0f
+        });
+
+        SDL_PushGPUVertexUniformData(
+            command_buffer,
+            0,
+            (void*)glm::value_ptr(light_matrix),
+            sizeof(float) * 16
+        );
+
+        for (const auto& draw_call : map->draw_calls)
+        {
+            draw_call.mesh->bind(depth_pass);
+            draw_call.mesh->draw(depth_pass);
+        }
+
+        SDL_EndGPURenderPass(depth_pass);
+    }
+
+    SDL_GPURenderPass* diffuse_pass = SDL_BeginGPURenderPass(
         command_buffer,
         &(SDL_GPUColorTargetInfo) {
             .texture = swapchain_texture,
@@ -148,13 +241,16 @@ void Renderer::render()
             .store_op = SDL_GPU_STOREOP_DONT_CARE,
             .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
             .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-            .cycle = true
+            .cycle = true,
+            .clear_stencil = 0,
+            .mip_level = 0,
+            .layer = 0
         }
     );
 
-    SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
+    SDL_BindGPUGraphicsPipeline(diffuse_pass, diffuse_pipeline);
 
-    SDL_SetGPUViewport(render_pass, &(SDL_GPUViewport) {
+    SDL_SetGPUViewport(diffuse_pass, &(SDL_GPUViewport) {
         .x = 0.0f,
         .y = 0.0f,
         .w = (float)swapchain_width,
@@ -163,25 +259,39 @@ void Renderer::render()
         .max_depth = 1.0f
     });
 
-    const glm::mat4 m =
-        camera.projection_matrix(swapchain_width, swapchain_height) *
-        camera.view_matrix();
-
     SDL_PushGPUVertexUniformData(
         command_buffer,
+        0,
+        &diffuse_shader_uniforms_vertex,
+        sizeof(diffuse_shader_uniforms_vertex)
+    );
+
+    SDL_PushGPUFragmentUniformData(
+        command_buffer,
+        0,
+        &diffuse_shader_uniforms_fragment,
+        sizeof(diffuse_shader_uniforms_fragment)
+    );
+
+    SDL_BindGPUFragmentSamplers(
+        diffuse_pass,
         1,
-        (void*)glm::value_ptr(m),
-        sizeof(float) * 16
+        &(SDL_GPUTextureSamplerBinding) {
+            .sampler = shadow_map_sampler,
+            .texture = shadow_map
+        },
+        1
     );
 
     for (const auto& draw_call : map->draw_calls)
     {
-        draw_call.texture->bind(render_pass, sampler);
-        draw_call.mesh->bind(render_pass);
-        draw_call.mesh->draw(render_pass);
+        draw_call.texture->bind(diffuse_pass, sampler);
+        draw_call.mesh->bind(diffuse_pass);
+        draw_call.mesh->draw(diffuse_pass);
     }
 
-    SDL_EndGPURenderPass(render_pass);
+    SDL_EndGPURenderPass(diffuse_pass);
+
     SDL_SubmitGPUCommandBuffer(command_buffer);
 }
 
@@ -245,7 +355,7 @@ SDL_GPUShader* Renderer::compile_shader(
     return shader;
 }
 
-SDL_GPUGraphicsPipeline* Renderer::create_graphics_pipeline(SDL_GPUShader* vertex_shader, SDL_GPUShader* fragment_shader)
+SDL_GPUGraphicsPipeline* Renderer::create_diffuse_pipeline()
 {
     const auto description = Mesh::Vertex::get_vertex_buffer_description();
     const auto attributes = Mesh::Vertex::get_vertex_attributes();
@@ -259,8 +369,8 @@ SDL_GPUGraphicsPipeline* Renderer::create_graphics_pipeline(SDL_GPUShader* verte
 
     SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
     {
-        .vertex_shader = vertex_shader,
-        .fragment_shader = fragment_shader,
+        .vertex_shader = diffuse_vertex_shader,
+        .fragment_shader = diffuse_fragment_shader,
         .vertex_input_state =
         {
             .vertex_buffer_descriptions = &description,
@@ -310,15 +420,100 @@ SDL_GPUGraphicsPipeline* Renderer::create_graphics_pipeline(SDL_GPUShader* verte
     return pipeline;
 }
 
+SDL_GPUGraphicsPipeline* Renderer::create_depth_pipeline()
+{
+    const auto description = Mesh::Vertex::get_vertex_buffer_description();
+    const auto attributes = Mesh::Vertex::get_vertex_attributes();
+dbg("Todo: reflect format");
+    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    {
+        .vertex_shader = depth_vertex_shader,
+        .fragment_shader = depth_fragment_shader,
+        .vertex_input_state =
+        {
+            .vertex_buffer_descriptions = &description,
+            .num_vertex_buffers = 1,
+            .vertex_attributes = &attributes[0],
+            .num_vertex_attributes = attributes.size()
+        },
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        .rasterizer_state =
+        {
+            .fill_mode = SDL_GPU_FILLMODE_FILL,
+            .cull_mode = SDL_GPU_CULLMODE_BACK,
+            .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
+            .depth_bias_constant_factor = 0.0f,
+            .depth_bias_clamp = 0.0f,
+            .depth_bias_slope_factor = 0.0f,
+            .enable_depth_bias = false,
+            .enable_depth_clip = false
+        },
+        .multisample_state =
+        {
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .sample_mask = 0,
+            .enable_mask = false,
+            .enable_alpha_to_coverage = false
+        },
+        .depth_stencil_state =
+        {
+            .compare_op = SDL_GPU_COMPAREOP_LESS,
+            .enable_depth_test = true,
+            .enable_depth_write = true,
+            .enable_stencil_test = false
+        },
+        .target_info =
+        {
+            .color_target_descriptions = NULL,
+            .num_color_targets = 0,
+            .depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
+            .has_depth_stencil_target = true
+        },
+        .props = 0
+    });
+
+    if (pipeline == NULL)
+        throw std::runtime_error("Failed to create pipeline: " + std::string(SDL_GetError()));
+
+    return pipeline;
+}
+
 SDL_GPUTexture* Renderer::create_depth_texture()
 {
     return SDL_CreateGPUTexture(device, &(SDL_GPUTextureCreateInfo){
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
         .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-        .width = width,
-        .height = height,
+        .width = framebuffer_width,
+        .height = framebuffer_height,
         .layer_count_or_depth = 1,
+        .num_levels = 1,
+        .sample_count = SDL_GPU_SAMPLECOUNT_1,
+        .props = 0
+    });
+}
+
+SDL_GPUTexture* Renderer::create_shadow_map()
+{
+    const bool supports_32 = SDL_GPUTextureSupportsFormat(
+        device,
+        SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
+        SDL_GPU_TEXTURETYPE_2D_ARRAY,
+        SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+    );
+
+    if (!supports_32)
+        dbg("Warning: SDL_GPU_TEXTUREFORMAT_D32_FLOAT not supported");
+
+    dbg("TODO: auto reflect in pipeline or whatever");
+
+    return SDL_CreateGPUTexture(device, &(SDL_GPUTextureCreateInfo){
+        .type = SDL_GPU_TEXTURETYPE_2D_ARRAY,
+        .format = supports_32 ? SDL_GPU_TEXTUREFORMAT_D32_FLOAT : SDL_GPU_TEXTUREFORMAT_D16_UNORM,
+        .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
+        .width = QUALITY_SETTINGS.shadow_map_width,
+        .height = QUALITY_SETTINGS.shadow_map_height,
+        .layer_count_or_depth = QUALITY_SETTINGS.max_shadows,
         .num_levels = 1,
         .sample_count = SDL_GPU_SAMPLECOUNT_1,
         .props = 0

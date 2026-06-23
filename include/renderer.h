@@ -7,6 +7,7 @@
 #include "texture.h"
 #include "map.h"
 #include "player.h"
+#include "spotlight.h"
 
 class Renderer
 {
@@ -23,7 +24,7 @@ private:
     bool is_debug();
 
     // Window resizing
-    u32 width, height;
+    u32 framebuffer_width, framebuffer_height;
     SDL_GPUTextureFormat framebuffer_texture_format;
 
     SDL_GPUShader* compile_shader(
@@ -31,24 +32,44 @@ private:
         const SDL_ShaderCross_ShaderStage stage
     );
 
-    SDL_GPUGraphicsPipeline* create_graphics_pipeline(
-        SDL_GPUShader* vertex_shader,
-        SDL_GPUShader* fragment_shader
-    );
-
+    SDL_GPUGraphicsPipeline* create_diffuse_pipeline();
+    SDL_GPUGraphicsPipeline* create_depth_pipeline();
     SDL_GPUTexture* create_depth_texture();
+    SDL_GPUTexture* create_shadow_map();
 
     SDL_GPUDevice* device;
     Window* window;
     SDL_GPUTexture* depth_texture;
 
-    SDL_GPUShader* vertex_shader;
-    SDL_GPUShader* fragment_shader;
-    SDL_GPUGraphicsPipeline* pipeline;
+    SDL_GPUShader* diffuse_vertex_shader;
+    SDL_GPUShader* diffuse_fragment_shader;
+    SDL_GPUGraphicsPipeline* diffuse_pipeline;
+
+    struct alignas(16) PaddedFloat {
+        float value;
+    };
+
+    struct DiffuseShaderUniformsVertex
+    {
+        glm::mat4 view;
+        glm::mat4 projection;
+    } diffuse_shader_uniforms_vertex;
+
+    struct DiffuseShaderUniformsFragment
+    {
+        glm::mat4 light_matrices[QUALITY_SETTINGS.max_shadows];
+    } diffuse_shader_uniforms_fragment;
+
+    SDL_GPUShader* depth_vertex_shader;
+    SDL_GPUShader* depth_fragment_shader;
+    SDL_GPUGraphicsPipeline* depth_pipeline;
+    SDL_GPUTexture* shadow_map;
+    SDL_GPUSampler* shadow_map_sampler;
 
     SDL_GPUSampler* sampler;
 
     Camera camera;
     Map* map;
     Player* player;
+    Spotlight light;
 };
