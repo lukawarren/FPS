@@ -52,9 +52,9 @@ void Player::setup_physics(csg::world_t& world)
             for (const auto& vertex : face.vertices)
             {
                 vertices.emplace_back(
-                    vertex.position.x * METRES_PER_UNIT,
-                    vertex.position.z * METRES_PER_UNIT,
-                    -vertex.position.y * METRES_PER_UNIT
+                    vertex.position.x * Map::METRES_PER_UNIT,
+                    vertex.position.z * Map::METRES_PER_UNIT,
+                    -vertex.position.y * Map::METRES_PER_UNIT
                 );
             }
 

@@ -86,6 +86,23 @@ void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyP
     // Brush setup
     brush->set_volume_operation(csg::make_fill_operation(VOLUME_SOLID));
 
+    const auto parse_texture_name = [](std::istream& is)
+    {
+        is >> std::ws;
+
+        if (is.peek() == '"')
+        {
+            is.get();
+            std::string name;
+            std::getline(is, name, '"');
+            return name;
+        }
+
+        std::string name;
+        is >> name;
+        return name;
+    };
+
     while (std::getline(stream, line))
     {
         // End of brush
@@ -130,8 +147,7 @@ void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyP
             };
 
             // Get texture info
-            std::string texture_name;
-            iss >> texture_name;
+            const std::string texture_name = parse_texture_name(iss);
             const csg::plane_t u_plane = parse_plane(iss);
             const csg::plane_t v_plane = parse_plane(iss);
             float rotation, scale_x, scale_y;

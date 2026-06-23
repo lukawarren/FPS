@@ -99,6 +99,6 @@ float4 main(VertexOutput input) : SV_TARGET
     );
 
     // Composite
-    float3 final_color = diffuse * max(lighting * 0.0001f + shadow, 0.2f);
+    float3 final_color = diffuse * max(lighting * shadow, 0.2f);
     return float4(final_color, 1.0f);
 }
