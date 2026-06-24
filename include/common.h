@@ -48,6 +48,7 @@ struct QualitySettings
     u32 max_shadows = 1;
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
+    u32 bloom_downsamples = 5;
 };
 
 constexpr static inline QualitySettings QUALITY_SETTINGS = {};

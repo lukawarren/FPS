@@ -30,7 +30,6 @@ glm::mat4 Spotlight::get_matrix() const
 
 Spotlight::UniformBuffer Spotlight::get_uniform_buffer(const glm::mat4& matrix) const
 {
-    dbg(colour.x, colour.y, colour.z);
     return {
         .shadow = matrix,
         .position = glm::vec4(position, 0.0f),
