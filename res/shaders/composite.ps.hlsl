@@ -47,5 +47,5 @@ float4 main(VertexOutput input) : SV_TARGET
      return float4(
         tonemap(lerp(render, bloom, BLOOM_STRENGTH)),
         1.0f
-    ) * 0.00001f + float4(1,1,1,1) * ssao;
+    ) * 1.0f + 0.000001f * float4(1,1,1,1) * ssao;
 }

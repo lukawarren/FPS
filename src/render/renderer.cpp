@@ -16,6 +16,16 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
     }
     SDL_SubmitGPUCommandBuffer(command_buffer);
 
+#if 0
+    if (SDL_WindowSupportsGPUPresentMode(device.device, device.window->get_window(), SDL_GPU_PRESENTMODE_IMMEDIATE))
+        SDL_SetGPUSwapchainParameters(
+            device.device,
+            device.window->get_window(),
+            SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
+            SDL_GPU_PRESENTMODE_IMMEDIATE
+        );
+#endif
+
     dbg("TODO: don't use uniform buffer for lights");
 }
 
@@ -108,7 +118,7 @@ void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4
             .store_op = SDL_GPU_STOREOP_STORE,
             .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
             .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-            .cycle = false,
+            .cycle = (slot == 0),
             .clear_stencil = 0,
             .mip_level = 0,
             .layer = slot
@@ -156,7 +166,7 @@ void Renderer::diffuse_pass(SDL_GPUCommandBuffer* command_buffer)
             .resolve_texture = NULL,
             .resolve_mip_level = 0,
             .resolve_layer = 0,
-            .cycle = false,
+            .cycle = true,
             .cycle_resolve_texture = false
         },
         1,
@@ -167,7 +177,7 @@ void Renderer::diffuse_pass(SDL_GPUCommandBuffer* command_buffer)
             .store_op = SDL_GPU_STOREOP_STORE,
             .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
             .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-            .cycle = false,
+            .cycle = true,
             .clear_stencil = 0,
             .mip_level = 0,
             .layer = 0
@@ -233,7 +243,7 @@ void Renderer::ssao_pass(SDL_GPUCommandBuffer* command_buffer)
             .resolve_texture = NULL,
             .resolve_mip_level = 0,
             .resolve_layer = 0,
-            .cycle = false,
+            .cycle = true,
             .cycle_resolve_texture = false
         },
         1,
@@ -294,7 +304,7 @@ void Renderer::ssao_blur_pass(SDL_GPUCommandBuffer* command_buffer)
             .resolve_texture = NULL,
             .resolve_mip_level = 0,
             .resolve_layer = 0,
-            .cycle = false,
+            .cycle = true,
             .cycle_resolve_texture = false
         },
         1,
@@ -343,7 +353,7 @@ void Renderer::downsample_pass(SDL_GPUCommandBuffer* command_buffer)
                 .resolve_texture = NULL,
                 .resolve_mip_level = 0,
                 .resolve_layer = 0,
-                .cycle = false,
+                .cycle = true,
                 .cycle_resolve_texture = false
             },
             1,
