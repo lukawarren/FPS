@@ -13,12 +13,17 @@ public:
     // Diffuse pass
     SDL_GPUTexture* diffuse_texture;
     SDL_GPUTexture* depth_texture;
+    SDL_GPUTextureFormat depth_texture_format;
     SDL_GPUSampler* sampler;
 
     // Shadow pass
     SDL_GPUTexture* shadow_map;
     SDL_GPUSampler* shadow_map_sampler;
     SDL_GPUTextureFormat depth_texture_array_format;
+
+    // SSAO
+    SDL_GPUTexture* ssao_texture;
+    SDL_GPUTexture* ssao_blur_texture;
 
     // Bloom passes
     SDL_GPUSampler* bloom_sampler;
@@ -29,6 +34,7 @@ public:
 private:
     void create_diffuse_texture(const Device& device);
     void create_depth_texture(const Device& device);
+    void create_ssao_textures(const Device& device);
     void create_shadow_map(const Device& device);
     void create_bloom_textures(const Device& device);
 

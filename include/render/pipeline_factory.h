@@ -13,6 +13,8 @@ public:
 
     SDL_GPUGraphicsPipeline* diffuse_pipeline;
     SDL_GPUGraphicsPipeline* depth_pipeline;
+    SDL_GPUGraphicsPipeline* ssao_pipeline;
+    SDL_GPUGraphicsPipeline* ssao_blur_pipeline;
     SDL_GPUGraphicsPipeline* downsample_pipeline;
     SDL_GPUGraphicsPipeline* upsample_pipeline;
     SDL_GPUGraphicsPipeline* composite_pipeline;
@@ -29,6 +31,18 @@ private:
         SDL_GPUShader* vs,
         SDL_GPUShader* fs,
         SDL_GPUTextureFormat depth_format
+    );
+
+    SDL_GPUGraphicsPipeline* create_ssao_pipeline(
+        SDL_GPUShader* vs,
+        SDL_GPUShader* fs,
+        SDL_GPUTextureFormat colour_format
+    );
+
+    SDL_GPUGraphicsPipeline* create_ssao_blur_pipeline(
+        SDL_GPUShader* vs,
+        SDL_GPUShader* fs,
+        SDL_GPUTextureFormat colour_format
     );
 
     SDL_GPUGraphicsPipeline* create_downsample_pipeline(
@@ -56,10 +70,14 @@ private:
     SDL_GPUShader* depth_vs;
     SDL_GPUShader* depth_fs;
     SDL_GPUShader* quad_vs;
+    SDL_GPUShader* ssao_vs;
+    SDL_GPUShader* ssao_fs;
+    SDL_GPUShader* ssao_blur_fs;
     SDL_GPUShader* downsample_fs;
     SDL_GPUShader* upsample_fs;
     SDL_GPUShader* composite_fs;
 
+    SDL_GPUTextureFormat depth_texture_format;
     SDL_GPUTextureFormat depth_texture_array_format;
 
     SDL_GPUDevice* device;

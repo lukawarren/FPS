@@ -3,14 +3,21 @@
 TextureManager::TextureManager(const Device& device) : device(device.device)
 {
     // Not guaranteed that we support 32-bit float depth
-    const bool supports_32 = SDL_GPUTextureSupportsFormat(
+    const bool supports_32_array = SDL_GPUTextureSupportsFormat(
         device.device,
         SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
         SDL_GPU_TEXTURETYPE_2D_ARRAY,
         SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
     );
+    const bool supports_32 = SDL_GPUTextureSupportsFormat(
+        device.device,
+        SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
+        SDL_GPU_TEXTURETYPE_2D,
+        SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+    );
 
-    depth_texture_array_format = supports_32 ? SDL_GPU_TEXTUREFORMAT_D32_FLOAT : SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+    depth_texture_array_format = supports_32_array ? SDL_GPU_TEXTUREFORMAT_D32_FLOAT : SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+    depth_texture_format = supports_32 ? SDL_GPU_TEXTUREFORMAT_D32_FLOAT : SDL_GPU_TEXTUREFORMAT_D16_UNORM;
 
     sampler = SDL_CreateGPUSampler(
         device.device,
@@ -74,6 +81,7 @@ TextureManager::TextureManager(const Device& device) : device(device.device)
 
     create_diffuse_texture(device);
     create_depth_texture(device);
+    create_ssao_textures(device);
     create_shadow_map(device);
     create_bloom_textures(device);
 }
@@ -86,6 +94,9 @@ TextureManager::~TextureManager()
     SDL_ReleaseGPUTexture(device, shadow_map);
     SDL_ReleaseGPUTexture(device, depth_texture);
     SDL_ReleaseGPUSampler(device, shadow_map_sampler);
+
+    SDL_ReleaseGPUTexture(device, ssao_texture);
+    SDL_ReleaseGPUTexture(device, ssao_blur_texture);
 
     for (size_t i = 0; i < bloom_textures.size(); i++)
         SDL_ReleaseGPUTexture(device, bloom_textures[i]);
@@ -114,11 +125,15 @@ void TextureManager::on_swapchain_format_change(const Device& device)
     SDL_ReleaseGPUTexture(device.device, depth_texture);
     SDL_ReleaseGPUTexture(device.device, diffuse_texture);
 
+    SDL_ReleaseGPUTexture(device.device, ssao_texture);
+    SDL_ReleaseGPUTexture(device.device, ssao_blur_texture);
+
     for (size_t i = 0; i < bloom_textures.size(); i++)
             SDL_ReleaseGPUTexture(device.device, bloom_textures[i]);
 
     create_depth_texture(device);
     create_diffuse_texture(device);
+    create_ssao_textures(device);
     create_bloom_textures(device);
 }
 
@@ -141,8 +156,8 @@ void TextureManager::create_depth_texture(const Device& device)
 {
     depth_texture = SDL_CreateGPUTexture(device.device, &(SDL_GPUTextureCreateInfo){
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
-        .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+        .format = depth_texture_format,
+        .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
         .width = device.swapchain_width,
         .height = device.swapchain_height,
         .layer_count_or_depth = 1,
@@ -166,6 +181,41 @@ void TextureManager::create_shadow_map(const Device& device)
         .props = 0
     });
 }
+
+void TextureManager::create_ssao_textures(const Device& device)
+{
+    dbg("TODO: half res");
+    ssao_texture = SDL_CreateGPUTexture(
+        device.device,
+        &(SDL_GPUTextureCreateInfo) {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .format = SDL_GPU_TEXTUREFORMAT_R32_FLOAT,
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
+            .width = device.swapchain_width / 2,
+            .height = device.swapchain_height / 2,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .props = 0
+        }
+    );
+
+    ssao_blur_texture = SDL_CreateGPUTexture(
+        device.device,
+        &(SDL_GPUTextureCreateInfo) {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .format = SDL_GPU_TEXTUREFORMAT_R32_FLOAT,
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
+            .width = device.swapchain_width / 2,
+            .height = device.swapchain_height / 2,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .props = 0
+        }
+    );
+}
+
 
 void TextureManager::create_bloom_textures(const Device& device)
 {

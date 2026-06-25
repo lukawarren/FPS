@@ -23,7 +23,7 @@ struct Spotlight
 };
 
 #define GAMMA 2.2f
-#define AMBIENT 0.01f
+#define AMBIENT 0.05f
 #define MAX_SPOTLIGHTS 4
 
 cbuffer UniformBlock : register(b0, space1)

@@ -4,6 +4,8 @@
 
 PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_manager) : device(device.device)
 {
+    dbg("need cycling for SDL_GPUColorTargetInfo");
+    depth_texture_format = texture_manager.depth_texture_format;
     depth_texture_array_format = texture_manager.depth_texture_array_format;
 
     diffuse_vs = device.compile_shader("diffuse.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
@@ -11,6 +13,9 @@ PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_m
     depth_vs = device.compile_shader("depth.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
     depth_fs = device.compile_shader("depth.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
     quad_vs = device.compile_shader("quad.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    ssao_vs = device.compile_shader("ssao.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    ssao_fs = device.compile_shader("ssao.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    ssao_blur_fs = device.compile_shader("ssao_blur.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
     downsample_fs = device.compile_shader("downsample.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
     upsample_fs = device.compile_shader("upsample.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
     composite_fs = device.compile_shader("composite.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
@@ -19,13 +24,25 @@ PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_m
         diffuse_vs,
         diffuse_fs,
         SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT,
-        SDL_GPU_TEXTUREFORMAT_D16_UNORM
+        depth_texture_format
     );
 
     depth_pipeline = create_depth_pipeline(
         depth_vs,
         depth_fs,
         depth_texture_array_format
+    );
+
+    ssao_pipeline = create_ssao_pipeline(
+        ssao_vs,
+        ssao_fs,
+        SDL_GPU_TEXTUREFORMAT_R32_FLOAT
+    );
+
+    ssao_blur_pipeline = create_ssao_blur_pipeline(
+        quad_vs,
+        ssao_blur_fs,
+        SDL_GPU_TEXTUREFORMAT_R32_FLOAT
     );
 
     downsample_pipeline = create_downsample_pipeline(
@@ -54,12 +71,17 @@ PipelineFactory::~PipelineFactory()
     SDL_ReleaseGPUShader(device, depth_vs);
     SDL_ReleaseGPUShader(device, depth_fs);
     SDL_ReleaseGPUShader(device, quad_vs);
+    SDL_ReleaseGPUShader(device, ssao_vs);
+    SDL_ReleaseGPUShader(device, ssao_fs);
+    SDL_ReleaseGPUShader(device, ssao_blur_fs);
     SDL_ReleaseGPUShader(device, downsample_fs);
     SDL_ReleaseGPUShader(device, upsample_fs);
     SDL_ReleaseGPUShader(device, composite_fs);
 
     SDL_ReleaseGPUGraphicsPipeline(device, diffuse_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, depth_pipeline);
+    SDL_ReleaseGPUGraphicsPipeline(device, ssao_pipeline);
+    SDL_ReleaseGPUGraphicsPipeline(device, ssao_blur_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, downsample_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, upsample_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, composite_pipeline);
@@ -67,29 +89,7 @@ PipelineFactory::~PipelineFactory()
 
 void PipelineFactory::on_swapchain_format_change(SDL_GPUTextureFormat swapchain_format)
 {
-    SDL_ReleaseGPUGraphicsPipeline(device, diffuse_pipeline);
-    SDL_ReleaseGPUGraphicsPipeline(device, downsample_pipeline);
-    SDL_ReleaseGPUGraphicsPipeline(device, upsample_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, composite_pipeline);
-
-    diffuse_pipeline = create_diffuse_pipeline(
-        diffuse_vs,
-        diffuse_fs,
-        SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT,
-        SDL_GPU_TEXTUREFORMAT_D16_UNORM
-    );
-
-    downsample_pipeline = create_downsample_pipeline(
-        quad_vs,
-        downsample_fs,
-        SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT
-    );
-
-    upsample_pipeline = create_upsample_pipeline(
-        quad_vs,
-        downsample_fs,
-        SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT
-    );
 
     composite_pipeline = create_composite_pipeline(
         quad_vs,
@@ -222,6 +222,81 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_depth_pipeline(
     });
 
     return check_pipeline(pipeline);
+}
+
+SDL_GPUGraphicsPipeline* PipelineFactory::create_ssao_pipeline(
+    SDL_GPUShader* vs,
+    SDL_GPUShader* fs,
+    SDL_GPUTextureFormat colour_format
+)
+{
+    const auto description = Quad::Vertex::get_vertex_buffer_description();
+    const auto attributes = Quad::Vertex::get_vertex_attributes();
+
+    SDL_GPUColorTargetDescription colour_target;
+    colour_target.format = colour_format;
+    colour_target.blend_state =
+    {
+        .enable_blend = false
+    };
+
+    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    {
+        .vertex_shader = vs,
+        .fragment_shader = fs,
+        .vertex_input_state =
+        {
+            .vertex_buffer_descriptions = &description,
+            .num_vertex_buffers = 1,
+            .vertex_attributes = &attributes[0],
+            .num_vertex_attributes = attributes.size()
+        },
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        .rasterizer_state =
+        {
+            .fill_mode = SDL_GPU_FILLMODE_FILL,
+            .cull_mode = SDL_GPU_CULLMODE_BACK,
+            .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
+            .depth_bias_constant_factor = 0.0f,
+            .depth_bias_clamp = 0.0f,
+            .depth_bias_slope_factor = 0.0f,
+            .enable_depth_bias = false,
+            .enable_depth_clip = false
+        },
+        .multisample_state =
+        {
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .sample_mask = 0,
+            .enable_mask = false,
+            .enable_alpha_to_coverage = false
+        },
+        .depth_stencil_state =
+        {
+            .compare_op = SDL_GPU_COMPAREOP_LESS,
+            .enable_depth_test = false,
+            .enable_depth_write = false,
+            .enable_stencil_test = false
+        },
+        .target_info =
+        {
+            .color_target_descriptions = &colour_target,
+            .num_color_targets = 1,
+            .depth_stencil_format = SDL_GPU_TEXTUREFORMAT_INVALID,
+            .has_depth_stencil_target = false
+        },
+        .props = 0
+    });
+
+    return check_pipeline(pipeline);
+}
+
+SDL_GPUGraphicsPipeline* PipelineFactory::create_ssao_blur_pipeline(
+    SDL_GPUShader* vs,
+    SDL_GPUShader* fs,
+    SDL_GPUTextureFormat colour_format
+)
+{
+    return create_ssao_pipeline(vs, fs, colour_format);
 }
 
 SDL_GPUGraphicsPipeline* PipelineFactory::create_downsample_pipeline(
