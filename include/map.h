@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
-#include "mesh.h"
-#include "texture.h"
+#include "render/mesh.h"
+#include "render/texture.h"
 
 class Map
 {

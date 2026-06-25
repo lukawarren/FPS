@@ -1,13 +1,13 @@
-#include "quad.h"
+#include "render/quad.h"
 
 static const std::array<Quad::Vertex, 6> QUAD_VERTICES =
 {{
-    { glm::vec2(-1.0f, -1.0f), glm::vec2(0.0f, 0.0f) }, // Bottom-Left
-    { glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 0.0f) }, // Bottom-Right
-    { glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f) }, // Top-Left
-    { glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 1.0f) }, // Top-Left
-    { glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 0.0f) }, // Bottom-Right
-    { glm::vec2( 1.0f,  1.0f), glm::vec2(1.0f, 1.0f) }  // Top-Right
+    { glm::vec2(-1.0f, -1.0f), glm::vec2(0.0f, 1.0f) }, // Bottom-Left
+    { glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 1.0f) }, // Bottom-Right
+    { glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 0.0f) }, // Top-Left
+    { glm::vec2(-1.0f,  1.0f), glm::vec2(0.0f, 0.0f) }, // Top-Left
+    { glm::vec2( 1.0f, -1.0f), glm::vec2(1.0f, 1.0f) }, // Bottom-Right
+    { glm::vec2( 1.0f,  1.0f), glm::vec2(1.0f, 0.0f) }  // Top-Right
 }};
 
 Quad::Quad(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)

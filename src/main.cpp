@@ -1,5 +1,5 @@
 #include "common.h"
-#include "renderer.h"
+#include "render/renderer.h"
 
 constexpr static inline int width = 1600;
 constexpr static inline int height = 900;
