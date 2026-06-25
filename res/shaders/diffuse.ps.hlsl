@@ -22,15 +22,16 @@ struct Spotlight
     float4 params;
 };
 
-cbuffer UniformBlock : register(b0, space1)
-{
-    Spotlight spotlight;
-};
-
 #define GAMMA 2.2f
 #define AMBIENT 0.01f
+#define MAX_SPOTLIGHTS 4
 
-float sample_shadow(float4 light_space_pos, float bias)
+cbuffer UniformBlock : register(b0, space1)
+{
+    Spotlight spotlights[MAX_SPOTLIGHTS];
+};
+
+float sample_shadow(float4 light_space_pos, float bias, int i)
 {
     float3 proj_coords = light_space_pos.xyz / light_space_pos.w;
     proj_coords.xy = proj_coords.xy * 0.5 + 0.5;
@@ -51,7 +52,7 @@ float sample_shadow(float4 light_space_pos, float bias)
 
     float closest = shadow_map_texture.Sample(
         shadow_map_sampler,
-        float3(proj_coords.xy, 0)
+        float3(proj_coords.xy, i)
     ).r;
 
     return (current_depth - bias > closest) ? 0.0f : 1.0f;
@@ -67,57 +68,59 @@ float3 calculate_spotlight(Spotlight s, float3 world_pos, float3 normal)
     float3 fragment_to_light = s.position - world_pos;
     float distance = length(fragment_to_light);
 
-    // --- 1. Prevent division by zero (clamp to a small physical epsilon) ---
     float dist = max(distance, 0.001f);
     float3 light_dir = fragment_to_light / dist;
 
-    // --- 2. Diffuse factor ---
     float diff_factor = max(dot(normal, light_dir), 0.0f);
 
-    // --- 3. Physically correct inverse-square attenuation ---
-    // This gives infinite intensity at distance 0, which is correct for a point source in HDR.
     float attenuation = 1.0f / (dist * dist);
 
-    // --- 4. Smooth range window (no hard cut-off) ---
-    // Prevents the light from abruptly disappearing at 'range'.
     float range_atten = saturate(1.0f - pow(dist / range, 4.0f));
     range_atten = range_atten * range_atten; // Square it for smoother falloff
     attenuation *= range_atten;
 
-    // --- 5. Spotlight cone (unchanged, still physically correct) ---
     float theta = dot(-light_dir, s.direction);
     float epsilon = inner_cutoff - outer_cutoff;
     float cone_intensity = clamp((theta - outer_cutoff) / epsilon, 0.0f, 1.0f);
 
-    // --- 6. Final output ---
-    // 's.colour' should now represent the luminous intensity (e.g., 10, 100, 5000).
-    // For a standard bright bulb, try s.colour = float3(10, 10, 10).
     return s.colour * diff_factor * attenuation * cone_intensity;
 }
 
 float4 main(VertexOutput input) : SV_TARGET
 {
-    // Shadow
-    float bias = 0.5f / 10000.0f;
-    float depth = abs(input.view_pos.z);
-    float shadow = sample_shadow(
-        mul(spotlight.shadow, input.world_pos),
-        bias
-    );
-
     // Diffuse
     float3 diffuse = diffuse_texture.Sample(diffuse_sampler, input.uv).xyz;
     diffuse = pow(diffuse, GAMMA);
 
-    // Lighting
+    float bias = 0.5f / 10000.0f;
+    float depth = abs(input.view_pos.z);
     float3 normal = normalize(input.normal);
-    float3 lighting = calculate_spotlight(
-        spotlight,
-        input.world_pos.xyz,
-        normal
-    );
+    float3 total = float3(0.0f, 0.0f, 0.0f);
+
+    for (int i = 0; i < MAX_SPOTLIGHTS; i++)
+    {
+        // Params of zero means disabled (i.e. less than MAX_SPOTLIGHTS)
+        if (spotlights[i].params.w == 0.0f)
+            break;
+
+        // Shadow
+        float shadow = sample_shadow(
+            mul(spotlights[i].shadow, input.world_pos),
+            bias,
+            i
+        );
+
+        // Lighting
+        float3 lighting = calculate_spotlight(
+            spotlights[i],
+            input.world_pos.xyz,
+            normal
+        );
+
+        total += max(lighting * shadow, 0.0f);
+    }
 
     // Composite
-    float3 final_color = diffuse * max(lighting * shadow, AMBIENT);
+    float3 final_color = diffuse * max(total, AMBIENT);
     return float4(final_color, 1.0f);
 }

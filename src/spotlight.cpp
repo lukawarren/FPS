@@ -35,6 +35,17 @@ Spotlight::UniformBuffer Spotlight::get_uniform_buffer(const glm::mat4& matrix) 
         .position = glm::vec4(position, 0.0f),
         .colour = glm::vec4(colour, 0.0f),
         .direction = glm::vec4(direction, 0.0f),
-        .params = { std::cos(angle * 0.85f), std::cos(angle), far, 0.0f }
+        .params = { std::cos(angle * 0.85f), std::cos(angle), far, 1.0f }
+    };
+}
+
+Spotlight::UniformBuffer Spotlight::get_disabled_uniform_buffer()
+{
+    return {
+        .shadow = glm::mat4(0.0f),
+        .position = glm::vec4(0.0f),
+        .colour = glm::vec4(0.0f),
+        .direction = glm::vec4(0.0f),
+        .params = { 0.0f, 0.0f, 0.0f, 0.0f }
     };
 }

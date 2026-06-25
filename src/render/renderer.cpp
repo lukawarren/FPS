@@ -15,6 +15,8 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
         draw_call.texture->generate_mipmaps(command_buffer);
     }
     SDL_SubmitGPUCommandBuffer(command_buffer);
+
+    dbg("TODO: don't use uniform buffer for lights");
 }
 
 Renderer::~Renderer()
@@ -48,14 +50,36 @@ void Renderer::render()
     const glm::mat4 camera_projection = world->camera.projection_matrix(device.swapchain_width, device.swapchain_height);
     const glm::mat4 camera_view = world->camera.view_matrix();
 
-    const auto light_matrix = world->spotlights[0].get_matrix();
+    const u32 n_lights = world->player.flashlight.enabled
+            ? std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size() + 1)
+            : std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size());
+
+    std::array<Spotlight*, QUALITY_SETTINGS.max_spotlights> spotlights;
+    std::array<glm::mat4, QUALITY_SETTINGS.max_spotlights> matrices;
+    for (u32 i = 0; i < n_lights - (world->player.flashlight.enabled ? 1 : 0); i++)
+    {
+        spotlights[i] = &world->spotlights[i];
+        matrices[i] = spotlights[i]->get_matrix();
+    }
+
+    if (world->player.flashlight.enabled)
+    {
+        spotlights[n_lights - 1] = &world->player.flashlight;
+        matrices[n_lights - 1] = world->player.flashlight.get_matrix();
+    }
 
     // Set uniforms
     diffuse_shader_uniforms_vertex.view = camera_view;
     diffuse_shader_uniforms_vertex.projection = camera_projection;
-    diffuse_shader_uniforms_fragment.spotlight = world->spotlights[0].get_uniform_buffer(light_matrix);
 
-    shadow_pass(command_buffer, light_matrix);
+    for (u32 i = 0; i < n_lights; i++)
+        diffuse_shader_uniforms_fragment.spotlights[i] = spotlights[i]->get_uniform_buffer(matrices[i]);
+    for (u32 i = n_lights; i < QUALITY_SETTINGS.max_spotlights; i++)
+        diffuse_shader_uniforms_fragment.spotlights[i] = Spotlight::get_disabled_uniform_buffer();
+
+    for (u32 i = 0; i < n_lights; i++)
+        shadow_pass(command_buffer, matrices[i], i);
+
     diffuse_pass(command_buffer);
     downsample_pass(command_buffer);
     upsample_pass(command_buffer);
@@ -64,7 +88,7 @@ void Renderer::render()
     SDL_SubmitGPUCommandBuffer(command_buffer);
 }
 
-void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& light_matrix)
+void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& light_matrix, const u8 slot)
 {
     SDL_GPURenderPass* shadow_pass = SDL_BeginGPURenderPass(
         command_buffer,
@@ -80,7 +104,7 @@ void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4
             .cycle = false,
             .clear_stencil = 0,
             .mip_level = 0,
-            .layer = 0
+            .layer = slot
         }
     );
 

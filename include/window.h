@@ -20,10 +20,12 @@ public:
     glm::vec2 get_mouse_position();
     glm::vec2 get_mouse_movement();
     bool get_key(const SDL_Scancode scancode);
+    bool get_key_pressed(const SDL_Scancode scancode);
 
 private:
     SDL_GPUDevice* device;
     SDL_Window* window = nullptr;
     bool closed = false;
     const bool* key_states;
+    std::unordered_set<SDL_Scancode> just_pressed_keys;
 };

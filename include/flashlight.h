@@ -11,4 +11,6 @@ public:
         const float pitch,
         const float yaw
     );
+
+    bool enabled = false;
 };

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <limits>
+#include <unordered_set>
 
 #include <SDL3/SDL.h>
 #include <SDL3_shadercross/SDL_shadercross.h>
@@ -45,10 +46,10 @@ inline std::string MAP_ROOT = "../res/maps/";
 
 struct QualitySettings
 {
-    u32 max_shadows = 1;
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
     u32 bloom_downsamples = 5;
+    u32 max_spotlights = 4;
 };
 
 constexpr static inline QualitySettings QUALITY_SETTINGS = {};

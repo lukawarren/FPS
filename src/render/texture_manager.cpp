@@ -15,8 +15,8 @@ TextureManager::TextureManager(const Device& device) : device(device.device)
     sampler = SDL_CreateGPUSampler(
         device.device,
         &(SDL_GPUSamplerCreateInfo) {
-            .min_filter = SDL_GPU_FILTER_LINEAR,
-            .mag_filter = SDL_GPU_FILTER_LINEAR,
+            .min_filter = SDL_GPU_FILTER_NEAREST,
+            .mag_filter = SDL_GPU_FILTER_NEAREST,
             .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
             .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
             .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
@@ -160,7 +160,7 @@ void TextureManager::create_shadow_map(const Device& device)
         .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
         .width = QUALITY_SETTINGS.shadow_map_width,
         .height = QUALITY_SETTINGS.shadow_map_height,
-        .layer_count_or_depth = QUALITY_SETTINGS.max_shadows,
+        .layer_count_or_depth = QUALITY_SETTINGS.max_spotlights,
         .num_levels = 1,
         .sample_count = SDL_GPU_SAMPLECOUNT_1,
         .props = 0

@@ -59,11 +59,19 @@ glm::vec2 Window::get_mouse_movement()
 
 bool Window::get_key(const SDL_Scancode scancode)
 {
+    if (!key_states) return false;
     return key_states[scancode];
+}
+
+bool Window::get_key_pressed(const SDL_Scancode scancode)
+{
+    return just_pressed_keys.count(scancode) > 0;
 }
 
 void Window::update()
 {
+    just_pressed_keys.clear();
+
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -71,12 +79,16 @@ void Window::update()
         {
             closed = true;
         }
-
         else if (event.type == SDL_EVENT_KEY_DOWN)
         {
             if (event.key.key == SDLK_ESCAPE)
             {
                 closed = true;
+            }
+
+            if (event.key.repeat == 0)
+            {
+                just_pressed_keys.insert(event.key.scancode);
             }
         }
     }

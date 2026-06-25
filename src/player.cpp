@@ -3,8 +3,8 @@
 #include "map.h"
 
 // Player dimensions
-constexpr float height = 1.72f;
-constexpr float eye_height = height - 0.5f;
+constexpr float height = 1.4f;
+constexpr float eye_height = height - 0.1f;
 constexpr float radius = 0.35f;
 
 // Movement
@@ -228,6 +228,10 @@ void Player::handle_input(const Camera& camera, const float delta)
     head_yaw += mouse_movement.x * sensitivity;
     head_pitch += mouse_movement.y * sensitivity;
     head_pitch = std::max(std::min(head_pitch, 90.0f), -90.0f);
+
+    // Flashlight
+    if (window->get_key_pressed(SDL_SCANCODE_F))
+        flashlight.enabled = !flashlight.enabled;
 }
 
 void Player::handle_physics(csg::world_t& world, const float delta)

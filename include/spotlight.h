@@ -28,9 +28,10 @@ public:
         glm::vec4 position;
         glm::vec4 colour;
         glm::vec4 direction;
-        glm::vec4 params; // inner_cutoff, outer_cutoff, range
+        glm::vec4 params; // inner_cutoff, outer_cutoff, range, enabled
     };
 
     glm::mat4 get_matrix() const;
     UniformBuffer get_uniform_buffer(const glm::mat4& matrix) const;
+    static UniformBuffer get_disabled_uniform_buffer();
 };

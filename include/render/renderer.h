@@ -28,10 +28,10 @@ private:
 
     struct DiffuseShaderUniformsFragment
     {
-        Spotlight::UniformBuffer spotlight;
+        Spotlight::UniformBuffer spotlights[QUALITY_SETTINGS.max_spotlights];
     } diffuse_shader_uniforms_fragment;
 
-    void shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& light_matrix);
+    void shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& light_matrix, const u8 slot);
     void diffuse_pass(SDL_GPUCommandBuffer* command_buffer);
     void downsample_pass(SDL_GPUCommandBuffer* command_buffer);
     void upsample_pass(SDL_GPUCommandBuffer* command_buffer);
