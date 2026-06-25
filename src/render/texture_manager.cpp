@@ -95,12 +95,18 @@ TextureManager::~TextureManager()
 
 u32 TextureManager::get_bloom_texture_width(const Device& device, const u32 level)
 {
-    return std::max(device.swapchain_width / (level + 2U), 16U);
+    u32 x = device.swapchain_width;
+    for (u32 i = 0; i <= level; i++)
+        x = std::max(x / 2U, 16U);
+    return x;
 }
 
 u32 TextureManager::get_bloom_texture_height(const Device& device, const u32 level)
 {
-    return std::max(device.swapchain_height / (level + 2U), 16U);
+    u32 x = device.swapchain_height;
+    for (u32 i = 0; i <= level; i++)
+        x = std::max(x / 2U, 16U);
+    return x;
 }
 
 void TextureManager::on_swapchain_format_change(const Device& device)

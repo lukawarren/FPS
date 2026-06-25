@@ -17,8 +17,6 @@ Device::Device(const std::string& title, u32 width, u32 height)
         setenv("MTL_HUD_ENABLED", "1", 1);
 #endif
 
-    dbg("TODO: only need to change pipeline with swapchain format on resize?");
-
     device = SDL_CreateGPUDevice(get_shader_format(), is_debug(), get_backend());
     if (!device)
         throw std::runtime_error(

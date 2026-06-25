@@ -48,16 +48,17 @@ void Renderer::render()
     const glm::mat4 camera_projection = world->camera.projection_matrix(device.swapchain_width, device.swapchain_height);
     const glm::mat4 camera_view = world->camera.view_matrix();
 
-    const auto light_matrix = world->player.flashlight.get_matrix();
+    const auto light_matrix = world->spotlights[0].get_matrix();
 
     // Set uniforms
     diffuse_shader_uniforms_vertex.view = camera_view;
     diffuse_shader_uniforms_vertex.projection = camera_projection;
-    diffuse_shader_uniforms_fragment.spotlight = world->player.flashlight.get_uniform_buffer(light_matrix);
+    diffuse_shader_uniforms_fragment.spotlight = world->spotlights[0].get_uniform_buffer(light_matrix);
 
     shadow_pass(command_buffer, light_matrix);
     diffuse_pass(command_buffer);
     downsample_pass(command_buffer);
+    upsample_pass(command_buffer);
     composite_pass(command_buffer, swapchain_texture.value());
 
     SDL_SubmitGPUCommandBuffer(command_buffer);
@@ -237,6 +238,59 @@ void Renderer::downsample_pass(SDL_GPUCommandBuffer* command_buffer)
     }
 }
 
+void Renderer::upsample_pass(SDL_GPUCommandBuffer* command_buffer)
+{
+    for (u32 level = 0; level < QUALITY_SETTINGS.bloom_downsamples - 1; level++)
+    {
+        const u32 target_level = texture_manager.bloom_textures.size() - level - 2;
+        const u32 source_level = texture_manager.bloom_textures.size() - level - 1;
+
+        SDL_GPURenderPass* upsample_pass = SDL_BeginGPURenderPass(
+            command_buffer,
+            &(SDL_GPUColorTargetInfo) {
+                .texture = texture_manager.bloom_textures[target_level],
+                .mip_level = 0,
+                .layer_or_depth_plane = 0,
+                .clear_color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f },
+                .load_op = SDL_GPU_LOADOP_LOAD,
+                .store_op = SDL_GPU_STOREOP_STORE,
+                .resolve_texture = NULL,
+                .resolve_mip_level = 0,
+                .resolve_layer = 0,
+                .cycle = false,
+                .cycle_resolve_texture = false
+            },
+            1,
+            NULL
+        );
+
+        SDL_BindGPUGraphicsPipeline(upsample_pass, pipeline_factory.upsample_pipeline);
+
+        SDL_SetGPUViewport(upsample_pass, &(SDL_GPUViewport) {
+            .x = 0.0f,
+            .y = 0.0f,
+            .w = (float)texture_manager.get_bloom_texture_width(device, target_level),
+            .h = (float)texture_manager.get_bloom_texture_height(device, target_level),
+            .min_depth = 0.0f,
+            .max_depth = 1.0f
+        });
+
+        SDL_BindGPUFragmentSamplers(
+            upsample_pass,
+            0,
+            &(SDL_GPUTextureSamplerBinding) {
+                .sampler = texture_manager.bloom_sampler,
+                .texture = texture_manager.bloom_textures[source_level]
+            },
+            1
+        );
+
+        quad->bind(upsample_pass);
+        quad->draw(upsample_pass);
+        SDL_EndGPURenderPass(upsample_pass);
+    }
+}
+
 void Renderer::composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture* swapchain_texture)
 {
     SDL_GPURenderPass* composite_pass = SDL_BeginGPURenderPass(
@@ -269,14 +323,25 @@ void Renderer::composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTextu
         .max_depth = 1.0f
     });
 
+    std::array<SDL_GPUTextureSamplerBinding, 2> bindings =
+    {
+        SDL_GPUTextureSamplerBinding
+        {
+            .sampler = texture_manager.bloom_sampler,
+            .texture = texture_manager.diffuse_texture
+        },
+        SDL_GPUTextureSamplerBinding
+        {
+            .sampler = texture_manager.bloom_sampler,
+            .texture = texture_manager.bloom_textures[0]
+        }
+    };
+
     SDL_BindGPUFragmentSamplers(
         composite_pass,
         0,
-        &(SDL_GPUTextureSamplerBinding) {
-            .sampler = texture_manager.bloom_sampler,
-            .texture = texture_manager.bloom_textures[texture_manager.bloom_textures.size() - 1]
-        },
-        1
+        &bindings[0],
+        (u32)bindings.size()
     );
 
     quad->bind(composite_pass);

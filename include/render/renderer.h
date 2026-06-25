@@ -34,6 +34,7 @@ private:
     void shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& light_matrix);
     void diffuse_pass(SDL_GPUCommandBuffer* command_buffer);
     void downsample_pass(SDL_GPUCommandBuffer* command_buffer);
+    void upsample_pass(SDL_GPUCommandBuffer* command_buffer);
     void composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture* swapchain_texture);
 
     Quad* quad;

@@ -28,7 +28,7 @@ public:
         glm::vec4 position;
         glm::vec4 colour;
         glm::vec4 direction;
-        glm::vec4 params; // inner_cutoff, outer_cutoff
+        glm::vec4 params; // inner_cutoff, outer_cutoff, range
     };
 
     glm::mat4 get_matrix() const;
