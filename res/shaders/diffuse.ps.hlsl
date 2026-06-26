@@ -62,22 +62,22 @@ float sample_shadow(float4 light_space_pos, float bias, int i)
     return (current_depth - bias > closest) ? 0.0f : 1.0f;
 }
 
-float3 calculate_pointlight(Spotlight s, float3 world_pos)
+float3 calculate_pointlight(Spotlight s, float3 fragment_to_light, float distance)
 {
-    float3 fragment_to_light = s.position - world_pos;
-    float distance = max(length(fragment_to_light), 1.0f);
+    // Limit distance so brightness doesn't blow up
+    distance = max(distance, 1.0f);
+
+    // Scale up fall-off too
     return s.colour * POINT_INTENSITY / pow(distance, 4.0f);
 }
 
-float3 calculate_spotlight(Spotlight s, float3 world_pos, float3 normal)
+float3 calculate_spotlight(Spotlight s, float3 normal, float3 fragment_to_light, float distance)
 {
     // Unpack
     float inner_cutoff = s.params.x;
     float outer_cutoff = s.params.y;
     float range = s.params.z;
 
-    float3 fragment_to_light = s.position - world_pos;
-    float distance = length(fragment_to_light);
     float dist = max(distance, 0.001f);
     float3 light_dir = fragment_to_light / dist;
 
@@ -113,15 +113,20 @@ float4 main(VertexOutput input) : SV_TARGET
         if (spotlights[i].params.w == 0.0f)
             break;
 
+        float3 fragment_to_light = spotlights[i].position - input.world_pos.xyz;
+        float distance = length(fragment_to_light);
+
         // Lighting
         float3 spotlight_lighting = calculate_spotlight(
             spotlights[i],
-            input.world_pos.xyz,
-            normal
+            normal,
+            fragment_to_light,
+            distance
         );
         float3 point_lighting = calculate_pointlight(
             spotlights[i],
-            input.world_pos.xyz
+            fragment_to_light,
+            distance
         );
 
         // Shadow
@@ -130,6 +135,7 @@ float4 main(VertexOutput input) : SV_TARGET
             bias,
             i
         );
+
         total += max(spotlight_lighting * shadow + point_lighting, 0.0f);
     }
 
