@@ -46,7 +46,9 @@ World::World(
         else if (class_name == "info_player_start")
         {
             const glm::vec3 position = entity.parse_vec3("origin");
+            const float angle = entity.parse_float("angle");
             player.set_position(position);
+            player.head_yaw = 90.0f - angle;
         }
     }
 

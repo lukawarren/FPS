@@ -13,15 +13,16 @@ public:
     void update_camera(Camera& camera) const;
     void set_position(const glm::vec3& pos);
 
+    glm::vec3 position = {};
+    float head_pitch = 0.0f;
+    float head_yaw = 0.0f;
+
     Flashlight flashlight;
 
 private:
     void handle_input(const Camera& camera, const float delta);
     void handle_physics(csg::world_t& world, const float delta);
 
-    glm::vec3 position = {};
-    float head_pitch = 0.0f;
-    float head_yaw = 0.0f;
     glm::vec2 mouse_position;
 
     // Physics
