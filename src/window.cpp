@@ -2,8 +2,10 @@
 
 Window::Window(const std::string& title, const int width, const int height, SDL_GPUDevice* device)
 {
-    // Create window
-    const SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    // Create window - NOTE: no SDL_WINDOW_HIGH_PIXEL_DENSITY for consistent artistic low-res look
+    const SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | (
+        QUALITY_SETTINGS.inverse_render_scale != 1 ? SDL_WINDOW_HIGH_PIXEL_DENSITY : 0
+    );
     window = SDL_CreateWindow(title.c_str(), width, height, flags);
 
     if (!window)

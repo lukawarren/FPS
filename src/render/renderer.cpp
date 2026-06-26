@@ -7,7 +7,7 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
 {
     SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device.device);
     SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
-    world = new World("lights.map", device.window, device.device, copy_pass);
+    world = new World("map2.map", device.window, device.device, copy_pass);
     quad = new Quad(device.device, copy_pass);
     SDL_EndGPUCopyPass(copy_pass);
     for (const auto& draw_call : world->map->draw_calls)
@@ -27,6 +27,7 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
 #endif
 
     dbg("TODO: don't use uniform buffer for lights");
+    dbg("TODO: fix AO");
 }
 
 Renderer::~Renderer()
@@ -182,8 +183,8 @@ void Renderer::depth_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4&
     SDL_SetGPUViewport(depth_pass, &(SDL_GPUViewport) {
         .x = 0.0f,
         .y = 0.0f,
-        .w = (float)device.swapchain_width,
-        .h = (float)device.swapchain_height,
+        .w = (float)device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale,
+        .h = (float)device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale,
         .min_depth = 0.0f,
         .max_depth = 1.0f
     });
@@ -242,8 +243,8 @@ void Renderer::diffuse_pass(SDL_GPUCommandBuffer* command_buffer)
     SDL_SetGPUViewport(diffuse_pass, &(SDL_GPUViewport) {
         .x = 0.0f,
         .y = 0.0f,
-        .w = (float)device.swapchain_width,
-        .h = (float)device.swapchain_height,
+        .w = (float)device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale,
+        .h = (float)device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale,
         .min_depth = 0.0f,
         .max_depth = 1.0f
     });
@@ -329,8 +330,8 @@ void Renderer::ssao_pass(SDL_GPUCommandBuffer* command_buffer)
     SDL_SetGPUViewport(ssao_pass, &(SDL_GPUViewport) {
         .x = 0.0f,
         .y = 0.0f,
-        .w = (float)device.swapchain_width / 2.0f,
-        .h = (float)device.swapchain_height / 2.0f,
+        .w = (float)device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale / 2.0f,
+        .h = (float)device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale / 2.0f,
         .min_depth = 0.0f,
         .max_depth = 1.0f
     });
@@ -390,8 +391,8 @@ void Renderer::ssao_blur_pass(SDL_GPUCommandBuffer* command_buffer)
     SDL_SetGPUViewport(ssao_blur_pass, &(SDL_GPUViewport) {
         .x = 0.0f,
         .y = 0.0f,
-        .w = (float)device.swapchain_width / 2.0f,
-        .h = (float)device.swapchain_height / 2.0f,
+        .w = (float)device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale / 2.0f,
+        .h = (float)device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale / 2.0f,
         .min_depth = 0.0f,
         .max_depth = 1.0f
     });
@@ -550,7 +551,7 @@ void Renderer::composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTextu
     {
         SDL_GPUTextureSamplerBinding
         {
-            .sampler = texture_manager.bloom_sampler,
+            .sampler = texture_manager.sampler,
             .texture = texture_manager.diffuse_texture
         },
         SDL_GPUTextureSamplerBinding

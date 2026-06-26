@@ -140,7 +140,7 @@ float4 main(VertexOutput input) : SV_TARGET
     float2 screen_resolution = float2(ao_width, ao_height) * 2.0f;
     float ao = ssao_texture.Sample(ssao_sampler, input.position.xy / screen_resolution).x;
 
-    float3 ambient = diffuse * AMBIENT * (ao * 0.0000001f + 1.0f);
+    float3 ambient = diffuse * AMBIENT * ao;
     float3 direct  = diffuse * total;
     float3 final_color = ambient + direct;
     return float4(final_color, 1.0f);

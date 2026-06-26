@@ -106,7 +106,7 @@ TextureManager::~TextureManager()
 
 u32 TextureManager::get_bloom_texture_width(const Device& device, const u32 level)
 {
-    u32 x = device.swapchain_width;
+    u32 x = device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale;
     for (u32 i = 0; i <= level; i++)
         x = std::max(x / 2U, 16U);
     return x;
@@ -114,7 +114,7 @@ u32 TextureManager::get_bloom_texture_width(const Device& device, const u32 leve
 
 u32 TextureManager::get_bloom_texture_height(const Device& device, const u32 level)
 {
-    u32 x = device.swapchain_height;
+    u32 x = device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale;
     for (u32 i = 0; i <= level; i++)
         x = std::max(x / 2U, 16U);
     return x;
@@ -143,8 +143,8 @@ void TextureManager::create_diffuse_texture(const Device& device)
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT,
         .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
-        .width = device.swapchain_width,
-        .height = device.swapchain_height,
+        .width = device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale,
+        .height = device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale,
         .layer_count_or_depth = 1,
         .num_levels = 1,
         .sample_count = SDL_GPU_SAMPLECOUNT_1,
@@ -158,8 +158,8 @@ void TextureManager::create_depth_texture(const Device& device)
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = depth_texture_format,
         .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
-        .width = device.swapchain_width,
-        .height = device.swapchain_height,
+        .width = device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale,
+        .height = device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale,
         .layer_count_or_depth = 1,
         .num_levels = 1,
         .sample_count = SDL_GPU_SAMPLECOUNT_1,
@@ -190,8 +190,8 @@ void TextureManager::create_ssao_textures(const Device& device)
             .type = SDL_GPU_TEXTURETYPE_2D,
             .format = SDL_GPU_TEXTUREFORMAT_R32_FLOAT,
             .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
-            .width = device.swapchain_width / 2,
-            .height = device.swapchain_height / 2,
+            .width = device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale / 2,
+            .height = device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale / 2,
             .layer_count_or_depth = 1,
             .num_levels = 1,
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
@@ -205,8 +205,8 @@ void TextureManager::create_ssao_textures(const Device& device)
             .type = SDL_GPU_TEXTURETYPE_2D,
             .format = SDL_GPU_TEXTUREFORMAT_R32_FLOAT,
             .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
-            .width = device.swapchain_width / 2,
-            .height = device.swapchain_height / 2,
+            .width = device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale / 2,
+            .height = device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale / 2,
             .layer_count_or_depth = 1,
             .num_levels = 1,
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
