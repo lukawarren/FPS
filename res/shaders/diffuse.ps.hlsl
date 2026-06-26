@@ -148,6 +148,6 @@ float4 main(VertexOutput input) : SV_TARGET
 
     float3 ambient = diffuse * AMBIENT * ao;
     float3 direct  = diffuse * total;
-    float3 final_color = ambient + direct;
-    return float4(final_color, 1.0f);
+    float3 final_colour = ambient + direct;
+    return float4(final_colour, 1.0f);
 }
