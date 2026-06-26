@@ -13,6 +13,7 @@ public:
 
     SDL_GPUGraphicsPipeline* diffuse_pipeline;
     SDL_GPUGraphicsPipeline* depth_pipeline;
+    SDL_GPUGraphicsPipeline* depth_pipeline_texture_array;
     SDL_GPUGraphicsPipeline* ssao_pipeline;
     SDL_GPUGraphicsPipeline* ssao_blur_pipeline;
     SDL_GPUGraphicsPipeline* downsample_pipeline;

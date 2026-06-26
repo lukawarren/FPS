@@ -14,7 +14,13 @@ Device::Device(const std::string& title, u32 width, u32 height)
 
 #ifdef __APPLE__
     if (is_debug())
-        setenv("MTL_HUD_ENABLED", "1", 1);
+    {
+        SDL_setenv_unsafe("MTL_HUD_ENABLED", "1", true);
+        SDL_setenv_unsafe("MTL_DEBUG_LAYER", "1", true);
+    #if 0
+        SDL_setenv_unsafe("MTL_SHADER_VALIDATION", "1", true);
+    #endif
+    }
 #endif
 
     device = SDL_CreateGPUDevice(get_shader_format(), is_debug(), get_backend());

@@ -4,7 +4,6 @@
 
 PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_manager) : device(device.device)
 {
-    dbg("need cycling for SDL_GPUColorTargetInfo");
     depth_texture_format = texture_manager.depth_texture_format;
     depth_texture_array_format = texture_manager.depth_texture_array_format;
 
@@ -28,6 +27,12 @@ PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_m
     );
 
     depth_pipeline = create_depth_pipeline(
+        depth_vs,
+        depth_fs,
+        depth_texture_format
+    );
+
+    depth_pipeline_texture_array = create_depth_pipeline(
         depth_vs,
         depth_fs,
         depth_texture_array_format
@@ -80,6 +85,7 @@ PipelineFactory::~PipelineFactory()
 
     SDL_ReleaseGPUGraphicsPipeline(device, diffuse_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, depth_pipeline);
+    SDL_ReleaseGPUGraphicsPipeline(device, depth_pipeline_texture_array);
     SDL_ReleaseGPUGraphicsPipeline(device, ssao_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, ssao_blur_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, downsample_pipeline);
@@ -147,9 +153,9 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_diffuse_pipeline(
         },
         .depth_stencil_state =
         {
-            .compare_op = SDL_GPU_COMPAREOP_LESS,
+            .compare_op = SDL_GPU_COMPAREOP_EQUAL,
             .enable_depth_test = true,
-            .enable_depth_write = true,
+            .enable_depth_write = false,
             .enable_stencil_test = false
         },
         .target_info =

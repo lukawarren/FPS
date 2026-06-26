@@ -49,7 +49,10 @@ void Renderer::render()
     SDL_GPUCommandBuffer* command_buffer = device.acquire_command_buffer();
     std::optional<SDL_GPUTexture*> swapchain_texture = device.get_swapchain_texture(command_buffer);
     if (!swapchain_texture.has_value())
+    {
+        SDL_CancelGPUCommandBuffer(command_buffer);
         return;
+    }
 
     if (device.did_swapchain_format_change())
     {
@@ -95,9 +98,10 @@ void Renderer::render()
     for (u32 i = 0; i < n_lights; i++)
         shadow_pass(command_buffer, matrices[i], i);
 
-    diffuse_pass(command_buffer);
+    depth_pass(command_buffer, camera_view, camera_projection);
     ssao_pass(command_buffer);
     ssao_blur_pass(command_buffer);
+    diffuse_pass(command_buffer);
     downsample_pass(command_buffer);
     upsample_pass(command_buffer);
     composite_pass(command_buffer, swapchain_texture.value());
@@ -125,7 +129,7 @@ void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4
         }
     );
 
-    SDL_BindGPUGraphicsPipeline(shadow_pass, pipeline_factory.depth_pipeline);
+    SDL_BindGPUGraphicsPipeline(shadow_pass, pipeline_factory.depth_pipeline_texture_array);
 
     SDL_SetGPUViewport(shadow_pass, &(SDL_GPUViewport) {
         .x = 0.0f,
@@ -136,11 +140,12 @@ void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4
         .max_depth = 1.0f
     });
 
+    glm::mat4 m[2] = { light_matrix, glm::mat4(1.0f) };
     SDL_PushGPUVertexUniformData(
         command_buffer,
         0,
-        (void*)glm::value_ptr(light_matrix),
-        sizeof(float) * 16
+        (void*)glm::value_ptr(m[0]),
+        sizeof(float) * 32
     );
 
     for (const auto& draw_call : world->map->draw_calls)
@@ -150,6 +155,54 @@ void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4
     }
 
     SDL_EndGPURenderPass(shadow_pass);
+}
+
+void Renderer::depth_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& view, const glm::mat4& projection)
+{
+    SDL_GPURenderPass* depth_pass = SDL_BeginGPURenderPass(
+        command_buffer,
+        NULL,
+        0,
+        &(SDL_GPUDepthStencilTargetInfo) {
+            .texture = texture_manager.depth_texture,
+            .clear_depth = 1.0f,
+            .load_op = SDL_GPU_LOADOP_CLEAR,
+            .store_op = SDL_GPU_STOREOP_STORE,
+            .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
+            .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
+            .cycle = true,
+            .clear_stencil = 0,
+            .mip_level = 0,
+            .layer = 0
+        }
+    );
+
+    SDL_BindGPUGraphicsPipeline(depth_pass, pipeline_factory.depth_pipeline);
+
+    SDL_SetGPUViewport(depth_pass, &(SDL_GPUViewport) {
+        .x = 0.0f,
+        .y = 0.0f,
+        .w = (float)device.swapchain_width,
+        .h = (float)device.swapchain_height,
+        .min_depth = 0.0f,
+        .max_depth = 1.0f
+    });
+
+    glm::mat4 m[2] = { view, projection };
+    SDL_PushGPUVertexUniformData(
+        command_buffer,
+        0,
+        (void*)glm::value_ptr(m[0]),
+        sizeof(float) * 32
+    );
+
+    for (const auto& draw_call : world->map->draw_calls)
+    {
+        draw_call.mesh->bind(depth_pass);
+        draw_call.mesh->draw(depth_pass);
+    }
+
+    SDL_EndGPURenderPass(depth_pass);
 }
 
 void Renderer::diffuse_pass(SDL_GPUCommandBuffer* command_buffer)
@@ -173,11 +226,11 @@ void Renderer::diffuse_pass(SDL_GPUCommandBuffer* command_buffer)
         &(SDL_GPUDepthStencilTargetInfo) {
             .texture = texture_manager.depth_texture,
             .clear_depth = 1.0f,
-            .load_op = SDL_GPU_LOADOP_CLEAR,
+            .load_op = SDL_GPU_LOADOP_LOAD,
             .store_op = SDL_GPU_STOREOP_STORE,
             .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
             .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-            .cycle = true,
+            .cycle = false,
             .clear_stencil = 0,
             .mip_level = 0,
             .layer = 0
@@ -217,6 +270,27 @@ void Renderer::diffuse_pass(SDL_GPUCommandBuffer* command_buffer)
             .texture = texture_manager.shadow_map
         },
         1
+    );
+
+    std::array<SDL_GPUTextureSamplerBinding, 2> bindings =
+    {
+        SDL_GPUTextureSamplerBinding
+        {
+            .sampler = texture_manager.shadow_map_sampler,
+            .texture = texture_manager.shadow_map
+        },
+        SDL_GPUTextureSamplerBinding
+        {
+            .sampler = texture_manager.bloom_sampler,
+            .texture = texture_manager.ssao_blur_texture
+        }
+    };
+
+    SDL_BindGPUFragmentSamplers(
+        diffuse_pass,
+        1,
+        &bindings[0],
+        (u32)bindings.size()
     );
 
     for (const auto& draw_call : world->map->draw_calls)
@@ -472,7 +546,7 @@ void Renderer::composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTextu
         .max_depth = 1.0f
     });
 
-    std::array<SDL_GPUTextureSamplerBinding, 3> bindings =
+    std::array<SDL_GPUTextureSamplerBinding, 2> bindings =
     {
         SDL_GPUTextureSamplerBinding
         {
@@ -483,11 +557,6 @@ void Renderer::composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTextu
         {
             .sampler = texture_manager.bloom_sampler,
             .texture = texture_manager.bloom_textures[0]
-        },
-        SDL_GPUTextureSamplerBinding
-        {
-            .sampler = texture_manager.bloom_sampler,
-            .texture = texture_manager.ssao_blur_texture
         }
     };
 

@@ -4,6 +4,9 @@ SamplerState diffuse_sampler : register(s0, space2);
 Texture2DArray shadow_map_texture : register(t1, space2);
 SamplerState shadow_map_sampler : register(s1, space2);
 
+Texture2D ssao_texture : register(t2, space2);
+SamplerState ssao_sampler : register(s2, space2);
+
 struct VertexOutput
 {
     float4 position         : SV_POSITION;
@@ -120,7 +123,15 @@ float4 main(VertexOutput input) : SV_TARGET
         total += max(lighting * shadow, 0.0f);
     }
 
-    // Composite
-    float3 final_color = diffuse * max(total, AMBIENT);
+    // SSAO
+    float ao_width;
+    float ao_height;
+    ssao_texture.GetDimensions(ao_width, ao_height);
+    float2 screen_resolution = float2(ao_width, ao_height) * 2.0f;
+    float ao = ssao_texture.Sample(ssao_sampler, input.position.xy / screen_resolution).x;
+
+    float3 ambient = diffuse * AMBIENT * ao;
+    float3 direct  = diffuse * total;
+    float3 final_color = ambient + direct;
     return float4(final_color, 1.0f);
 }

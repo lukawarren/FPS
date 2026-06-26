@@ -14,12 +14,15 @@ struct VertexOutput
 
 cbuffer PushBlock : register(b0, space1)
 {
-    float4x4 mvp;
+    // Need both because otherwise get tiny floating-point differences
+    // when we use the output as a depth-prepass (diffuse uses two too)
+    float4x4 view;
+    float4x4 projection;
 };
 
 VertexOutput main(VertexInput input)
 {
     VertexOutput output;
-    output.position = mul(mvp, float4(input.position, 1.0));
+    output.position = mul(projection, mul(view, float4(input.position, 1.0)));
     return output;
 }

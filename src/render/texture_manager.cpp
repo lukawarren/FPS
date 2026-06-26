@@ -184,7 +184,6 @@ void TextureManager::create_shadow_map(const Device& device)
 
 void TextureManager::create_ssao_textures(const Device& device)
 {
-    dbg("TODO: half res");
     ssao_texture = SDL_CreateGPUTexture(
         device.device,
         &(SDL_GPUTextureCreateInfo) {
