@@ -13,7 +13,7 @@ void Flashlight::update(
 
     const float pitch_rad = glm::radians(-pitch);
     const float yaw_rad = glm::radians(yaw - 90.0f);
-    direction.x = cos(pitch_rad) * cos(yaw_rad);
-    direction.y = sin(pitch_rad);
-    direction.z = cos(pitch_rad) * sin(yaw_rad);
+    direction.x = std::cos(pitch_rad) * std::cos(yaw_rad);
+    direction.y = std::sin(pitch_rad);
+    direction.z = std::cos(pitch_rad) * std::sin(yaw_rad);
 }

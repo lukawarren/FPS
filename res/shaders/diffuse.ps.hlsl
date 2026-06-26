@@ -27,7 +27,8 @@ struct Spotlight
 
 #define GAMMA 2.2f
 #define AMBIENT 0.05f
-#define MAX_SPOTLIGHTS 4
+#define MAX_SPOTLIGHTS 6
+#define POINT_INTENSITY 1.0f
 
 cbuffer UniformBlock : register(b0, space1)
 {
@@ -61,6 +62,13 @@ float sample_shadow(float4 light_space_pos, float bias, int i)
     return (current_depth - bias > closest) ? 0.0f : 1.0f;
 }
 
+float3 calculate_pointlight(Spotlight s, float3 world_pos)
+{
+    float3 fragment_to_light = s.position - world_pos;
+    float distance = max(length(fragment_to_light), 1.0f);
+    return s.colour * POINT_INTENSITY / pow(distance, 4.0f);
+}
+
 float3 calculate_spotlight(Spotlight s, float3 world_pos, float3 normal)
 {
     // Unpack
@@ -70,7 +78,6 @@ float3 calculate_spotlight(Spotlight s, float3 world_pos, float3 normal)
 
     float3 fragment_to_light = s.position - world_pos;
     float distance = length(fragment_to_light);
-
     float dist = max(distance, 0.001f);
     float3 light_dir = fragment_to_light / dist;
 
@@ -106,21 +113,24 @@ float4 main(VertexOutput input) : SV_TARGET
         if (spotlights[i].params.w == 0.0f)
             break;
 
+        // Lighting
+        float3 spotlight_lighting = calculate_spotlight(
+            spotlights[i],
+            input.world_pos.xyz,
+            normal
+        );
+        float3 point_lighting = calculate_pointlight(
+            spotlights[i],
+            input.world_pos.xyz
+        );
+
         // Shadow
         float shadow = sample_shadow(
             mul(spotlights[i].shadow, input.world_pos),
             bias,
             i
         );
-
-        // Lighting
-        float3 lighting = calculate_spotlight(
-            spotlights[i],
-            input.world_pos.xyz,
-            normal
-        );
-
-        total += max(lighting * shadow, 0.0f);
+        total += max(spotlight_lighting * shadow + point_lighting, 0.0f);
     }
 
     // SSAO
@@ -130,7 +140,7 @@ float4 main(VertexOutput input) : SV_TARGET
     float2 screen_resolution = float2(ao_width, ao_height) * 2.0f;
     float ao = ssao_texture.Sample(ssao_sampler, input.position.xy / screen_resolution).x;
 
-    float3 ambient = diffuse * AMBIENT * ao;
+    float3 ambient = diffuse * AMBIENT * (ao * 0.0000001f + 1.0f);
     float3 direct  = diffuse * total;
     float3 final_color = ambient + direct;
     return float4(final_color, 1.0f);

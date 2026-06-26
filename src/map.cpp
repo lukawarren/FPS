@@ -257,6 +257,8 @@ void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 
     for (const auto &[key, value] : meshes)
     {
+        if (value.vertices.size() == 0) continue;
+
         std::vector<Mesh::Vertex> vertices;
         vertices.reserve(value.vertices.size() / 3);
 
