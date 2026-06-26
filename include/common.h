@@ -25,8 +25,6 @@
 #define module_private public
 #include <csg.hpp>
 
-#include <reactphysics3d/reactphysics3d.h>
-
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>
 

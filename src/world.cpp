@@ -51,8 +51,6 @@ World::World(
             player.head_yaw = 90.0f - angle;
         }
     }
-
-    player.setup_physics(map->world);
 }
 
 World::~World()

@@ -22,7 +22,6 @@ add_subdirectory(lib/SDL)
 add_subdirectory(lib/SDL_shadercross)
 add_subdirectory(lib/glm)
 add_subdirectory(lib/dbg-macro)
-add_subdirectory(lib/reactphysics3d)
 
 # Source discovery
 file(GLOB_RECURSE SOURCES
@@ -39,7 +38,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     lib/stb
     lib/dbg-macro/
     lib/tiny_csg/
-    lib/reactphysics3d/include
 )
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/common.h)
 
@@ -47,7 +45,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     SDL3::SDL3
     SDL3_shadercross::SDL3_shadercross
     glm::glm
-    ReactPhysics3D::reactphysics3d
 )
 
 # Fix warning / error with Clang

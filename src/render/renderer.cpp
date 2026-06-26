@@ -40,8 +40,7 @@ Renderer::~Renderer()
 bool Renderer::update()
 {
     device.window->update();
-    world->player.update(world->map->world, world->camera, 1.0f / 60.0f);
-    world->player.update_camera(world->camera);
+    world->player.update(world->camera, 1.0f / 60.0f);
     return !device.window->should_close();
 }
 
