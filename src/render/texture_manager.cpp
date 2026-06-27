@@ -81,7 +81,6 @@ TextureManager::TextureManager(const Device& device) : device(device.device)
 
     create_diffuse_texture(device);
     create_depth_texture(device);
-    create_ssao_textures(device);
     create_shadow_map(device);
     create_bloom_textures(device);
 }
@@ -94,9 +93,6 @@ TextureManager::~TextureManager()
     SDL_ReleaseGPUTexture(device, shadow_map);
     SDL_ReleaseGPUTexture(device, depth_texture);
     SDL_ReleaseGPUSampler(device, shadow_map_sampler);
-
-    SDL_ReleaseGPUTexture(device, ssao_texture);
-    SDL_ReleaseGPUTexture(device, ssao_blur_texture);
 
     for (size_t i = 0; i < bloom_textures.size(); i++)
         SDL_ReleaseGPUTexture(device, bloom_textures[i]);
@@ -125,15 +121,11 @@ void TextureManager::on_swapchain_format_change(const Device& device)
     SDL_ReleaseGPUTexture(device.device, depth_texture);
     SDL_ReleaseGPUTexture(device.device, diffuse_texture);
 
-    SDL_ReleaseGPUTexture(device.device, ssao_texture);
-    SDL_ReleaseGPUTexture(device.device, ssao_blur_texture);
-
     for (size_t i = 0; i < bloom_textures.size(); i++)
             SDL_ReleaseGPUTexture(device.device, bloom_textures[i]);
 
     create_depth_texture(device);
     create_diffuse_texture(device);
-    create_ssao_textures(device);
     create_bloom_textures(device);
 }
 
@@ -181,40 +173,6 @@ void TextureManager::create_shadow_map(const Device& device)
         .props = 0
     });
 }
-
-void TextureManager::create_ssao_textures(const Device& device)
-{
-    ssao_texture = SDL_CreateGPUTexture(
-        device.device,
-        &(SDL_GPUTextureCreateInfo) {
-            .type = SDL_GPU_TEXTURETYPE_2D,
-            .format = SDL_GPU_TEXTUREFORMAT_R32_FLOAT,
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
-            .width = device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale / 2,
-            .height = device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale / 2,
-            .layer_count_or_depth = 1,
-            .num_levels = 1,
-            .sample_count = SDL_GPU_SAMPLECOUNT_1,
-            .props = 0
-        }
-    );
-
-    ssao_blur_texture = SDL_CreateGPUTexture(
-        device.device,
-        &(SDL_GPUTextureCreateInfo) {
-            .type = SDL_GPU_TEXTURETYPE_2D,
-            .format = SDL_GPU_TEXTUREFORMAT_R32_FLOAT,
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
-            .width = device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale / 2,
-            .height = device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale / 2,
-            .layer_count_or_depth = 1,
-            .num_levels = 1,
-            .sample_count = SDL_GPU_SAMPLECOUNT_1,
-            .props = 0
-        }
-    );
-}
-
 
 void TextureManager::create_bloom_textures(const Device& device)
 {

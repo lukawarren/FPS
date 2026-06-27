@@ -4,9 +4,6 @@ SamplerState diffuse_sampler : register(s0, space2);
 Texture2DArray shadow_map_texture : register(t1, space2);
 SamplerState shadow_map_sampler : register(s1, space2);
 
-Texture2D ssao_texture : register(t2, space2);
-SamplerState ssao_sampler : register(s2, space2);
-
 struct VertexOutput
 {
     float4 position         : SV_POSITION;
@@ -26,7 +23,7 @@ struct Spotlight
 };
 
 #define GAMMA 2.2f
-#define AMBIENT 0.3f
+#define AMBIENT 0.05f
 #define MAX_SPOTLIGHTS 6
 #define POINT_INTENSITY 1.0f
 
@@ -139,14 +136,7 @@ float4 main(VertexOutput input) : SV_TARGET
         total += max(spotlight_lighting * shadow + point_lighting, 0.0f);
     }
 
-    // SSAO
-    float ao_width;
-    float ao_height;
-    ssao_texture.GetDimensions(ao_width, ao_height);
-    float2 screen_resolution = float2(ao_width, ao_height) * 2.0f;
-    float ao = ssao_texture.Sample(ssao_sampler, input.position.xy / screen_resolution).x;
-
-    float3 ambient = diffuse * AMBIENT * ao;
+    float3 ambient = diffuse * AMBIENT;
     float3 direct  = diffuse * total;
     float3 final_colour = ambient + direct;
     return float4(final_colour, 1.0f);

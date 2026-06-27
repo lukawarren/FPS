@@ -46,8 +46,6 @@ private:
     void shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& light_matrix, const u8 slot);
     void depth_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& view, const glm::mat4& projection);
     void diffuse_pass(SDL_GPUCommandBuffer* command_buffer);
-    void ssao_pass(SDL_GPUCommandBuffer* command_buffer);
-    void ssao_blur_pass(SDL_GPUCommandBuffer* command_buffer);
     void downsample_pass(SDL_GPUCommandBuffer* command_buffer);
     void upsample_pass(SDL_GPUCommandBuffer* command_buffer);
     void composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture* swapchain_texture);

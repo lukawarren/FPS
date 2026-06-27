@@ -99,8 +99,6 @@ void Renderer::render()
         shadow_pass(command_buffer, matrices[i], i);
 
     depth_pass(command_buffer, camera_view, camera_projection);
-    ssao_pass(command_buffer);
-    ssao_blur_pass(command_buffer);
     diffuse_pass(command_buffer);
     downsample_pass(command_buffer);
     upsample_pass(command_buffer);
@@ -272,17 +270,12 @@ void Renderer::diffuse_pass(SDL_GPUCommandBuffer* command_buffer)
         1
     );
 
-    std::array<SDL_GPUTextureSamplerBinding, 2> bindings =
+    std::array<SDL_GPUTextureSamplerBinding, 1> bindings =
     {
         SDL_GPUTextureSamplerBinding
         {
             .sampler = texture_manager.shadow_map_sampler,
             .texture = texture_manager.shadow_map
-        },
-        SDL_GPUTextureSamplerBinding
-        {
-            .sampler = texture_manager.bloom_sampler,
-            .texture = texture_manager.ssao_blur_texture
         }
     };
 
@@ -301,114 +294,6 @@ void Renderer::diffuse_pass(SDL_GPUCommandBuffer* command_buffer)
     }
 
     SDL_EndGPURenderPass(diffuse_pass);
-}
-
-void Renderer::ssao_pass(SDL_GPUCommandBuffer* command_buffer)
-{
-    SDL_GPURenderPass* ssao_pass = SDL_BeginGPURenderPass(
-        command_buffer,
-        &(SDL_GPUColorTargetInfo) {
-            .texture = texture_manager.ssao_texture,
-            .mip_level = 0,
-            .layer_or_depth_plane = 0,
-            .clear_color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f },
-            .load_op = SDL_GPU_LOADOP_DONT_CARE,
-            .store_op = SDL_GPU_STOREOP_STORE,
-            .resolve_texture = NULL,
-            .resolve_mip_level = 0,
-            .resolve_layer = 0,
-            .cycle = true,
-            .cycle_resolve_texture = false
-        },
-        1,
-        NULL
-    );
-
-    SDL_BindGPUGraphicsPipeline(ssao_pass, pipeline_factory.ssao_pipeline);
-
-    SDL_SetGPUViewport(ssao_pass, &(SDL_GPUViewport) {
-        .x = 0.0f,
-        .y = 0.0f,
-        .w = (float)device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale / 2.0f,
-        .h = (float)device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale / 2.0f,
-        .min_depth = 0.0f,
-        .max_depth = 1.0f
-    });
-
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        0,
-        &ssao_shader_uniforms_vertex,
-        sizeof(ssao_shader_uniforms_vertex)
-    );
-
-    SDL_PushGPUFragmentUniformData(
-        command_buffer,
-        0,
-        &ssao_shader_uniforms_fragment,
-        sizeof(ssao_shader_uniforms_fragment)
-    );
-
-    SDL_BindGPUFragmentSamplers(
-        ssao_pass,
-        0,
-        &(SDL_GPUTextureSamplerBinding) {
-            .sampler = texture_manager.bloom_sampler,
-            .texture = texture_manager.depth_texture
-        },
-        1
-    );
-
-    quad->bind(ssao_pass);
-    quad->draw(ssao_pass);
-    SDL_EndGPURenderPass(ssao_pass);
-}
-
-void Renderer::ssao_blur_pass(SDL_GPUCommandBuffer* command_buffer)
-{
-    SDL_GPURenderPass* ssao_blur_pass = SDL_BeginGPURenderPass(
-        command_buffer,
-        &(SDL_GPUColorTargetInfo) {
-            .texture = texture_manager.ssao_blur_texture,
-            .mip_level = 0,
-            .layer_or_depth_plane = 0,
-            .clear_color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f },
-            .load_op = SDL_GPU_LOADOP_DONT_CARE,
-            .store_op = SDL_GPU_STOREOP_STORE,
-            .resolve_texture = NULL,
-            .resolve_mip_level = 0,
-            .resolve_layer = 0,
-            .cycle = true,
-            .cycle_resolve_texture = false
-        },
-        1,
-        NULL
-    );
-
-    SDL_BindGPUGraphicsPipeline(ssao_blur_pass, pipeline_factory.ssao_blur_pipeline);
-
-    SDL_SetGPUViewport(ssao_blur_pass, &(SDL_GPUViewport) {
-        .x = 0.0f,
-        .y = 0.0f,
-        .w = (float)device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale / 2.0f,
-        .h = (float)device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale / 2.0f,
-        .min_depth = 0.0f,
-        .max_depth = 1.0f
-    });
-
-    SDL_BindGPUFragmentSamplers(
-        ssao_blur_pass,
-        0,
-        &(SDL_GPUTextureSamplerBinding) {
-            .sampler = texture_manager.bloom_sampler,
-            .texture = texture_manager.ssao_texture
-        },
-        1
-    );
-
-    quad->bind(ssao_blur_pass);
-    quad->draw(ssao_blur_pass);
-    SDL_EndGPURenderPass(ssao_blur_pass);
 }
 
 void Renderer::downsample_pass(SDL_GPUCommandBuffer* command_buffer)
