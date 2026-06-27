@@ -40,7 +40,7 @@ Renderer::~Renderer()
 bool Renderer::update()
 {
     device.window->update();
-    world->player.update(world->camera, 1.0f / 60.0f);
+    world->update(1.0f / 60.0f);
     return !device.window->should_close();
 }
 
@@ -63,22 +63,22 @@ void Renderer::render()
     const glm::mat4 camera_projection = world->camera.projection_matrix(device.swapchain_width, device.swapchain_height);
     const glm::mat4 camera_view = world->camera.view_matrix();
 
-    const u32 n_lights = world->player.flashlight.enabled
+    const u32 n_lights = world->player->flashlight.enabled
             ? std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size() + 1)
             : std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size());
 
     std::array<Spotlight*, QUALITY_SETTINGS.max_spotlights> spotlights;
     std::array<glm::mat4, QUALITY_SETTINGS.max_spotlights> matrices;
-    for (u32 i = 0; i < n_lights - (world->player.flashlight.enabled ? 1 : 0); i++)
+    for (u32 i = 0; i < n_lights - (world->player->flashlight.enabled ? 1 : 0); i++)
     {
         spotlights[i] = &world->spotlights[i];
         matrices[i] = spotlights[i]->get_matrix();
     }
 
-    if (world->player.flashlight.enabled)
+    if (world->player->flashlight.enabled)
     {
-        spotlights[n_lights - 1] = &world->player.flashlight;
-        matrices[n_lights - 1] = world->player.flashlight.get_matrix();
+        spotlights[n_lights - 1] = &world->player->flashlight;
+        matrices[n_lights - 1] = world->player->flashlight.get_matrix();
     }
 
     // Set diffuse uniforms

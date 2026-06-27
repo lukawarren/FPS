@@ -38,7 +38,7 @@ public:
 
     std::vector<DrawCall> draw_calls;
     std::vector<Entity> entities;
-    csg::world_t world;
+    JPH::Ref<JPH::Shape> physics_shape;
 
     constexpr static inline float METRES_PER_UNIT = 0.01905;
     constexpr static inline float TRENCHBROOM_TEXTURE_SIZE = 128.0f;
@@ -63,6 +63,7 @@ private:
     // Temporary variables
     std::set<std::string> textures;
     std::vector<TextureInfo> texture_infos;
+    csg::world_t* world;
 
     std::pair<glm::vec3, float> plane_from_points(
         const glm::vec3& p1,

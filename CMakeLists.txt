@@ -16,12 +16,17 @@ set(SDL_TESTS OFF CACHE INTERNAL "")
 set(SDL_EXAMPLES OFF CACHE INTERNAL "")
 set(SDLSHADERCROSS_VENDORED ON CACHE INTERNAL "")
 set(GLM_BUILD_TESTS OFF CACHE INTERNAL "")
+set(JOLT_PHYSICS_BUILD_TESTS OFF CACHE INTERNAL "")
+set(JOLT_PHYSICS_BUILD_SAMPLES OFF CACHE INTERNAL "")
+set(JOLT_PHYSICS_BUILD_DEBUG_VIEWER OFF CACHE INTERNAL "")
+set(JOLT_PHYSICS_BUILD_UNIT_TESTS OFF CACHE INTERNAL "")
 
-# Add submodules from lib/
+# Add submodules
 add_subdirectory(lib/SDL)
 add_subdirectory(lib/SDL_shadercross)
 add_subdirectory(lib/glm)
 add_subdirectory(lib/dbg-macro)
+add_subdirectory(lib/JoltPhysics/Build)
 
 # Source discovery
 file(GLOB_RECURSE SOURCES
@@ -38,6 +43,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     lib/stb
     lib/dbg-macro/
     lib/tiny_csg/
+    ${JoltPhysics_SOURCE_DIR}/..
 )
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/common.h)
 
@@ -45,6 +51,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     SDL3::SDL3
     SDL3_shadercross::SDL3_shadercross
     glm::glm
+    Jolt::Jolt
 )
 
 # Fix warning / error with Clang

@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <limits>
 #include <unordered_set>
+#include <thread>
 
 #include <SDL3/SDL.h>
 #include <SDL3_shadercross/SDL_shadercross.h>
@@ -24,6 +25,18 @@
 
 #define module_private public
 #include <csg.hpp>
+
+#include <Jolt/Jolt.h>
+#include <Jolt/Core/Factory.h>
+#include <Jolt/Core/TempAllocator.h>
+#include <Jolt/RegisterTypes.h>
+#include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Physics/PhysicsSettings.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
 
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>

@@ -5,9 +5,12 @@ World::World(
     Window* window,
     SDL_GPUDevice* device,
     SDL_GPUCopyPass* copy_pass
-) : player(window)
+)
 {
     map = new Map(filename, device, copy_pass);
+
+    glm::vec3 player_position = {};
+    float player_yaw = 0.0f;
 
     // Extract entities
     for (const auto& entity : map->entities)
@@ -47,13 +50,74 @@ World::World(
         {
             const glm::vec3 position = entity.parse_vec3("origin");
             const float angle = entity.parse_float("angle");
-            player.set_position(position);
-            player.head_yaw = 90.0f - angle;
+            player_position = position + glm::vec3(0.0f, Player::PLAYER_HEIGHT, 0.0f);
+            player_yaw = 90.0f - angle;
         }
     }
+
+    setup_physics();
+    player = new Player(player_position, player_yaw, window, physics_system);
+}
+
+void World::update(const float delta)
+{
+    JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
+
+    // Need 1 collision step for every 60 FPS
+    const float divisions_of_60 = (1.0f / 60.0f) / delta;
+    player->update(camera, divisions_of_60, physics_system, allocator);
+    const JPH::EPhysicsUpdateError error = physics_system.Update(delta, divisions_of_60, &allocator, job_system);
+
+    if (error != JPH::EPhysicsUpdateError::None)
+        dbg("Warning: physics update error", (int)error);
+
+    camera.pitch = player->head_pitch;
+    camera.yaw = player->head_yaw;
+    camera.position = {
+        player->position.x,
+        player->position.y + Player::PLAYER_EYE_HEIGHT,
+        player->position.z
+    };
+}
+
+void World::setup_physics()
+{
+    job_system = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers);
+
+	const u32 MAX_RIGID_BODIES = 65536;
+	const u32 MAX_BODY_PAIRS = 65536;
+	const u32 MAX_CONTACT_CONSTRAINTS = 10240;
+    physics_system.Init(
+        MAX_RIGID_BODIES,
+        0,
+        MAX_BODY_PAIRS,
+        MAX_CONTACT_CONSTRAINTS,
+        broad_phase_layer_interface,
+        object_vs_broadphase_layer_filter,
+        object_vs_object_layer_filter
+    );
+    physics_system.SetGravity(physics_system.GetGravity() * 30.0f);
+
+    JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
+
+    // Add map
+    JPH::BodyCreationSettings map_settings(
+        map->physics_shape,
+        JPH::RVec3(0, 0, 0),
+        JPH::Quat::sIdentity(),
+        JPH::EMotionType::Static,
+        Layers::NON_MOVING
+    );
+	JPH::Body* map_body = body_interface.CreateBody(map_settings);
+	body_interface.AddBody(map_body->GetID(), JPH::EActivation::DontActivate);
+
+    // Now that all colliders are added, optimise collisions
+    physics_system.OptimizeBroadPhase();
 }
 
 World::~World()
 {
+    delete job_system;
+    delete player;
     delete map;
 }

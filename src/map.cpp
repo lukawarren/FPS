@@ -6,7 +6,8 @@ constexpr static inline csg::volume_t VOLUME_SOLID = 1;
 Map::Map(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 {
     // Setup CSG "world"
-    world.set_void_volume(VOLUME_AIR);
+    world = new csg::world_t();
+    world->set_void_volume(VOLUME_AIR);
 
     // Load text file
     std::ifstream file(MAP_ROOT + filename);
@@ -23,6 +24,9 @@ Map::Map(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* co
     build_meshes(device, copy_pass);
     textures.clear();
     texture_infos.clear();
+
+    // World no longer needed
+    delete world;
 }
 
 void Map::parse_entity(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
@@ -79,7 +83,7 @@ void Map::parse_entity(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopy
 void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 {
     std::string line;
-    csg::brush_t* brush = world.add();
+    csg::brush_t* brush = world->add();
     std::vector<csg::plane_t> planes;
     std::vector<size_t> texture_info_indices;
 
@@ -176,8 +180,8 @@ void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyP
 
 void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 {
-    world.rebuild();
-    csg::brush_t* brush = world.first();
+    world->rebuild();
+    csg::brush_t* brush = world->first();
 
     // Build separates mesh per texture
     struct TexturedMesh
@@ -252,9 +256,10 @@ void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
             }
         }
 
-        brush = world.next(brush);
+        brush = world->next(brush);
     }
 
+    // Add for rendering
     for (const auto &[key, value] : meshes)
     {
         if (value.vertices.size() == 0) continue;
@@ -281,6 +286,43 @@ void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
             .texture = new Texture(key + ".png", device, copy_pass)
         });
     }
+
+    // Add for physics
+    JPH::VertexList p_vertices;
+    JPH::IndexedTriangleList p_indices;
+    uint32_t vertex_offset = 0;
+    for (const auto &[key, value] : meshes)
+    {
+        if (value.vertices.size() == 0) continue;
+
+        for (size_t i = 0; i < value.vertices.size() /  3; i++)
+        {
+            p_vertices.emplace_back(JPH::Float3 {
+                value.vertices[i * 3 + 0],
+                value.vertices[i * 3 + 1],
+                value.vertices[i * 3 + 2]
+            });
+        }
+
+        for (size_t i = 0; i < value.indices.size() /  3; i++)
+        {
+            p_indices.emplace_back(JPH::IndexedTriangle {
+                value.indices[i * 3 + 0] + vertex_offset,
+                value.indices[i * 3 + 1] + vertex_offset,
+                value.indices[i * 3 + 2] + vertex_offset
+            });
+        }
+
+        vertex_offset += value.vertices.size() / 3;
+    }
+
+    JPH::MeshShapeSettings settings(p_vertices, p_indices);
+    JPH::Shape::ShapeResult result = settings.Create();
+
+    if (result.IsValid())
+        physics_shape = result.Get();
+    else
+        throw std::runtime_error("Failed to create physics shape for map: " + std::string(result.GetError()));
 }
 
 void Map::calculate_uvs(
