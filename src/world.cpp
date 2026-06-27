@@ -22,7 +22,7 @@ World::World(
         {
             const glm::vec3 position = entity.parse_vec3("origin");
             const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(255.0f, 170.0f, 95.0f), false);
-            const float intensity = entity.parse_float("intensity", 50.0f);
+            const float intensity = entity.parse_float("intensity", 100.0f);
             const glm::vec3 angles = entity.parse_vec3("angles", { 0.0f, 0.0f, 0.0f }, false);
             const float near = entity.parse_float("near", 0.01f);
             const float far = entity.parse_float("far", 30.0f);
@@ -50,7 +50,7 @@ World::World(
         {
             const glm::vec3 position = entity.parse_vec3("origin");
             const float angle = entity.parse_float("angle");
-            player_position = position + glm::vec3(0.0f, Player::PLAYER_HEIGHT, 0.0f);
+            player_position = position + glm::vec3(0.0f, Player::PLAYER_HEIGHT / 2.0f, 0.0f);
             player_yaw = 90.0f - angle;
         }
     }
@@ -75,7 +75,7 @@ void World::update(const float delta)
     camera.yaw = player->head_yaw;
     camera.position = {
         player->position.x,
-        player->position.y + Player::PLAYER_EYE_HEIGHT,
+        player->position.y - Player::PLAYER_HEIGHT / 2.0f + Player::PLAYER_EYE_HEIGHT + player->head_bob_offset,
         player->position.z
     };
 }

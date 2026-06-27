@@ -40,7 +40,7 @@ public:
     std::vector<Entity> entities;
     JPH::Ref<JPH::Shape> physics_shape;
 
-    constexpr static inline float METRES_PER_UNIT = 0.01905;
+    constexpr static inline float METRES_PER_UNIT = 0.0254;
     constexpr static inline float TRENCHBROOM_TEXTURE_SIZE = 128.0f;
 
 private:
