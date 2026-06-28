@@ -135,16 +135,35 @@ Renderer::LightingState Renderer::collect_lights() const
     LightingState state = {};
 
     const bool flashlight_enabled = world->player->flashlight.enabled;
-    state.n_lights = flashlight_enabled
-        ? std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size() + 1)
-        : std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size());
+    const u32 max_world_lights = QUALITY_SETTINGS.max_spotlights - (flashlight_enabled ? 1 : 0);
+
+    // Gather candidate world lights with their distance to the player
+    std::vector<std::pair<float, Spotlight*>> candidates;
+    candidates.reserve(world->spotlights.size());
+    const glm::vec3 player_pos = world->player->position;
+
+    for (auto& light : world->spotlights)
+    {
+        const float dist2 = glm::length(light.position - world->player->position);
+        candidates.emplace_back(dist2, &light);
+    }
+
+    // Partial sort: nearest max_world_lights first
+    const u32 n_world_lights = std::min(max_world_lights, (u32)candidates.size());
+    std::partial_sort(
+        candidates.begin(),
+        candidates.begin() + n_world_lights,
+        candidates.end(),
+        [](const auto& a, const auto& b) { return a.first < b.first; }
+    );
+
+    state.n_lights = n_world_lights + (flashlight_enabled ? 1 : 0);
 
     std::array<Spotlight*, QUALITY_SETTINGS.max_spotlights> spotlights;
 
-    const u32 n_world_lights = state.n_lights - (flashlight_enabled ? 1 : 0);
     for (u32 i = 0; i < n_world_lights; i++)
     {
-        spotlights[i] = &world->spotlights[i];
+        spotlights[i] = candidates[i].second;
         state.matrices[i] = spotlights[i]->get_matrix();
     }
 

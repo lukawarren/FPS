@@ -47,9 +47,4 @@ void ShadowPass::execute(
         draw_call.mesh->bind(render_pass);
         draw_call.mesh->draw(render_pass);
     }
-
-    // Draw eapon
-    render_pass.push_model_matrix(weapon_model);
-    models.at(world.player->weapon.model)->mesh->bind(render_pass);
-    models.at(world.player->weapon.model)->mesh->draw(render_pass);
 }
