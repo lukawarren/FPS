@@ -8,6 +8,7 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
     shadow_pass(pipeline_factory, texture_manager),
     depth_pass(device, pipeline_factory, texture_manager),
     diffuse_pass(device, pipeline_factory, texture_manager),
+    sprite_pass(device, pipeline_factory, texture_manager),
     bloom_pass(device, pipeline_factory, texture_manager, *quad),
     composite_pass(device, pipeline_factory, texture_manager, *quad)
 {
@@ -27,6 +28,17 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
         );
     }
 
+    // Load sprites
+    for (size_t i = 0; i < Decal::SPRITE_NAMES.size(); i++)
+    {
+        sprites[(Decal::ID)i] = new Texture(
+            std::string(Decal::SPRITE_NAMES[i]) + ".png",
+            device.device,
+            copy_pass,
+            SPRITE_ROOT
+        );
+    }
+
     // Load world
     world = new World("map2.map", device.window, device.device, copy_pass);
 
@@ -37,6 +49,9 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
 
     for (const auto& m : models)
         m.second->texture->generate_mipmaps(command_buffer);
+
+    for (const auto& s : sprites)
+        s.second->generate_mipmaps(command_buffer);
 
     SDL_SubmitGPUCommandBuffer(command_buffer);
 
@@ -56,6 +71,13 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
 Renderer::~Renderer()
 {
     device.wait_for_idle();
+
+    for (size_t i = 0; i < Model::MODEL_NAMES.size(); i++)
+        delete models[(Model::ID)i];
+
+    for (size_t i = 0; i < Decal::SPRITE_NAMES.size(); i++)
+        delete sprites[(Decal::ID)i];
+
     delete world;
     delete quad;
 }
@@ -120,6 +142,16 @@ void Renderer::render()
         camera_view,
         camera_projection,
         weapon_model,
+        lighting.fragment_uniforms
+    );
+
+    sprite_pass.execute(
+        command_buffer,
+        *world,
+        sprites,
+        camera_view,
+        camera_projection,
+        *quad,
         lighting.fragment_uniforms
     );
 

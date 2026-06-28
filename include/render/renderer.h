@@ -8,6 +8,7 @@
 #include "render/passes/shadow_pass.h"
 #include "render/passes/depth_pass.h"
 #include "render/passes/diffuse_pass.h"
+#include "render/passes/sprite_pass.h"
 #include "render/passes/bloom_pass.h"
 #include "render/passes/composite_pass.h"
 #include "model.h"
@@ -22,6 +23,7 @@ public:
     void render();
 
     std::unordered_map<Model::ID, Model*> models;
+    std::unordered_map<Decal::ID, Texture*> sprites;
 
 private:
     // Per-light data gathered once per frame and shared between the shadow
@@ -45,6 +47,7 @@ private:
     ShadowPass shadow_pass;
     DepthPass depth_pass;
     DiffusePass diffuse_pass;
+    SpritePass sprite_pass;
     BloomPass bloom_pass;
     CompositePass composite_pass;
 

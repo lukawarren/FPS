@@ -55,8 +55,8 @@ public:
     Mesh(const Mesh&) = delete;
     Mesh& operator=(const Mesh&) = delete;
 
-    void bind(SDL_GPURenderPass* render_pass);
-    void draw(SDL_GPURenderPass* render_pass);
+    void bind(SDL_GPURenderPass* render_pass) const;
+    void draw(SDL_GPURenderPass* render_pass) const;
 
 private:
     SDL_GPUDevice* device;

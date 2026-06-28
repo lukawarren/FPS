@@ -5,6 +5,7 @@
 #include "spotlight.h"
 #include "map.h"
 #include "physics.h"
+#include "decal.h"
 
 class World
 {
@@ -25,6 +26,9 @@ public:
 
     // Lighting
     std::vector<Spotlight> spotlights;
+
+    // Sprites
+    std::vector<Decal> decals;
 
 private:
     void setup_physics();

@@ -55,7 +55,7 @@ Quad::Quad(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
     this->device = device;
 }
 
-void Quad::bind(SDL_GPURenderPass* render_pass)
+void Quad::bind(SDL_GPURenderPass* render_pass) const
 {
     SDL_BindGPUVertexBuffers(
         render_pass,
@@ -68,7 +68,7 @@ void Quad::bind(SDL_GPURenderPass* render_pass)
     );
 }
 
-void Quad::draw(SDL_GPURenderPass* render_pass)
+void Quad::draw(SDL_GPURenderPass* render_pass) const
 {
     SDL_DrawGPUPrimitives(
         render_pass,

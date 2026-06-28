@@ -71,7 +71,7 @@ Mesh::Mesh(
     this->device = device;
 }
 
-void Mesh::bind(SDL_GPURenderPass* render_pass)
+void Mesh::bind(SDL_GPURenderPass* render_pass) const
 {
     SDL_BindGPUVertexBuffers(
         render_pass,
@@ -93,7 +93,7 @@ void Mesh::bind(SDL_GPURenderPass* render_pass)
     );
 }
 
-void Mesh::draw(SDL_GPURenderPass* render_pass)
+void Mesh::draw(SDL_GPURenderPass* render_pass) const
 {
     SDL_DrawGPUIndexedPrimitives(
         render_pass,

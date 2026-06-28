@@ -55,6 +55,12 @@ World::World(
         }
     }
 
+    int n = 5;
+    for (int x = 0; x < n; x++)
+    for (int y = 0; y < n; y++)
+    for (int z = 0; z < n; z++)
+    decals.push_back(Decal(glm::vec3(x, y, z) / 3.0f, glm::vec3(0.0f), Decal::ID::BULLET));
+
     setup_physics();
     player = new Player(player_position, player_yaw, window, physics_system);
 }

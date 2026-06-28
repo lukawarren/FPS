@@ -40,7 +40,7 @@ float4 main(VertexOutput input) : SV_TARGET
     float3 render = render_texture.Sample(render_sampler, input.uv).rgb;
     float3 bloom = bloom_texture.Sample(bloom_sampler, input.uv).rgb;
 
-     return float4(
+    return float4(
         tonemap(lerp(render, bloom, BLOOM_STRENGTH)),
         1.0f
     );
