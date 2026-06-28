@@ -10,7 +10,6 @@ struct VertexOutput
     float3 normal           : NORMAL;
     float2 uv               : TEXCOORD;
     float4 world_pos        : POSITIONT;
-    float4 view_pos         : POSITIONT2;
 };
 
 struct Spotlight
@@ -100,7 +99,6 @@ float4 main(VertexOutput input) : SV_TARGET
     diffuse = pow(diffuse, GAMMA);
 
     float bias = 0.5f / 10000.0f;
-    float depth = abs(input.view_pos.z);
     float3 normal = normalize(input.normal);
     float3 total = float3(0.0f, 0.0f, 0.0f);
 

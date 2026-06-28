@@ -57,9 +57,6 @@ private:
     SDL_GPUShader* depth_vs;
     SDL_GPUShader* depth_fs;
     SDL_GPUShader* quad_vs;
-    SDL_GPUShader* ssao_vs;
-    SDL_GPUShader* ssao_fs;
-    SDL_GPUShader* ssao_blur_fs;
     SDL_GPUShader* downsample_fs;
     SDL_GPUShader* upsample_fs;
     SDL_GPUShader* composite_fs;

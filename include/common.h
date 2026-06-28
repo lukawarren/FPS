@@ -53,11 +53,12 @@ using i64 = int64_t;
 
 inline std::string SHADER_ROOT = "../res/shaders/";
 inline std::string TEXTURE_ROOT = "../res/trenchbroom/textures/";
+inline std::string MODEL_ROOT = "../res/trenchbroom/models/";
 inline std::string MAP_ROOT = "../res/maps/";
 
 struct QualitySettings
 {
-    u32 inverse_render_scale = 1;
+    u32 inverse_render_scale = 4;
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
     u32 bloom_downsamples = 5;

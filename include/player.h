@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "window.h"
 #include "flashlight.h"
+#include "weapon.h"
 #include "map.h"
 
 class Player
@@ -27,8 +28,9 @@ public:
     float head_bob_offset = 0.0f;
 
     glm::vec3 position = {};
-    Flashlight flashlight;
     JPH::Ref<JPH::CharacterVirtual> character;
+    Flashlight flashlight;
+    Weapon weapon = Weapon(Model::ID::WEAPON_2);
 
     constexpr static inline float PLAYER_HEIGHT     = 72 * Map::METRES_PER_UNIT;
     constexpr static inline float PLAYER_EYE_HEIGHT = 64 * Map::METRES_PER_UNIT;

@@ -27,6 +27,7 @@ add_subdirectory(lib/SDL_shadercross)
 add_subdirectory(lib/glm)
 add_subdirectory(lib/dbg-macro)
 add_subdirectory(lib/JoltPhysics/Build)
+add_subdirectory(lib/tinyobjloader)
 
 # Source discovery
 file(GLOB_RECURSE SOURCES
@@ -52,6 +53,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     SDL3_shadercross::SDL3_shadercross
     glm::glm
     Jolt::Jolt
+    tinyobjloader
 )
 
 # Fix warning / error with Clang

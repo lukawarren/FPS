@@ -4,7 +4,12 @@
 class Texture
 {
 public:
-    Texture(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass);
+    Texture(
+        const std::string& filename,
+        SDL_GPUDevice* device,
+        SDL_GPUCopyPass* copy_pass,
+        const std::string& root = TEXTURE_ROOT
+    );
     ~Texture();
 
     Texture(const Texture&) = delete;

@@ -2,11 +2,16 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-Texture::Texture(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
+Texture::Texture(
+    const std::string& filename,
+    SDL_GPUDevice* device,
+    SDL_GPUCopyPass* copy_pass,
+    const std::string& root
+)
 {
     // Load image
     int channels, width, height;
-    const std::string path = TEXTURE_ROOT + filename;
+    const std::string path = root + filename;
     uint8_t* pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
     if (pixels == nullptr)
         throw std::runtime_error("Failed to load texture " + path);

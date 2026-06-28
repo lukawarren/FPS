@@ -61,9 +61,6 @@ PipelineFactory::~PipelineFactory()
     SDL_ReleaseGPUShader(device, depth_vs);
     SDL_ReleaseGPUShader(device, depth_fs);
     SDL_ReleaseGPUShader(device, quad_vs);
-    SDL_ReleaseGPUShader(device, ssao_vs);
-    SDL_ReleaseGPUShader(device, ssao_fs);
-    SDL_ReleaseGPUShader(device, ssao_blur_fs);
     SDL_ReleaseGPUShader(device, downsample_fs);
     SDL_ReleaseGPUShader(device, upsample_fs);
     SDL_ReleaseGPUShader(device, composite_fs);
