@@ -22,7 +22,6 @@ cbuffer PushBlock : register(b0, space1)
 cbuffer PushBlockTwo : register(b1, space1)
 {
     float4x4 model;
-    float4x4 true_model;
 };
 
 VertexOutput main(VertexInput input)
@@ -33,8 +32,8 @@ VertexOutput main(VertexInput input)
     float4 view_pos  = mul(view, world_pos);
     output.position = mul(projection, view_pos);
 
-    output.normal = mul((float3x3)true_model, input.normal);
+    output.normal = mul((float3x3)model, input.normal);
     output.uv = input.uv;
-    output.world_pos = mul(true_model, float4(input.position, 1.0f));
+    output.world_pos = world_pos;
     return output;
 }

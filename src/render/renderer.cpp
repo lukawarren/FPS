@@ -77,11 +77,10 @@ void Renderer::render()
 
     const glm::mat4 camera_view = world->camera.view_matrix();
     const glm::mat4 camera_projection = world->camera.projection_matrix(device.swapchain_width, device.swapchain_height);
-
-    const glm::mat4 weapon_model = world->player->weapon.get_model_matrix();
-    const glm::mat4 weapon_true_model = world->player->weapon.get_true_model_matrix(world->player->position, world->player->head_pitch, world->player->head_yaw);
-    const glm::mat4 weapon_view = world->player->weapon.get_view_matrix();
-    const glm::mat4 weapon_projection =world->player->weapon.get_projection_matrix(device.swapchain_width, device.swapchain_height);
+    const glm::mat4 weapon_model = world->player->weapon.get_model_matrix(
+        camera_view,
+        world->player->head_bob_offset
+    );
 
     const u32 n_lights = world->player->flashlight.enabled
             ? std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size() + 1)
@@ -107,10 +106,10 @@ void Renderer::render()
         diffuse_shader_uniforms_fragment.spotlights[i] = Spotlight::get_disabled_uniform_buffer();
 
     for (u32 i = 0; i < n_lights; i++)
-        shadow_pass(command_buffer, matrices[i], i);
+        shadow_pass(command_buffer, matrices[i], weapon_model, i);
 
-    depth_pass(command_buffer, camera_view, camera_projection, weapon_model, weapon_true_model, weapon_view, weapon_projection);
-    diffuse_pass(command_buffer, camera_view, camera_projection, weapon_model, weapon_true_model, weapon_view, weapon_projection);
+    depth_pass(command_buffer, camera_view, camera_projection, weapon_model);
+    diffuse_pass(command_buffer, camera_view, camera_projection, weapon_model);
     downsample_pass(command_buffer);
     upsample_pass(command_buffer);
     composite_pass(command_buffer, swapchain_texture.value());
@@ -118,7 +117,12 @@ void Renderer::render()
     SDL_SubmitGPUCommandBuffer(command_buffer);
 }
 
-void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& light_matrix, const u8 slot)
+void Renderer::shadow_pass(
+    SDL_GPUCommandBuffer* command_buffer,
+    const glm::mat4& light_matrix,
+    const glm::mat4& weapon_model,
+    const u8 slot
+)
 {
     SDL_GPURenderPass* shadow_pass = SDL_BeginGPURenderPass(
         command_buffer,
@@ -172,6 +176,16 @@ void Renderer::shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4
         draw_call.mesh->draw(shadow_pass);
     }
 
+    // Weapon model
+    SDL_PushGPUVertexUniformData(
+        command_buffer,
+        1,
+        (void*)glm::value_ptr(weapon_model),
+        sizeof(float) * 16
+    );
+    models[world->player->weapon.model]->mesh->bind(shadow_pass);
+    models[world->player->weapon.model]->mesh->draw(shadow_pass);
+
     SDL_EndGPURenderPass(shadow_pass);
 }
 
@@ -179,10 +193,7 @@ void Renderer::depth_pass(
     SDL_GPUCommandBuffer* command_buffer,
     const glm::mat4& view,
     const glm::mat4& projection,
-    const glm::mat4& weapon_model,
-    const glm::mat4& weapon_true_model,
-    const glm::mat4& weapon_view,
-    const glm::mat4& weapon_projection
+    const glm::mat4& weapon_model
 )
 {
     SDL_GPURenderPass* depth_pass = SDL_BeginGPURenderPass(
@@ -238,23 +249,13 @@ void Renderer::depth_pass(
         draw_call.mesh->draw(depth_pass);
     }
 
-    // Weapon view and projection
-    glm::mat4 m2[2] = { weapon_view, weapon_projection };
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        0,
-        (void*)glm::value_ptr(m2[0]),
-        sizeof(float) * 32
-    );
-
-    // Model matrix
+    // Weapon model
     SDL_PushGPUVertexUniformData(
         command_buffer,
         1,
         (void*)glm::value_ptr(weapon_model),
         sizeof(float) * 16
     );
-
     models[world->player->weapon.model]->mesh->bind(depth_pass);
     models[world->player->weapon.model]->mesh->draw(depth_pass);
 
@@ -265,10 +266,7 @@ void Renderer::diffuse_pass(
     SDL_GPUCommandBuffer* command_buffer,
     const glm::mat4& view,
     const glm::mat4& projection,
-    const glm::mat4& weapon_model,
-    const glm::mat4& weapon_true_model,
-    const glm::mat4& weapon_view,
-    const glm::mat4& weapon_projection
+    const glm::mat4& weapon_model
 )
 {
     SDL_GPURenderPass* diffuse_pass = SDL_BeginGPURenderPass(
@@ -322,11 +320,11 @@ void Renderer::diffuse_pass(
     );
 
     // Map model matrix
-    glm::mat4 m0[2] = { glm::mat4(1.0f), glm::mat4(1.0f) };
+    const glm::mat4 unit = glm::mat4(1.0f);
     SDL_PushGPUVertexUniformData(
         command_buffer,
         1,
-        (void*)glm::value_ptr(m0[0]),
+        (void*)glm::value_ptr(unit),
         sizeof(float) * 32
     );
 
@@ -370,22 +368,12 @@ void Renderer::diffuse_pass(
         draw_call.mesh->draw(diffuse_pass);
     }
 
-    // View and projection
-    glm::mat4 m2[2] = { weapon_view, weapon_projection };
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        0,
-        (void*)glm::value_ptr(m2[0]),
-        sizeof(float) * 32
-    );
-
-    // Model matrix
-    glm::mat4 m3[2] = { weapon_model, weapon_true_model };
+    // Weapon model
     SDL_PushGPUVertexUniformData(
         command_buffer,
         1,
-        (void*)glm::value_ptr(m3[0]),
-        sizeof(float) * 32
+        (void*)glm::value_ptr(weapon_model),
+        sizeof(float) * 16
     );
 
     models[world->player->weapon.model]->texture->bind(diffuse_pass, texture_manager.sampler);

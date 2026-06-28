@@ -30,7 +30,7 @@ public:
     glm::vec3 position = {};
     JPH::Ref<JPH::CharacterVirtual> character;
     Flashlight flashlight;
-    Weapon weapon = Weapon(Model::ID::WEAPON_2);
+    Weapon weapon = Weapon(Model::ID::WEAPON_5);
 
     constexpr static inline float PLAYER_HEIGHT     = 72 * Map::METRES_PER_UNIT;
     constexpr static inline float PLAYER_EYE_HEIGHT = 64 * Map::METRES_PER_UNIT;

@@ -28,24 +28,23 @@ private:
         Spotlight::UniformBuffer spotlights[QUALITY_SETTINGS.max_spotlights];
     } diffuse_shader_uniforms_fragment;
 
-    void shadow_pass(SDL_GPUCommandBuffer* command_buffer, const glm::mat4& light_matrix, const u8 slot);
+    void shadow_pass(
+        SDL_GPUCommandBuffer* command_buffer,
+        const glm::mat4& light_matrix,
+        const glm::mat4& weapon_model,
+        const u8 slot
+    );
     void depth_pass(
         SDL_GPUCommandBuffer* command_buffer,
         const glm::mat4& view,
         const glm::mat4& projection,
-        const glm::mat4& weapon_model,
-        const glm::mat4& weapon_true_model,
-        const glm::mat4& weapon_view,
-        const glm::mat4& weapon_projection
+        const glm::mat4& weapon_model
     );
     void diffuse_pass(
         SDL_GPUCommandBuffer* command_buffer,
         const glm::mat4& view,
         const glm::mat4& projection,
-        const glm::mat4& weapon_model,
-        const glm::mat4& weapon_true_model,
-        const glm::mat4& weapon_view,
-        const glm::mat4& weapon_projection
+        const glm::mat4& weapon_model
     );
     void downsample_pass(SDL_GPUCommandBuffer* command_buffer);
     void upsample_pass(SDL_GPUCommandBuffer* command_buffer);

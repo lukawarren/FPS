@@ -14,11 +14,11 @@ public:
 
     enum class ID
     {
-        WEAPON_2 = 0
+        WEAPON_5 = 0
     };
 
     static inline constexpr std::array<const char*, 1> MODEL_NAMES =
     {
-        "weapon2"
+        "weapon5"
     };
 };
