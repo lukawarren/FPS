@@ -3,11 +3,21 @@
 Renderer::Renderer(const std::string& title, const u32 width, const u32 height) :
     device(title, width, height),
     texture_manager(device),
-    pipeline_factory(device, texture_manager)
+    pipeline_factory(device, texture_manager),
+    quad(create_quad(device)),
+    shadow_pass(pipeline_factory, texture_manager),
+    depth_pass(device, pipeline_factory, texture_manager),
+    diffuse_pass(device, pipeline_factory, texture_manager),
+    bloom_pass(device, pipeline_factory, texture_manager, *quad),
+    composite_pass(device, pipeline_factory, texture_manager, *quad)
 {
     SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device.device);
     SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
 
+    // Load quad
+    Quad* quad = new Quad(device.device, copy_pass);
+
+    // Load models
     for (size_t i = 0; i < Model::MODEL_NAMES.size(); i++)
     {
         models[(Model::ID)i] = new Model(
@@ -17,8 +27,7 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
         );
     }
 
-    quad = new Quad(device.device, copy_pass);
-
+    // Load world
     world = new World("map2.map", device.window, device.device, copy_pass);
 
     SDL_EndGPUCopyPass(copy_pass);
@@ -42,7 +51,6 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
 #endif
 
     dbg("TODO: don't use uniform buffer for lights");
-    dbg("TODO: fix AO");
 }
 
 Renderer::~Renderer()
@@ -75,6 +83,7 @@ void Renderer::render()
         pipeline_factory.on_swapchain_format_change(device.swapchain_format);
     }
 
+    // Collect matrices
     const glm::mat4 camera_view = world->camera.view_matrix();
     const glm::mat4 camera_projection = world->camera.projection_matrix(device.swapchain_width, device.swapchain_height);
     const glm::mat4 weapon_model = world->player->weapon.get_model_matrix(
@@ -82,448 +91,86 @@ void Renderer::render()
         world->player->head_bob_offset
     );
 
-    const u32 n_lights = world->player->flashlight.enabled
-            ? std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size() + 1)
-            : std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size());
+    // Collect lights
+    const LightingState lighting = collect_lights();
 
-    std::array<Spotlight*, QUALITY_SETTINGS.max_spotlights> spotlights;
-    std::array<glm::mat4, QUALITY_SETTINGS.max_spotlights> matrices;
-    for (u32 i = 0; i < n_lights - (world->player->flashlight.enabled ? 1 : 0); i++)
-    {
-        spotlights[i] = &world->spotlights[i];
-        matrices[i] = spotlights[i]->get_matrix();
-    }
+    for (u32 i = 0; i < lighting.n_lights; i++)
+        shadow_pass.execute(
+            command_buffer,
+            *world,
+            models,
+            lighting.matrices[i],
+            weapon_model,
+            (u8)i
+        );
 
-    if (world->player->flashlight.enabled)
-    {
-        spotlights[n_lights - 1] = &world->player->flashlight;
-        matrices[n_lights - 1] = world->player->flashlight.get_matrix();
-    }
+    depth_pass.execute(
+        command_buffer,
+        *world,
+        models,
+        camera_view,
+        camera_projection,
+        weapon_model
+    );
 
-    for (u32 i = 0; i < n_lights; i++)
-        diffuse_shader_uniforms_fragment.spotlights[i] = spotlights[i]->get_uniform_buffer(matrices[i]);
-    for (u32 i = n_lights; i < QUALITY_SETTINGS.max_spotlights; i++)
-        diffuse_shader_uniforms_fragment.spotlights[i] = Spotlight::get_disabled_uniform_buffer();
+    diffuse_pass.execute(
+        command_buffer,
+        *world,
+        models,
+        camera_view,
+        camera_projection,
+        weapon_model,
+        lighting.fragment_uniforms
+    );
 
-    for (u32 i = 0; i < n_lights; i++)
-        shadow_pass(command_buffer, matrices[i], weapon_model, i);
+    bloom_pass.execute(command_buffer);
 
-    depth_pass(command_buffer, camera_view, camera_projection, weapon_model);
-    diffuse_pass(command_buffer, camera_view, camera_projection, weapon_model);
-    downsample_pass(command_buffer);
-    upsample_pass(command_buffer);
-    composite_pass(command_buffer, swapchain_texture.value());
+    composite_pass.execute(command_buffer, swapchain_texture.value());
 
     SDL_SubmitGPUCommandBuffer(command_buffer);
 }
 
-void Renderer::shadow_pass(
-    SDL_GPUCommandBuffer* command_buffer,
-    const glm::mat4& light_matrix,
-    const glm::mat4& weapon_model,
-    const u8 slot
-)
+Renderer::LightingState Renderer::collect_lights() const
 {
-    SDL_GPURenderPass* shadow_pass = SDL_BeginGPURenderPass(
-        command_buffer,
-        NULL,
-        0,
-        &(SDL_GPUDepthStencilTargetInfo) {
-            .texture = texture_manager.shadow_map,
-            .clear_depth = 1.0f,
-            .load_op = SDL_GPU_LOADOP_CLEAR,
-            .store_op = SDL_GPU_STOREOP_STORE,
-            .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
-            .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-            .cycle = (slot == 0),
-            .clear_stencil = 0,
-            .mip_level = 0,
-            .layer = slot
-        }
-    );
+    LightingState state = {};
 
-    SDL_BindGPUGraphicsPipeline(shadow_pass, pipeline_factory.depth_pipeline_texture_array);
+    const bool flashlight_enabled = world->player->flashlight.enabled;
+    state.n_lights = flashlight_enabled
+        ? std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size() + 1)
+        : std::min(QUALITY_SETTINGS.max_spotlights, (u32)world->spotlights.size());
 
-    SDL_SetGPUViewport(shadow_pass, &(SDL_GPUViewport) {
-        .x = 0.0f,
-        .y = 0.0f,
-        .w = (float)QUALITY_SETTINGS.shadow_map_width,
-        .h = (float)QUALITY_SETTINGS.shadow_map_height,
-        .min_depth = 0.0f,
-        .max_depth = 1.0f
-    });
+    std::array<Spotlight*, QUALITY_SETTINGS.max_spotlights> spotlights;
 
-    // Projection and view
-    glm::mat4 m[2] = { light_matrix, glm::mat4(1.0f) };
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        0,
-        (void*)glm::value_ptr(m[0]),
-        sizeof(float) * 32
-    );
-
-    // Map model matrix
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        1,
-        (void*)glm::value_ptr(m[1]),
-        sizeof(float) * 16
-    );
-
-    for (const auto& draw_call : world->map->draw_calls)
+    const u32 n_world_lights = state.n_lights - (flashlight_enabled ? 1 : 0);
+    for (u32 i = 0; i < n_world_lights; i++)
     {
-        draw_call.mesh->bind(shadow_pass);
-        draw_call.mesh->draw(shadow_pass);
+        spotlights[i] = &world->spotlights[i];
+        state.matrices[i] = spotlights[i]->get_matrix();
     }
 
-    // Weapon model
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        1,
-        (void*)glm::value_ptr(weapon_model),
-        sizeof(float) * 16
-    );
-    models[world->player->weapon.model]->mesh->bind(shadow_pass);
-    models[world->player->weapon.model]->mesh->draw(shadow_pass);
-
-    SDL_EndGPURenderPass(shadow_pass);
-}
-
-void Renderer::depth_pass(
-    SDL_GPUCommandBuffer* command_buffer,
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::mat4& weapon_model
-)
-{
-    SDL_GPURenderPass* depth_pass = SDL_BeginGPURenderPass(
-        command_buffer,
-        NULL,
-        0,
-        &(SDL_GPUDepthStencilTargetInfo) {
-            .texture = texture_manager.depth_texture,
-            .clear_depth = 1.0f,
-            .load_op = SDL_GPU_LOADOP_CLEAR,
-            .store_op = SDL_GPU_STOREOP_STORE,
-            .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
-            .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-            .cycle = true,
-            .clear_stencil = 0,
-            .mip_level = 0,
-            .layer = 0
-        }
-    );
-
-    SDL_BindGPUGraphicsPipeline(depth_pass, pipeline_factory.depth_pipeline);
-
-    SDL_SetGPUViewport(depth_pass, &(SDL_GPUViewport) {
-        .x = 0.0f,
-        .y = 0.0f,
-        .w = (float)device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale,
-        .h = (float)device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale,
-        .min_depth = 0.0f,
-        .max_depth = 1.0f
-    });
-
-    // View and projection
-    glm::mat4 m[2] = { view, projection };
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        0,
-        (void*)glm::value_ptr(m[0]),
-        sizeof(float) * 32
-    );
-
-    // Map model matrix
-    const glm::mat4 unit = glm::mat4(1.0f);
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        1,
-        (void*)glm::value_ptr(unit),
-        sizeof(float) * 16
-    );
-
-    for (const auto& draw_call : world->map->draw_calls)
+    if (flashlight_enabled)
     {
-        draw_call.mesh->bind(depth_pass);
-        draw_call.mesh->draw(depth_pass);
+        spotlights[state.n_lights - 1] = &world->player->flashlight;
+        state.matrices[state.n_lights - 1] = world->player->flashlight.get_matrix();
     }
 
-    // Weapon model
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        1,
-        (void*)glm::value_ptr(weapon_model),
-        sizeof(float) * 16
-    );
-    models[world->player->weapon.model]->mesh->bind(depth_pass);
-    models[world->player->weapon.model]->mesh->draw(depth_pass);
-
-    SDL_EndGPURenderPass(depth_pass);
-}
-
-void Renderer::diffuse_pass(
-    SDL_GPUCommandBuffer* command_buffer,
-    const glm::mat4& view,
-    const glm::mat4& projection,
-    const glm::mat4& weapon_model
-)
-{
-    SDL_GPURenderPass* diffuse_pass = SDL_BeginGPURenderPass(
-        command_buffer,
-        &(SDL_GPUColorTargetInfo) {
-            .texture = texture_manager.diffuse_texture,
-            .mip_level = 0,
-            .layer_or_depth_plane = 0,
-            .clear_color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f },
-            .load_op = SDL_GPU_LOADOP_CLEAR,
-            .store_op = SDL_GPU_STOREOP_STORE,
-            .resolve_texture = NULL,
-            .resolve_mip_level = 0,
-            .resolve_layer = 0,
-            .cycle = true,
-            .cycle_resolve_texture = false
-        },
-        1,
-        &(SDL_GPUDepthStencilTargetInfo) {
-            .texture = texture_manager.depth_texture,
-            .clear_depth = 1.0f,
-            .load_op = SDL_GPU_LOADOP_LOAD,
-            .store_op = SDL_GPU_STOREOP_STORE,
-            .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
-            .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-            .cycle = false,
-            .clear_stencil = 0,
-            .mip_level = 0,
-            .layer = 0
-        }
-    );
-
-    SDL_BindGPUGraphicsPipeline(diffuse_pass, pipeline_factory.diffuse_pipeline);
-
-    SDL_SetGPUViewport(diffuse_pass, &(SDL_GPUViewport) {
-        .x = 0.0f,
-        .y = 0.0f,
-        .w = (float)device.swapchain_width / QUALITY_SETTINGS.inverse_render_scale,
-        .h = (float)device.swapchain_height / QUALITY_SETTINGS.inverse_render_scale,
-        .min_depth = 0.0f,
-        .max_depth = 1.0f
-    });
-
-    // View and projection
-    glm::mat4 m[2] = { view, projection };
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        0,
-        (void*)glm::value_ptr(m[0]),
-        sizeof(float) * 32
-    );
-
-    // Map model matrix
-    const glm::mat4 unit = glm::mat4(1.0f);
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        1,
-        (void*)glm::value_ptr(unit),
-        sizeof(float) * 16
-    );
-
-    SDL_PushGPUFragmentUniformData(
-        command_buffer,
-        0,
-        &diffuse_shader_uniforms_fragment,
-        sizeof(diffuse_shader_uniforms_fragment)
-    );
-
-    SDL_BindGPUFragmentSamplers(
-        diffuse_pass,
-        1,
-        &(SDL_GPUTextureSamplerBinding) {
-            .sampler = texture_manager.shadow_map_sampler,
-            .texture = texture_manager.shadow_map
-        },
-        1
-    );
-
-    for (const auto& draw_call : world->map->draw_calls)
-    {
-        draw_call.texture->bind(diffuse_pass, texture_manager.sampler);
-        draw_call.mesh->bind(diffuse_pass);
-        draw_call.mesh->draw(diffuse_pass);
-    }
-
-    // Weapon model
-    SDL_PushGPUVertexUniformData(
-        command_buffer,
-        1,
-        (void*)glm::value_ptr(weapon_model),
-        sizeof(float) * 16
-    );
-
-    models[world->player->weapon.model]->texture->bind(diffuse_pass, texture_manager.sampler);
-    models[world->player->weapon.model]->mesh->bind(diffuse_pass);
-    models[world->player->weapon.model]->mesh->draw(diffuse_pass);
-
-    SDL_EndGPURenderPass(diffuse_pass);
-}
-
-void Renderer::downsample_pass(SDL_GPUCommandBuffer* command_buffer)
-{
-    for (u32 level = 0; level < QUALITY_SETTINGS.bloom_downsamples; level++)
-    {
-        SDL_GPURenderPass* downsample_pass = SDL_BeginGPURenderPass(
-            command_buffer,
-            &(SDL_GPUColorTargetInfo) {
-                .texture = texture_manager.bloom_textures[level],
-                .mip_level = 0,
-                .layer_or_depth_plane = 0,
-                .clear_color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f },
-                .load_op = SDL_GPU_LOADOP_DONT_CARE,
-                .store_op = SDL_GPU_STOREOP_STORE,
-                .resolve_texture = NULL,
-                .resolve_mip_level = 0,
-                .resolve_layer = 0,
-                .cycle = true,
-                .cycle_resolve_texture = false
-            },
-            1,
-            NULL
+    for (u32 i = 0; i < state.n_lights; i++)
+        state.fragment_uniforms.spotlights[i] = spotlights[i]->get_uniform_buffer(
+            state.matrices[i]
         );
 
-        SDL_BindGPUGraphicsPipeline(downsample_pass, pipeline_factory.downsample_pipeline);
+    for (u32 i = state.n_lights; i < QUALITY_SETTINGS.max_spotlights; i++)
+        state.fragment_uniforms.spotlights[i] = Spotlight::get_disabled_uniform_buffer();
 
-        SDL_SetGPUViewport(downsample_pass, &(SDL_GPUViewport) {
-            .x = 0.0f,
-            .y = 0.0f,
-            .w = (float)texture_manager.get_bloom_texture_width(device, level),
-            .h = (float)texture_manager.get_bloom_texture_height(device, level),
-            .min_depth = 0.0f,
-            .max_depth = 1.0f
-        });
-
-        SDL_BindGPUFragmentSamplers(
-            downsample_pass,
-            0,
-            &(SDL_GPUTextureSamplerBinding) {
-                .sampler = texture_manager.bloom_sampler,
-                .texture = (level == 0 ? texture_manager.diffuse_texture : texture_manager.bloom_textures[level - 1])
-            },
-            1
-        );
-
-        quad->bind(downsample_pass);
-        quad->draw(downsample_pass);
-        SDL_EndGPURenderPass(downsample_pass);
-    }
+    return state;
 }
 
-void Renderer::upsample_pass(SDL_GPUCommandBuffer* command_buffer)
+Quad* Renderer::create_quad(Device& device)
 {
-    for (u32 level = 0; level < QUALITY_SETTINGS.bloom_downsamples - 1; level++)
-    {
-        const u32 target_level = texture_manager.bloom_textures.size() - level - 2;
-        const u32 source_level = texture_manager.bloom_textures.size() - level - 1;
-
-        SDL_GPURenderPass* upsample_pass = SDL_BeginGPURenderPass(
-            command_buffer,
-            &(SDL_GPUColorTargetInfo) {
-                .texture = texture_manager.bloom_textures[target_level],
-                .mip_level = 0,
-                .layer_or_depth_plane = 0,
-                .clear_color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f },
-                .load_op = SDL_GPU_LOADOP_LOAD,
-                .store_op = SDL_GPU_STOREOP_STORE,
-                .resolve_texture = NULL,
-                .resolve_mip_level = 0,
-                .resolve_layer = 0,
-                .cycle = false,
-                .cycle_resolve_texture = false
-            },
-            1,
-            NULL
-        );
-
-        SDL_BindGPUGraphicsPipeline(upsample_pass, pipeline_factory.upsample_pipeline);
-
-        SDL_SetGPUViewport(upsample_pass, &(SDL_GPUViewport) {
-            .x = 0.0f,
-            .y = 0.0f,
-            .w = (float)texture_manager.get_bloom_texture_width(device, target_level),
-            .h = (float)texture_manager.get_bloom_texture_height(device, target_level),
-            .min_depth = 0.0f,
-            .max_depth = 1.0f
-        });
-
-        SDL_BindGPUFragmentSamplers(
-            upsample_pass,
-            0,
-            &(SDL_GPUTextureSamplerBinding) {
-                .sampler = texture_manager.bloom_sampler,
-                .texture = texture_manager.bloom_textures[source_level]
-            },
-            1
-        );
-
-        quad->bind(upsample_pass);
-        quad->draw(upsample_pass);
-        SDL_EndGPURenderPass(upsample_pass);
-    }
-}
-
-void Renderer::composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture* swapchain_texture)
-{
-    SDL_GPURenderPass* composite_pass = SDL_BeginGPURenderPass(
-        command_buffer,
-        &(SDL_GPUColorTargetInfo) {
-            .texture = swapchain_texture,
-            .mip_level = 0,
-            .layer_or_depth_plane = 0,
-            .clear_color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f },
-            .load_op = SDL_GPU_LOADOP_DONT_CARE,
-            .store_op = SDL_GPU_STOREOP_STORE,
-            .resolve_texture = NULL,
-            .resolve_mip_level = 0,
-            .resolve_layer = 0,
-            .cycle = false,
-            .cycle_resolve_texture = false
-        },
-        1,
-        NULL
-    );
-
-    SDL_BindGPUGraphicsPipeline(composite_pass, pipeline_factory.composite_pipeline);
-
-    SDL_SetGPUViewport(composite_pass, &(SDL_GPUViewport) {
-        .x = 0.0f,
-        .y = 0.0f,
-        .w = (float)device.swapchain_width,
-        .h = (float)device.swapchain_height,
-        .min_depth = 0.0f,
-        .max_depth = 1.0f
-    });
-
-    std::array<SDL_GPUTextureSamplerBinding, 2> bindings =
-    {
-        SDL_GPUTextureSamplerBinding
-        {
-            .sampler = texture_manager.sampler,
-            .texture = texture_manager.diffuse_texture
-        },
-        SDL_GPUTextureSamplerBinding
-        {
-            .sampler = texture_manager.bloom_sampler,
-            .texture = texture_manager.bloom_textures[0]
-        }
-    };
-
-    SDL_BindGPUFragmentSamplers(
-        composite_pass,
-        0,
-        &bindings[0],
-        (u32)bindings.size()
-    );
-
-    quad->bind(composite_pass);
-    quad->draw(composite_pass);
-    SDL_EndGPURenderPass(composite_pass);
+    SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device.device);
+    SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
+    Quad* quad = new Quad(device.device, copy_pass);
+    SDL_EndGPUCopyPass(copy_pass);
+    SDL_SubmitGPUCommandBuffer(command_buffer);
+    return quad;
 }

@@ -5,6 +5,11 @@
 #include "render/device.h"
 #include "render/pipeline_factory.h"
 #include "render/texture_manager.h"
+#include "render/passes/shadow_pass.h"
+#include "render/passes/depth_pass.h"
+#include "render/passes/diffuse_pass.h"
+#include "render/passes/bloom_pass.h"
+#include "render/passes/composite_pass.h"
 #include "model.h"
 
 class Renderer
@@ -19,37 +24,29 @@ public:
     std::unordered_map<Model::ID, Model*> models;
 
 private:
+    // Per-light data gathered once per frame and shared between the shadow
+    // pass and the diffuse pass.
+    struct LightingState
+    {
+        std::array<glm::mat4, QUALITY_SETTINGS.max_spotlights> matrices;
+        DiffusePass::FragmentUniforms fragment_uniforms;
+        u32 n_lights;
+    };
+
+    LightingState collect_lights() const;
+
+    static Quad* create_quad(Device& device);
+
     Device device;
     TextureManager texture_manager;
     PipelineFactory pipeline_factory;
-
-    struct DiffuseShaderUniformsFragment
-    {
-        Spotlight::UniformBuffer spotlights[QUALITY_SETTINGS.max_spotlights];
-    } diffuse_shader_uniforms_fragment;
-
-    void shadow_pass(
-        SDL_GPUCommandBuffer* command_buffer,
-        const glm::mat4& light_matrix,
-        const glm::mat4& weapon_model,
-        const u8 slot
-    );
-    void depth_pass(
-        SDL_GPUCommandBuffer* command_buffer,
-        const glm::mat4& view,
-        const glm::mat4& projection,
-        const glm::mat4& weapon_model
-    );
-    void diffuse_pass(
-        SDL_GPUCommandBuffer* command_buffer,
-        const glm::mat4& view,
-        const glm::mat4& projection,
-        const glm::mat4& weapon_model
-    );
-    void downsample_pass(SDL_GPUCommandBuffer* command_buffer);
-    void upsample_pass(SDL_GPUCommandBuffer* command_buffer);
-    void composite_pass(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture* swapchain_texture);
-
     Quad* quad;
+
+    ShadowPass shadow_pass;
+    DepthPass depth_pass;
+    DiffusePass diffuse_pass;
+    BloomPass bloom_pass;
+    CompositePass composite_pass;
+
     World* world;
 };
