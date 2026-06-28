@@ -325,7 +325,7 @@ void Renderer::diffuse_pass(
         command_buffer,
         1,
         (void*)glm::value_ptr(unit),
-        sizeof(float) * 32
+        sizeof(float) * 16
     );
 
     SDL_PushGPUFragmentUniformData(
@@ -343,22 +343,6 @@ void Renderer::diffuse_pass(
             .texture = texture_manager.shadow_map
         },
         1
-    );
-
-    std::array<SDL_GPUTextureSamplerBinding, 1> bindings =
-    {
-        SDL_GPUTextureSamplerBinding
-        {
-            .sampler = texture_manager.shadow_map_sampler,
-            .texture = texture_manager.shadow_map
-        }
-    };
-
-    SDL_BindGPUFragmentSamplers(
-        diffuse_pass,
-        1,
-        &bindings[0],
-        (u32)bindings.size()
     );
 
     for (const auto& draw_call : world->map->draw_calls)
