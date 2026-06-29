@@ -56,7 +56,7 @@ World::World(
     }
 
     setup_physics();
-    player = new Player(player_position, player_yaw, window, physics_system);
+    player = new Player(player_position, player_yaw, window, *this);
     dbg("TODO: decal limits");
 }
 
@@ -66,7 +66,7 @@ void World::update(const float delta)
 
     // Need 1 collision step for every 60 FPS
     const float divisions_of_60 = (1.0f / 60.0f) / delta;
-    player->update(*this, divisions_of_60);
+    player->update(*this, delta);
     const JPH::EPhysicsUpdateError error = physics_system.Update(delta, divisions_of_60, &allocator, job_system);
 
     if (error != JPH::EPhysicsUpdateError::None)
@@ -85,10 +85,13 @@ void World::spawn_decal(const glm::vec3 position, const glm::vec3 direction)
 {
     // Prevent clipping
     decals.emplace_back(
-        position + direction * (0.0001f * (float)decals.size()),
+        position + direction * (0.001f * (float)decals.size()),
         direction,
         Decal::ID::BULLET
     );
+
+    if (decals.size() > QUALITY_SETTINGS.max_decals)
+        decals.pop_front();
 }
 
 void World::setup_physics()

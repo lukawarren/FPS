@@ -4,16 +4,16 @@
 #include "map.h"
 #include "world.h"
 
-static constexpr float MOVE_SPEED       = 0.12f;
-static constexpr float JUMP_SPEED       = 0.14f;
-static constexpr float GRAVITY          = 0.008f;
-static constexpr float ACCEL_RATE       = 0.2f;
-static constexpr float AIR_ACCEL_RATE   = 5.0f;
-static constexpr float FRICTION         = 0.1f;
+static constexpr float MOVE_SPEED       = 7.2f;
+static constexpr float JUMP_SPEED       = 8.4f;
+static constexpr float GRAVITY          = 0.48f;
+static constexpr float ACCEL_RATE       = 12.0f;
+static constexpr float AIR_ACCEL_RATE   = 300.0f;
+static constexpr float FRICTION         = 6.0f;
 static constexpr float STOP_SPEED       = 0.3f * MOVE_SPEED;
 static constexpr float AIR_CAP          = 0.3f * MOVE_SPEED;
 static constexpr float MAX_SPEED        = 1.5f * MOVE_SPEED;
-static constexpr float BOB_FREQUENCY    = 0.25f;
+static constexpr float BOB_FREQUENCY    = 15.0f;
 static constexpr float BOB_AMOUNT       = 0.10f;
 
 static constexpr float MAX_RAY_DISTANCE = 100.0f;
@@ -22,8 +22,9 @@ Player::Player(
     const glm::vec3 position,
     const float yaw,
     Window* window,
-    JPH::PhysicsSystem& physics_system
-) : position(position), head_yaw(yaw), window(window)
+    World& world
+) : position(position), head_yaw(yaw), window(window),
+    weapon(Model::ID::WEAPON_5, [&](World& world) { on_fire(world); }, world)
 {
     mouse_position = window->get_mouse_position();
     window->capture_mouse();
@@ -43,7 +44,7 @@ Player::Player(
         { position.x, position.y, position.z },
         JPH::Quat::sIdentity(),
         0,
-        &physics_system
+        &world.physics_system
     );
 }
 
@@ -51,6 +52,11 @@ void Player::update(World& world, const float delta)
 {
     handle_input(world, delta);
     flashlight.update(position, world.camera.pitch, world.camera.yaw);
+    weapon.update(
+        window->get_mouse_button(SDL_BUTTON_LEFT),
+        window->get_mouse_button_pressed(SDL_BUTTON_LEFT),
+        delta
+    );
 
     JPH::RVec3 center = character->GetPosition();
     position = {
@@ -58,15 +64,6 @@ void Player::update(World& world, const float delta)
         center.GetY(),
         center.GetZ()
     };
-
-    if (window->get_mouse_button(SDL_BUTTON_LEFT))
-    {
-        const auto hit = get_hit(world);
-        if (hit.has_value())
-        {
-            world.spawn_decal(hit->first, hit->second);
-        }
-    }
 }
 
 glm::vec2 Player::read_movement_input() const
@@ -202,6 +199,17 @@ void Player::handle_input(World& world, const float delta)
 
     if (window->get_key_pressed(SDL_SCANCODE_F))
         flashlight.enabled = !flashlight.enabled;
+}
+
+void Player::on_fire(World& world)
+{
+    const auto hit = get_hit(world);
+    if (!hit.has_value()) return;
+
+    world.spawn_decal(
+        hit->first,
+        hit->second
+    );
 }
 
 std::optional<std::pair<glm::vec3, glm::vec3>> Player::get_hit(const World& world) const

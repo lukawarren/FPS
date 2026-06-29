@@ -15,7 +15,7 @@ public:
         const glm::vec3 position,
         const float yaw,
         Window* window,
-        JPH::PhysicsSystem& physics_system
+        World& world
     );
 
     void update(World& world, const float delta);
@@ -27,7 +27,7 @@ public:
     glm::vec3 position = {};
     JPH::Ref<JPH::CharacterVirtual> character;
     Flashlight flashlight;
-    Weapon weapon = Weapon(Model::ID::WEAPON_5);
+    Weapon weapon;
 
     constexpr static inline float PLAYER_HEIGHT     = 72 * Map::METRES_PER_UNIT;
     constexpr static inline float PLAYER_EYE_HEIGHT = 64 * Map::METRES_PER_UNIT;
@@ -35,6 +35,7 @@ public:
 
 private:
     void handle_input(World& world, const float delta);
+    void on_fire(World& world);
 
     glm::vec2 read_movement_input() const;
     void update_velocity(const glm::vec2& wishdir, const float wishspeed, const float delta);

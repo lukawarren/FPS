@@ -9,6 +9,8 @@
 #include <limits>
 #include <unordered_set>
 #include <thread>
+#include <functional>
+#include <deque>
 
 #include <SDL3/SDL.h>
 #include <SDL3_shadercross/SDL_shadercross.h>
@@ -63,11 +65,12 @@ inline std::string SPRITE_ROOT = "../res/sprites/";
 
 struct QualitySettings
 {
-    u32 inverse_render_scale = 3;
+    u32 inverse_render_scale = 2;
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
     u32 bloom_downsamples = 5;
     u32 max_spotlights = 6;
+    u32 max_decals = 100;
 };
 
 constexpr static inline QualitySettings QUALITY_SETTINGS = {};

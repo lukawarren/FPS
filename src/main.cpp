@@ -1,8 +1,8 @@
 #include "common.h"
 #include "render/renderer.h"
 
-constexpr static inline int width = 1600;
-constexpr static inline int height = 900;
+constexpr static inline int width = 800;
+constexpr static inline int height = 600;
 
 int main()
 {

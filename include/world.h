@@ -29,7 +29,7 @@ public:
     std::vector<Spotlight> spotlights;
 
     // Sprites
-    std::vector<Decal> decals;
+    std::deque<Decal> decals;
 
     // Physics
     JPH::PhysicsSystem physics_system;
