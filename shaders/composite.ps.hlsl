@@ -11,7 +11,7 @@ struct VertexOutput
 };
 
 #define BLOOM_STRENGTH  0.03f
-#define EXPOSURE        16.0f
+#define EXPOSURE        32.0f
 #define GAMMA           2.2f
 
 #define A 0.15f

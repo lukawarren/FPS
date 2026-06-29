@@ -65,7 +65,7 @@ inline std::string SPRITE_ROOT = "../res/sprites/";
 
 struct QualitySettings
 {
-    u32 inverse_render_scale = 2;
+    u32 inverse_render_scale = 4;
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
     u32 bloom_downsamples = 5;
