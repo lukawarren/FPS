@@ -70,9 +70,20 @@ bool Window::get_key_pressed(const SDL_Scancode scancode)
     return just_pressed_keys.count(scancode) > 0;
 }
 
+bool Window::get_mouse_button(const uint8_t button)
+{
+    return (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_MASK(button)) != 0;
+}
+
+bool Window::get_mouse_button_pressed(const uint8_t button)
+{
+    return just_pressed_mouse_buttons.count(button) > 0;
+}
+
 void Window::update()
 {
     just_pressed_keys.clear();
+    just_pressed_mouse_buttons.clear();
 
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -92,6 +103,10 @@ void Window::update()
             {
                 just_pressed_keys.insert(event.key.scancode);
             }
+        }
+        else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+        {
+            just_pressed_mouse_buttons.insert(event.button.button);
         }
     }
 

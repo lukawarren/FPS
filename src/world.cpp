@@ -57,6 +57,7 @@ World::World(
 
     setup_physics();
     player = new Player(player_position, player_yaw, window, physics_system);
+    dbg("TODO: decal limits");
 }
 
 void World::update(const float delta)
@@ -65,7 +66,7 @@ void World::update(const float delta)
 
     // Need 1 collision step for every 60 FPS
     const float divisions_of_60 = (1.0f / 60.0f) / delta;
-    player->update(camera, divisions_of_60, physics_system, allocator);
+    player->update(*this, divisions_of_60);
     const JPH::EPhysicsUpdateError error = physics_system.Update(delta, divisions_of_60, &allocator, job_system);
 
     if (error != JPH::EPhysicsUpdateError::None)
@@ -78,57 +79,16 @@ void World::update(const float delta)
         player->position.y - Player::PLAYER_HEIGHT / 2.0f + Player::PLAYER_EYE_HEIGHT + player->head_bob_offset,
         player->position.z
     };
+}
 
-
-    const glm::vec3 forward = camera.direction_vector();
-    const float margin = 0.0f;
-
-    JPH::RVec3 start = {
-        camera.position.x + forward.x * margin,
-        camera.position.y + forward.y * margin,
-        camera.position.z + forward.z * margin
-    };
-
-    const float max_distance = 100.0f;
-
-    JPH::RVec3 direction = JPH::RVec3 { forward.x, forward.y, forward.z } * max_distance;
-    JPH::RRayCast ray { start, direction };
-
-    JPH::RayCastSettings settings;
-    settings.SetBackFaceMode(JPH::EBackFaceMode::CollideWithBackFaces);
-
-    JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
-    physics_system.GetNarrowPhaseQuery().CastRay(ray, settings, collector);
-
-    if (collector.HadHit())
-    {
-        // Sort hits to get the closest one if necessary
-        collector.Sort();
-
-        const JPH::RayCastResult& hit = collector.mHits[0];
-        JPH::Vec3 position = start + direction * hit.mFraction;
-
-        // Get surface normal
-        JPH::BodyLockRead lock(physics_system.GetBodyLockInterface(), hit.mBodyID);
-        JPH::Vec3 jolt_normal = JPH::Vec3::sAxisY();
-        if (lock.Succeeded())
-        {
-            const JPH::Body& body = lock.GetBody();
-            jolt_normal = body.GetShape()->GetSurfaceNormal(
-                hit.mSubShapeID2,
-                ray.GetPointOnRay(hit.mFraction)
-            );
-            jolt_normal = body.GetWorldTransform().Multiply3x3(jolt_normal);
-        }
-
-        glm::vec3 surface_normal(jolt_normal.GetX(), jolt_normal.GetY(), jolt_normal.GetZ());
-        decals.emplace_back(
-            glm::vec3(position.GetX(), position.GetY(), position.GetZ()),
-            surface_normal,
-            Decal::ID::BULLET
-        );
-    }
-
+void World::spawn_decal(const glm::vec3 position, const glm::vec3 direction)
+{
+    // Prevent clipping
+    decals.emplace_back(
+        position + direction * (0.0001f * (float)decals.size()),
+        direction,
+        Decal::ID::BULLET
+    );
 }
 
 void World::setup_physics()

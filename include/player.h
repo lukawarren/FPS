@@ -6,6 +6,8 @@
 #include "weapon.h"
 #include "map.h"
 
+class World;
+
 class Player
 {
 public:
@@ -16,12 +18,7 @@ public:
         JPH::PhysicsSystem& physics_system
     );
 
-    void update(
-        const Camera& camera,
-        const float delta,
-        JPH::PhysicsSystem& system,
-        JPH::TempAllocator& temp_allocator
-    );
+    void update(World& world, const float delta);
 
     float head_pitch = 0.0f;
     float head_yaw = 0.0f;
@@ -37,17 +34,14 @@ public:
     constexpr static inline float PLAYER_RADIUS     = 16 * Map::METRES_PER_UNIT;
 
 private:
-    void handle_input(
-        const Camera& camera,
-        const float delta,
-        JPH::PhysicsSystem& system,
-        JPH::TempAllocator& temp_allocator
-    );
+    void handle_input(World& world, const float delta);
 
     glm::vec2 read_movement_input() const;
     void update_velocity(const glm::vec2& wishdir, const float wishspeed, const float delta);
     void update_mouse_look();
     void update_view_juice(const glm::vec2& movement, const float delta);
+
+    std::optional<std::pair<glm::vec3, glm::vec3>> get_hit(const World& world) const;
 
     float bob_time = 0.0f;
     glm::vec2 mouse_position;

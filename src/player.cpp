@@ -2,19 +2,21 @@
 #include "window.h"
 #include "physics.h"
 #include "map.h"
+#include "world.h"
 
-static constexpr float MOVE_SPEED     = 0.12f;
-static constexpr float JUMP_SPEED     = 0.14f;
-static constexpr float GRAVITY        = 0.008f;
-static constexpr float ACCEL_RATE     = 0.2f;
-static constexpr float AIR_ACCEL_RATE = 5.0f;
-static constexpr float FRICTION       = 0.1f;
-static constexpr float STOP_SPEED     = 0.3f * MOVE_SPEED;
-static constexpr float AIR_CAP        = 0.3f * MOVE_SPEED;
-static constexpr float MAX_SPEED      = 1.5f * MOVE_SPEED;
+static constexpr float MOVE_SPEED       = 0.12f;
+static constexpr float JUMP_SPEED       = 0.14f;
+static constexpr float GRAVITY          = 0.008f;
+static constexpr float ACCEL_RATE       = 0.2f;
+static constexpr float AIR_ACCEL_RATE   = 5.0f;
+static constexpr float FRICTION         = 0.1f;
+static constexpr float STOP_SPEED       = 0.3f * MOVE_SPEED;
+static constexpr float AIR_CAP          = 0.3f * MOVE_SPEED;
+static constexpr float MAX_SPEED        = 1.5f * MOVE_SPEED;
+static constexpr float BOB_FREQUENCY    = 0.25f;
+static constexpr float BOB_AMOUNT       = 0.10f;
 
-static constexpr float BOB_FREQUENCY = 0.25f;
-static constexpr float BOB_AMOUNT    = 0.10f;
+static constexpr float MAX_RAY_DISTANCE = 100.0f;
 
 Player::Player(
     const glm::vec3 position,
@@ -45,15 +47,10 @@ Player::Player(
     );
 }
 
-void Player::update(
-    const Camera& camera,
-    const float delta,
-    JPH::PhysicsSystem& system,
-    JPH::TempAllocator& temp_allocator
-)
+void Player::update(World& world, const float delta)
 {
-    handle_input(camera, delta, system, temp_allocator);
-    flashlight.update(position, camera.pitch, camera.yaw);
+    handle_input(world, delta);
+    flashlight.update(position, world.camera.pitch, world.camera.yaw);
 
     JPH::RVec3 center = character->GetPosition();
     position = {
@@ -61,6 +58,15 @@ void Player::update(
         center.GetY(),
         center.GetZ()
     };
+
+    if (window->get_mouse_button(SDL_BUTTON_LEFT))
+    {
+        const auto hit = get_hit(world);
+        if (hit.has_value())
+        {
+            world.spawn_decal(hit->first, hit->second);
+        }
+    }
 }
 
 glm::vec2 Player::read_movement_input() const
@@ -166,17 +172,12 @@ void Player::update_view_juice(const glm::vec2& movement, const float delta)
     }
 }
 
-void Player::handle_input(
-    const Camera& camera,
-    const float delta,
-    JPH::PhysicsSystem& system,
-    JPH::TempAllocator& temp_allocator
-)
+void Player::handle_input(World& world, const float delta)
 {
     const glm::vec2 movement = read_movement_input();
 
-    const glm::vec3 forward = { sin(glm::radians(camera.yaw)), 0.0f, -cos(glm::radians(camera.yaw)) };
-    const glm::vec3 right   = { cos(glm::radians(camera.yaw)), 0.0f,  sin(glm::radians(camera.yaw)) };
+    const glm::vec3 forward = { sin(glm::radians(world.camera.yaw)), 0.0f, -cos(glm::radians(world.camera.yaw)) };
+    const glm::vec3 right   = { cos(glm::radians(world.camera.yaw)), 0.0f,  sin(glm::radians(world.camera.yaw)) };
 
     glm::vec3 wishdir3 = forward * movement.y + right * movement.x;
     if (glm::length(wishdir3) > 0.0001f)
@@ -189,11 +190,11 @@ void Player::handle_input(
         delta,
         { 0.0f, GRAVITY, 0.0f },
         update_settings,
-        system.GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
-        system.GetDefaultLayerFilter(Layers::MOVING),
+        world.physics_system.GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
+        world.physics_system.GetDefaultLayerFilter(Layers::MOVING),
         {},
         {},
-        temp_allocator
+        world.allocator
     );
 
     update_mouse_look();
@@ -201,4 +202,60 @@ void Player::handle_input(
 
     if (window->get_key_pressed(SDL_SCANCODE_F))
         flashlight.enabled = !flashlight.enabled;
+}
+
+std::optional<std::pair<glm::vec3, glm::vec3>> Player::get_hit(const World& world) const
+{
+    const glm::vec3 forward = world.camera.direction_vector();
+    JPH::RVec3 start = {
+        world.camera.position.x + forward.x,
+        world.camera.position.y + forward.y,
+        world.camera.position.z + forward.z
+    };
+
+    JPH::RVec3 direction = JPH::RVec3 { forward.x, forward.y, forward.z } * MAX_RAY_DISTANCE;
+    JPH::RRayCast ray { start, direction };
+
+    JPH::RayCastSettings settings;
+    settings.SetBackFaceMode(JPH::EBackFaceMode::CollideWithBackFaces);
+
+    JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
+    world.physics_system.GetNarrowPhaseQuery().CastRay(ray, settings, collector);
+
+    if (collector.HadHit())
+    {
+        // Sort hits to get the closest one if necessary
+        collector.Sort();
+
+        const JPH::RayCastResult& hit = collector.mHits[0];
+        JPH::Vec3 position = start + direction * hit.mFraction;
+
+        // Get surface normal
+        JPH::BodyLockRead lock(world.physics_system.GetBodyLockInterface(), hit.mBodyID);
+        JPH::Vec3 jolt_normal = JPH::Vec3::sAxisY();
+        if (lock.Succeeded())
+        {
+            const JPH::Body& body = lock.GetBody();
+            jolt_normal = body.GetShape()->GetSurfaceNormal(
+                hit.mSubShapeID2,
+                ray.GetPointOnRay(hit.mFraction)
+            );
+            jolt_normal = body.GetWorldTransform().Multiply3x3(jolt_normal);
+        }
+
+        return std::pair<glm::vec3, glm::vec3> {
+            glm::vec3(
+                position.GetX(),
+                position.GetY(),
+                position.GetZ()
+            ),
+            glm::vec3(
+                jolt_normal.GetX(),
+                jolt_normal.GetY(),
+                jolt_normal.GetZ()
+            )
+        };
+    }
+
+    return std::nullopt;
 }

@@ -19,6 +19,7 @@ public:
     ~World();
 
     void update(const float delta);
+    void spawn_decal(const glm::vec3 position, const glm::vec3 direction);
 
     Camera camera;
     Player* player = nullptr;
@@ -30,15 +31,17 @@ public:
     // Sprites
     std::vector<Decal> decals;
 
+    // Physics
+    JPH::PhysicsSystem physics_system;
+    JPH::TempAllocatorMalloc allocator;
+
 private:
     void setup_physics();
 
     // Physics
     JPH::JobSystemThreadPool* job_system;
-    JPH::PhysicsSystem physics_system;
     BPLayerInterfaceImpl broad_phase_layer_interface;
 	ObjectVsBroadPhaseLayerFilterImpl object_vs_broadphase_layer_filter;
 	ObjectLayerPairFilterImpl object_vs_object_layer_filter;
-    JPH::TempAllocatorMalloc allocator;
     JPH::Ref<JPH::CharacterVirtual> character;
 };
