@@ -91,7 +91,7 @@ SDL_GPUShader* Device::compile_shader(
     SDL_ShaderCross_HLSL_Info hlsl_info = {};
     hlsl_info.source = (const char*)source;
     hlsl_info.entrypoint = "main";
-    hlsl_info.include_dir = NULL;
+    hlsl_info.include_dir = SHADER_ROOT.c_str();
     hlsl_info.defines = NULL;
     hlsl_info.shader_stage = stage;
     hlsl_info.props = 0;

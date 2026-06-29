@@ -35,13 +35,16 @@ public:
 
     glm::vec3 direction_vector() const
     {
-        // Eye coordinates at centre of screen
-        glm::vec4 eye = { 0.0f, 0.0f, -1.0f, 0.0f };
+        glm::vec3 direction;
 
-        // World coordinates
-        glm::vec4 world_ray_xyzw = glm::inverse(view_matrix()) * eye;
-        glm::vec3 world_ray_xyz = { world_ray_xyzw.x, world_ray_xyzw.y, world_ray_xyzw.z };
-        return glm::normalize(world_ray_xyz);
+        const float p = glm::radians(pitch);
+        const float y = glm::radians(yaw);
+
+        direction.x = std::cos(p) * std::sin(y);
+        direction.y = -std::sin(p);
+        direction.z = -std::cos(p) * std::cos(y);
+
+        return glm::normalize(direction);
     }
 
     glm::vec3 position = {};

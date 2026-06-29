@@ -37,6 +37,10 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollisionCollector.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>
