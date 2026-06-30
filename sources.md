@@ -13,3 +13,9 @@ Sprites:
 - https://opengameart.org/content/bullet-decal
 - https://opengameart.org/content/skeleton-knight
 - https://opengameart.org/content/wgstudio-fire-animation-loop
+
+Audio:
+- https://opengameart.org/content/wind-whoosh-loop
+- https://opengameart.org/content/metal-footsteps-on-concrete
+- https://opengameart.org/content/25-cc0-bang-firework-sfx
+- https://opengameart.org/content/fireplace-sound-loop

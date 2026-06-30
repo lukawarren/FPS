@@ -8,6 +8,7 @@
 #include "decal.h"
 #include "enemy.h"
 #include "animated_sprite.h"
+#include "audio.h"
 
 class World
 {
@@ -16,7 +17,8 @@ public:
         const std::string& filename,
         Window* window,
         SDL_GPUDevice* device,
-        SDL_GPUCopyPass* copy_pass
+        SDL_GPUCopyPass* copy_pass,
+        Audio& audio
     );
     ~World();
 
@@ -27,6 +29,7 @@ public:
     Camera camera;
     Player* player = nullptr;
     Map* map = nullptr;
+    Audio& audio;
 
     // Lighting
     std::vector<Spotlight> spotlights;

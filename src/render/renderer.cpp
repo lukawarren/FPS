@@ -1,6 +1,11 @@
 #include "render/renderer.h"
 
-Renderer::Renderer(const std::string& title, const u32 width, const u32 height) :
+Renderer::Renderer(
+    const std::string& title,
+    const u32 width,
+    const u32 height,
+    Audio& audio
+) :
     device(title, width, height),
     texture_manager(device),
     pipeline_factory(device, texture_manager),
@@ -40,7 +45,7 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
     }
 
     // Load world
-    world = new World("map3.map", device.window, device.device, copy_pass);
+    world = new World("map3.map", device.window, device.device, copy_pass, audio);
 
     SDL_EndGPUCopyPass(copy_pass);
 

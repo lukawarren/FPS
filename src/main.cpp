@@ -1,8 +1,9 @@
 #include "common.h"
 #include "render/renderer.h"
+#include "audio.h"
 
-constexpr static inline int width = 1600;
-constexpr static inline int height = 900;
+constexpr static inline int width = 800;
+constexpr static inline int height = 600;
 
 int main()
 {
@@ -12,11 +13,13 @@ int main()
     JPH::RegisterTypes();
     JPH::TempAllocatorMalloc temp_allocator;
 
-    Renderer renderer("FPS", width, height);
+    Audio audio;
+    Renderer renderer("FPS", width, height, audio);
 
     while (renderer.update())
     {
         renderer.render();
+        audio.update();
     }
 
     delete JPH::Factory::sInstance;

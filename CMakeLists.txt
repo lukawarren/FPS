@@ -32,6 +32,7 @@ add_subdirectory(lib/dbg-macro)
 add_subdirectory(lib/JoltPhysics/Build)
 add_subdirectory(lib/tinyobjloader)
 add_subdirectory(lib/recastnavigation)
+add_subdirectory(lib/miniaudio)
 
 # Source discovery
 file(GLOB_RECURSE SOURCES
@@ -48,6 +49,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     lib/stb
     lib/dbg-macro/
     lib/tiny_csg/
+    lib/
     ${JoltPhysics_SOURCE_DIR}/..
 )
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/common.h)
@@ -60,6 +62,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     tinyobjloader
     RecastNavigation::Recast
     RecastNavigation::Detour
+    miniaudio
 )
 
 # Fix warning / error with Clang

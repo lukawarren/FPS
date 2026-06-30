@@ -5,6 +5,7 @@
 #include "flashlight.h"
 #include "weapon.h"
 #include "map.h"
+#include "audio.h"
 
 class World;
 
@@ -15,10 +16,11 @@ public:
         const glm::vec3 position,
         const float yaw,
         Window* window,
-        World& world
+        World& world,
+        Audio& audio
     );
 
-    void update(World& world, const float delta);
+    void update(const float delta);
 
     float head_pitch = 0.0f;
     float head_yaw = 0.0f;
@@ -34,10 +36,11 @@ public:
     constexpr static inline float PLAYER_RADIUS     = 16 * Map::METRES_PER_UNIT;
 
 private:
-    void handle_input(World& world, const float delta);
-    void on_fire(World& world);
+    void handle_input(const float delta);
+    void on_fire();
 
     glm::vec2 read_movement_input() const;
+    bool is_walking() const;
     void update_velocity(const glm::vec2& wishdir, const float wishspeed, const float delta);
     void update_mouse_look();
     void update_view_juice(const glm::vec2& movement, const float delta);
@@ -49,9 +52,14 @@ private:
         std::optional<JPH::BodyID> body_id;
     };
 
-    std::optional<Hit> get_hit(const World& world) const;
+    std::optional<Hit> get_hit() const;
 
+    u32 step = 0;
+    float step_time = 0.0f;
     float bob_time = 0.0f;
     glm::vec2 mouse_position;
+
+    World& world;
+    Audio& audio;
     Window* window;
 };

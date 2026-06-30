@@ -4,8 +4,9 @@ World::World(
     const std::string& filename,
     Window* window,
     SDL_GPUDevice* device,
-    SDL_GPUCopyPass* copy_pass
-)
+    SDL_GPUCopyPass* copy_pass,
+    Audio& audio
+) : audio(audio)
 {
     map = new Map(filename, device, copy_pass);
     setup_physics();
@@ -72,8 +73,9 @@ World::World(
         }
     }
 
-    player = new Player(player_position, player_yaw, window, *this);
-    dbg("TODO: decal limits");
+    player = new Player(player_position, player_yaw, window, *this, audio);
+
+    audio.play(Audio::ID::AMBIENCE);
 }
 
 void World::update(const float delta)
@@ -82,7 +84,7 @@ void World::update(const float delta)
 
     // Need 1 collision step for every 60 FPS
     const float divisions_of_60 = (1.0f / 60.0f) / delta;
-    player->update(*this, delta);
+    player->update(delta);
     const JPH::EPhysicsUpdateError error = physics_system.Update(delta, divisions_of_60, &allocator, job_system);
 
     if (error != JPH::EPhysicsUpdateError::None)

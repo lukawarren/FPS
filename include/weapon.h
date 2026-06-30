@@ -1,15 +1,12 @@
 #pragma once
 #include "model.h"
 
-class World;
-
 class Weapon
 {
 public:
     Weapon(
         const Model::ID model,
-        const std::function<void(World&)> on_fire,
-        World& world
+        const std::function<void()> on_fire
     );
 
     glm::mat4 get_model_matrix(
@@ -21,8 +18,7 @@ public:
 
     Model::ID model;
     float time = 0.0f;
-    std::function<void(World&)> on_fire;
-    World& world;
+    std::function<void()> on_fire;
 
     constexpr static inline float DAMAGE = 20.0f;
 };

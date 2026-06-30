@@ -7,9 +7,8 @@ constexpr static inline float RECOIL_AMOUNT = 0.01f;
 
 Weapon::Weapon(
     const Model::ID model,
-    const std::function<void(World&)> on_fire,
-    World& world
-) : model(model), on_fire(on_fire), world(world) {}
+    const std::function<void()> on_fire
+) : model(model), on_fire(on_fire) {}
 
 glm::mat4 Weapon::get_model_matrix(const glm::mat4& view_matrix, const float bob_amount) const
 {
@@ -36,7 +35,7 @@ void Weapon::update(const bool fired, const bool fired_this_frame, const float d
 
     if (time <= 0.0f)
     {
-        on_fire(world);
+        on_fire();
         time = 1.0f / FIRE_RATE;
     }
 }

@@ -24,6 +24,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/norm.hpp>
 
 #define module_private public
 #include <csg.hpp>
@@ -49,6 +50,8 @@
 #include <DetourNavMeshBuilder.h>
 #include <DetourNavMeshQuery.h>
 
+#include <miniaudio/miniaudio.h>
+
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>
 
@@ -67,6 +70,7 @@ inline std::string TEXTURE_ROOT = "../res/trenchbroom/textures/";
 inline std::string MODEL_ROOT = "../res/trenchbroom/models/";
 inline std::string MAP_ROOT = "../res/maps/";
 inline std::string SPRITE_ROOT = "../res/sprites/";
+inline std::string AUDIO_ROOT = "../res/audio/";
 
 struct QualitySettings
 {

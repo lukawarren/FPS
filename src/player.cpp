@@ -18,13 +18,20 @@ static constexpr float BOB_AMOUNT       = 0.10f;
 
 static constexpr float MAX_RAY_DISTANCE = 100.0f;
 
+static constexpr float STEP_DELAY       = 0.4f;
+
 Player::Player(
     const glm::vec3 position,
     const float yaw,
     Window* window,
-    World& world
-) : position(position), head_yaw(yaw), window(window),
-    weapon(Model::ID::WEAPON_5, [&](World& world) { on_fire(world); }, world)
+    World& world,
+    Audio& audio
+) : position(position),
+    head_yaw(yaw),
+    weapon(Model::ID::WEAPON_5, [&]() { on_fire(); }),
+    window(window),
+    world(world),
+    audio(audio)
 {
     mouse_position = window->get_mouse_position();
     window->capture_mouse();
@@ -48,9 +55,14 @@ Player::Player(
     );
 }
 
-void Player::update(World& world, const float delta)
+void Player::update(const float delta)
 {
-    handle_input(world, delta);
+    const bool grounded_this_frame =
+        character->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround;
+
+    const glm::vec3 original_position = position;
+
+    handle_input(delta);
     flashlight.update(position, world.camera.pitch, world.camera.yaw);
     weapon.update(
         window->get_mouse_button(SDL_BUTTON_LEFT),
@@ -58,12 +70,42 @@ void Player::update(World& world, const float delta)
         delta
     );
 
+    // Update position from physics
     JPH::RVec3 center = character->GetPosition();
     position = {
         center.GetX(),
         center.GetY(),
         center.GetZ()
     };
+
+    if (window->get_key_pressed(SDL_SCANCODE_K))
+        character->SetPosition(character->GetPosition() + JPH::RVec3(0.0f, 100.0f, 0.0f));
+
+    // Walking sounds
+    if (is_walking())
+    {
+        if (step_time <= 0.0f)
+        {
+            if (glm::length2(position - original_position) > 0.001f)
+                audio.play(
+                    (Audio::ID)(
+                        (u32)Audio::ID::STEPS_BEGIN + (
+                            step %
+                            ((u32)Audio::ID::STEPS_FINAL - (u32)Audio::ID::STEPS_BEGIN + 1)
+                        )
+                    )
+                );
+            step_time = STEP_DELAY + delta;
+            step++;
+        }
+
+        step_time -= delta;
+    }
+    else step_time = 0.0f;
+
+    // Landing sound
+    if (!grounded_this_frame && character->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround)
+        audio.play(Audio::ID::STEPS_BEGIN);
 }
 
 glm::vec2 Player::read_movement_input() const
@@ -78,6 +120,17 @@ glm::vec2 Player::read_movement_input() const
         movement = glm::normalize(movement);
 
     return movement;
+}
+
+bool Player::is_walking() const
+{
+    return
+        character->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround && (
+        window->get_key(SDL_SCANCODE_W) ||
+        window->get_key(SDL_SCANCODE_S) ||
+        window->get_key(SDL_SCANCODE_A) ||
+        window->get_key(SDL_SCANCODE_D)
+    );
 }
 
 static void apply_friction(glm::vec2& velocity, const float delta)
@@ -169,18 +222,18 @@ void Player::update_view_juice(const glm::vec2& movement, const float delta)
     }
 }
 
-void Player::handle_input(World& world, const float delta)
+void Player::handle_input(const float delta)
 {
     const glm::vec2 movement = read_movement_input();
 
     const glm::vec3 forward = { sin(glm::radians(world.camera.yaw)), 0.0f, -cos(glm::radians(world.camera.yaw)) };
     const glm::vec3 right   = { cos(glm::radians(world.camera.yaw)), 0.0f,  sin(glm::radians(world.camera.yaw)) };
 
-    glm::vec3 wishdir3 = forward * movement.y + right * movement.x;
-    if (glm::length(wishdir3) > 0.0001f)
-        wishdir3 = glm::normalize(wishdir3);
+    glm::vec3 wishdir = forward * movement.y + right * movement.x;
+    const float length = glm::length(wishdir);
+    if (length > 0.0001f) wishdir = glm::normalize(wishdir);
 
-    update_velocity({ wishdir3.x, wishdir3.z }, MOVE_SPEED, delta);
+    update_velocity({ wishdir.x, wishdir.z }, MOVE_SPEED, delta);
 
     JPH::CharacterVirtual::ExtendedUpdateSettings update_settings;
     character->ExtendedUpdate(
@@ -201,13 +254,18 @@ void Player::handle_input(World& world, const float delta)
         flashlight.enabled = !flashlight.enabled;
 }
 
-void Player::on_fire(World& world)
+void Player::on_fire()
 {
-    const auto hit = get_hit(world);
+    const auto hit = get_hit();
     if (!hit.has_value() || !hit->body_id.has_value()) return;
 
     const JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
     JPH::uint64 data = body_interface.GetUserData(hit->body_id.value());
+
+    audio.play(
+        Audio::ID::SHOOT,
+        0.9f + (rand() % 200) / 1000.0f
+    );
 
     if (data == 0)
     {
@@ -224,7 +282,7 @@ void Player::on_fire(World& world)
     }
 }
 
-std::optional<Player::Hit> Player::get_hit(const World& world) const
+std::optional<Player::Hit> Player::get_hit() const
 {
     const glm::vec3 forward = world.camera.direction_vector();
     JPH::RVec3 start = {

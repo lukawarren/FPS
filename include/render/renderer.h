@@ -11,12 +11,13 @@
 #include "render/passes/sprite_pass.h"
 #include "render/passes/bloom_pass.h"
 #include "render/passes/composite_pass.h"
+#include "audio.h"
 #include "model.h"
 
 class Renderer
 {
 public:
-    Renderer(const std::string& title, const u32 width, const u32 height);
+    Renderer(const std::string& title, const u32 width, const u32 height, Audio& audio);
     ~Renderer();
 
     bool update();
