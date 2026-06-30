@@ -40,7 +40,7 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
     }
 
     // Load world
-    world = new World("map2.map", device.window, device.device, copy_pass);
+    world = new World("map3.map", device.window, device.device, copy_pass);
 
     SDL_EndGPUCopyPass(copy_pass);
 
