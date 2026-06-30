@@ -30,9 +30,9 @@ public:
     // Lighting
     std::vector<Spotlight> spotlights;
 
-    // Sprites
+    // Sprites; enemies need constant addresses for physics user pointer
     std::deque<Decal> decals;
-    std::vector<Enemy> enemies;
+    std::vector<std::unique_ptr<Enemy>> enemies;
 
     // Physics
     JPH::PhysicsSystem physics_system;
@@ -46,5 +46,4 @@ private:
     BPLayerInterfaceImpl broad_phase_layer_interface;
 	ObjectVsBroadPhaseLayerFilterImpl object_vs_broadphase_layer_filter;
 	ObjectLayerPairFilterImpl object_vs_object_layer_filter;
-    JPH::Ref<JPH::CharacterVirtual> character;
 };

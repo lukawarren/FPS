@@ -6,18 +6,37 @@ constexpr static inline float SPEED = 4.0f;
 constexpr static inline float WAYPOINT_THRESHOLD = 0.05f;
 constexpr static inline float REPATH_INTERVAL = 0.5f;
 
-Enemy::Enemy(const glm::vec3 position) : sprite(
+Enemy::Enemy(World& world, const glm::vec3 position) : sprite(
     position,
     { 1.0f, 0.0f, 0.0f },
     Sprite::ID::ENEMY
 )
 {
     sprite.transform.scale = {
-        ENEMY_RADIUS * 2.0f,
+        ENEMY_RADIUS,
         ENEMY_HEIGHT / 2.0f,
-        ENEMY_RADIUS * 2.0f
+        ENEMY_RADIUS
     };
     sprite.transform.position.y += ENEMY_HEIGHT / 2.0f;
+
+    JPH::Ref<JPH::BoxShape> shape = new JPH::BoxShape(
+        { ENEMY_RADIUS, ENEMY_HEIGHT / 2.0f, ENEMY_RADIUS }
+    );
+
+    JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
+
+    // Add physics
+    JPH::BodyCreationSettings settings(
+        shape,
+        JPH::RVec3(position.x, position.y, position.z),
+        JPH::Quat::sIdentity(),
+        JPH::EMotionType::Static,
+        Layers::MOVING
+    );
+	JPH::Body* body = body_interface.CreateBody(settings);
+    body->SetUserData((u64)this);
+    body_id = body->GetID();
+	body_interface.AddBody(body_id, JPH::EActivation::DontActivate);
 }
 
 void Enemy::update(World& world, const float delta, const glm::vec3 direction)
@@ -63,4 +82,21 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
         const float step = glm::min(SPEED * delta, distance);
         sprite.transform.position += move_direction * step;
     }
+
+    // Update physics
+    JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
+    body_interface.SetPosition(
+        body_id,
+        JPH::RVec3(
+            sprite.transform.position.x,
+            sprite.transform.position.y,
+            sprite.transform.position.z
+        ),
+        JPH::EActivation::DontActivate
+    );
+}
+
+void Enemy::damage(const float damage)
+{
+    health -= damage;
 }

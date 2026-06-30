@@ -94,7 +94,7 @@ void SpritePass::execute(
     sprites.at(Decal::ID::ENEMY)->bind(render_pass, texture_manager.sampler);
     for (const auto& e : world.enemies)
     {
-        render_pass.push_model_matrix(e.sprite.transform.matrix());
+        render_pass.push_model_matrix(e->sprite.transform.matrix());
         quad.draw(render_pass);
     }
 }

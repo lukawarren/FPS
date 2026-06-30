@@ -204,15 +204,27 @@ void Player::handle_input(World& world, const float delta)
 void Player::on_fire(World& world)
 {
     const auto hit = get_hit(world);
-    if (!hit.has_value()) return;
+    if (!hit.has_value() || !hit->body_id.has_value()) return;
 
-    world.spawn_decal(
-        hit->first,
-        hit->second
-    );
+    const JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
+    JPH::uint64 data = body_interface.GetUserData(hit->body_id.value());
+
+    if (data == 0)
+    {
+        // Hit map
+        world.spawn_decal(
+            hit->position,
+            hit->normal
+        );
+    }
+    else
+    {
+        Enemy* enemy = (Enemy*)data;
+        enemy->damage(Weapon::DAMAGE);
+    }
 }
 
-std::optional<std::pair<glm::vec3, glm::vec3>> Player::get_hit(const World& world) const
+std::optional<Player::Hit> Player::get_hit(const World& world) const
 {
     const glm::vec3 forward = world.camera.direction_vector();
     JPH::RVec3 start = {
@@ -237,6 +249,7 @@ std::optional<std::pair<glm::vec3, glm::vec3>> Player::get_hit(const World& worl
 
         const JPH::RayCastResult& hit = collector.mHits[0];
         JPH::Vec3 position = start + direction * hit.mFraction;
+        std::optional<JPH::BodyID> body_id = std::nullopt;
 
         // Get surface normal
         JPH::BodyLockRead lock(world.physics_system.GetBodyLockInterface(), hit.mBodyID);
@@ -249,20 +262,22 @@ std::optional<std::pair<glm::vec3, glm::vec3>> Player::get_hit(const World& worl
                 ray.GetPointOnRay(hit.mFraction)
             );
             jolt_normal = body.GetWorldTransform().Multiply3x3(jolt_normal);
+            body_id = body.GetID();
         }
 
-        return std::pair<glm::vec3, glm::vec3> {
-            glm::vec3(
+        return std::optional<Hit>(Hit {
+            .position = glm::vec3(
                 position.GetX(),
                 position.GetY(),
                 position.GetZ()
             ),
-            glm::vec3(
+            .normal = glm::vec3(
                 jolt_normal.GetX(),
                 jolt_normal.GetY(),
                 jolt_normal.GetZ()
-            )
-        };
+            ),
+            .body_id = body_id
+        });
     }
 
     return std::nullopt;

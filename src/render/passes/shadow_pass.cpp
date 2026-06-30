@@ -57,7 +57,7 @@ void ShadowPass::execute(
     quad.bind(render_pass);
     for (const auto& e : world.enemies)
     {
-        render_pass.push_model_matrix(e.sprite.transform.matrix());
+        render_pass.push_model_matrix(e->sprite.transform.matrix());
         quad.draw(render_pass);
     }
 }

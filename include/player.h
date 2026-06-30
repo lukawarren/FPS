@@ -42,7 +42,14 @@ private:
     void update_mouse_look();
     void update_view_juice(const glm::vec2& movement, const float delta);
 
-    std::optional<std::pair<glm::vec3, glm::vec3>> get_hit(const World& world) const;
+    struct Hit
+    {
+        glm::vec3 position;
+        glm::vec3 normal;
+        std::optional<JPH::BodyID> body_id;
+    };
+
+    std::optional<Hit> get_hit(const World& world) const;
 
     float bob_time = 0.0f;
     glm::vec2 mouse_position;

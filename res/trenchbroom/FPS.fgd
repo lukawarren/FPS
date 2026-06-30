@@ -15,6 +15,6 @@
 ]
 
 
-@PointClass size(-16 -16 0, 16 16 120) color(255 0 0) = enemy : "Enemy"
+@PointClass size(-32 -32 0, 32 32 120) color(255 0 0) = enemy : "Enemy"
 [
 ]

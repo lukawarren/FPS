@@ -23,4 +23,6 @@ public:
     float time = 0.0f;
     std::function<void(World&)> on_fire;
     World& world;
+
+    constexpr static inline float DAMAGE = 20.0f;
 };

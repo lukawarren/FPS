@@ -8,6 +8,7 @@ World::World(
 )
 {
     map = new Map(filename, device, copy_pass);
+    setup_physics();
 
     glm::vec3 player_position = {};
     float player_yaw = 0.0f;
@@ -58,11 +59,12 @@ World::World(
         else if (class_name == "enemy")
         {
             const glm::vec3 position = entity.parse_vec3("origin");
-            enemies.emplace_back(position);
+            enemies.emplace_back(std::make_unique<Enemy>(
+                *this, position
+            ));
         }
     }
 
-    setup_physics();
     player = new Player(player_position, player_yaw, window, *this);
     dbg("TODO: decal limits");
 }
@@ -82,7 +84,20 @@ void World::update(const float delta)
     // Enemies
     const glm::vec3 direction = -camera.direction_vector();
     for (auto& e : enemies)
-        e.update(*this, delta, direction);
+        e->update(*this, delta, direction);
+
+    // Remove dead enemies
+    for (const auto& e : enemies)
+        if (e->is_dead())
+            body_interface.RemoveBody(e->body_id);
+
+    enemies.erase(std::remove_if(
+        enemies.begin(), enemies.end(),
+        [](const auto& e) {
+            return e->is_dead();
+        }),
+        enemies.end()
+    );
 
     camera.pitch = player->head_pitch;
     camera.yaw = player->head_yaw;
