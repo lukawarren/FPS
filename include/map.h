@@ -36,6 +36,8 @@ public:
         ) const;
     };
 
+    std::vector<glm::vec3> find_path(const glm::vec3& start, const glm::vec3& end) const;
+
     std::vector<DrawCall> draw_calls;
     std::vector<Entity> entities;
     JPH::Ref<JPH::Shape> physics_shape;
@@ -65,9 +67,15 @@ private:
     std::vector<TextureInfo> texture_infos;
     csg::world_t* world;
 
+    // Navigation
+    dtNavMesh* nav_mesh = nullptr;
+    dtNavMeshQuery* nav_query = nullptr;
+
     std::pair<glm::vec3, float> plane_from_points(
         const glm::vec3& p1,
         const glm::vec3& p2,
         const glm::vec3& p3
     ) const;
+
+    void build_navmesh(const std::vector<float>& vertices, const std::vector<int>& indices);
 };

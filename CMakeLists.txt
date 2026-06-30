@@ -20,6 +20,9 @@ set(JOLT_PHYSICS_BUILD_TESTS OFF CACHE INTERNAL "")
 set(JOLT_PHYSICS_BUILD_SAMPLES OFF CACHE INTERNAL "")
 set(JOLT_PHYSICS_BUILD_DEBUG_VIEWER OFF CACHE INTERNAL "")
 set(JOLT_PHYSICS_BUILD_UNIT_TESTS OFF CACHE INTERNAL "")
+set(RECASTNAVIGATION_DEMO OFF CACHE INTERNAL "")
+set(RECASTNAVIGATION_TESTS OFF CACHE INTERNAL "")
+set(RECASTNAVIGATION_EXAMPLES OFF CACHE INTERNAL "")
 
 # Add submodules
 add_subdirectory(lib/SDL)
@@ -28,6 +31,7 @@ add_subdirectory(lib/glm)
 add_subdirectory(lib/dbg-macro)
 add_subdirectory(lib/JoltPhysics/Build)
 add_subdirectory(lib/tinyobjloader)
+add_subdirectory(lib/recastnavigation)
 
 # Source discovery
 file(GLOB_RECURSE SOURCES
@@ -54,6 +58,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glm::glm
     Jolt::Jolt
     tinyobjloader
+    RecastNavigation::Recast
+    RecastNavigation::Detour
 )
 
 # Fix warning / error with Clang

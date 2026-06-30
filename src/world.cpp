@@ -82,7 +82,7 @@ void World::update(const float delta)
     // Enemies
     const glm::vec3 direction = -camera.direction_vector();
     for (auto& e : enemies)
-        e.update(direction);
+        e.update(*this, delta, direction);
 
     camera.pitch = player->head_pitch;
     camera.yaw = player->head_yaw;
@@ -104,6 +104,11 @@ void World::spawn_decal(const glm::vec3 position, const glm::vec3 direction)
 
     if (decals.size() > QUALITY_SETTINGS.max_decals)
         decals.pop_front();
+}
+
+std::vector<glm::vec3> World::find_path(const glm::vec3& start, const glm::vec3& end) const
+{
+    return map->find_path(start, end);
 }
 
 void World::setup_physics()

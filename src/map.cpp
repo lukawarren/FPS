@@ -1,4 +1,5 @@
 #include "map.h"
+#include "enemy.h"
 
 constexpr static inline csg::volume_t VOLUME_AIR = 0;
 constexpr static inline csg::volume_t VOLUME_SOLID = 1;
@@ -27,6 +28,65 @@ Map::Map(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* co
 
     // World no longer needed
     delete world;
+}
+
+Map::~Map()
+{
+    for (auto& draw_call : draw_calls)
+    {
+        delete draw_call.mesh;
+        delete draw_call.texture;
+    }
+
+    if (nav_query) dtFreeNavMeshQuery(nav_query);
+    if (nav_mesh) dtFreeNavMesh(nav_mesh);
+}
+
+std::vector<glm::vec3> Map::find_path(const glm::vec3& start, const glm::vec3& end) const
+{
+    std::vector<glm::vec3> path;
+    if (!nav_query) return path;
+
+    const float extents[3] = { 2.0f, 4.0f, 2.0f };
+    dtQueryFilter filter;
+
+    dtPolyRef start_ref = 0, end_ref = 0;
+    float start_pt[3], end_pt[3];
+    const float start_pos[3] = { start.x, start.y, start.z };
+    const float end_pos[3] = { end.x, end.y, end.z };
+
+    nav_query->findNearestPoly(start_pos, extents, &filter, &start_ref, start_pt);
+    nav_query->findNearestPoly(end_pos, extents, &filter, &end_ref, end_pt);
+
+    if (!start_ref || !end_ref) return path;
+
+    dtPolyRef poly_path[256];
+    int poly_count = 0;
+    nav_query->findPath(start_ref, end_ref, start_pt, end_pt, &filter, poly_path, &poly_count, 256);
+    if (poly_count == 0) return path;
+
+    float straight_path[256 * 3];
+    unsigned char straight_path_flags[256];
+    dtPolyRef straight_path_polys[256];
+    int straight_path_count = 0;
+
+    nav_query->findStraightPath(
+        start_pt, end_pt, poly_path, poly_count,
+        straight_path, straight_path_flags, straight_path_polys,
+        &straight_path_count, 256
+    );
+
+    path.reserve(straight_path_count);
+    for (int i = 0; i < straight_path_count; ++i)
+    {
+        path.emplace_back(
+            straight_path[i * 3 + 0],
+            straight_path[i * 3 + 1],
+            straight_path[i * 3 + 2]
+        );
+    }
+
+    return path;
 }
 
 void Map::parse_entity(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
@@ -291,6 +351,11 @@ void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
     JPH::VertexList p_vertices;
     JPH::IndexedTriangleList p_indices;
     uint32_t vertex_offset = 0;
+
+    // Add for navigation (same geometry, recast-friendly layout)
+    std::vector<float> nav_vertices;
+    std::vector<int> nav_indices;
+
     for (const auto &[key, value] : meshes)
     {
         if (value.vertices.size() == 0) continue;
@@ -302,6 +367,10 @@ void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
                 value.vertices[i * 3 + 1],
                 value.vertices[i * 3 + 2]
             });
+
+            nav_vertices.push_back(value.vertices[i * 3 + 0]);
+            nav_vertices.push_back(value.vertices[i * 3 + 1]);
+            nav_vertices.push_back(value.vertices[i * 3 + 2]);
         }
 
         for (size_t i = 0; i < value.indices.size() /  3; i++)
@@ -311,6 +380,10 @@ void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
                 value.indices[i * 3 + 1] + vertex_offset,
                 value.indices[i * 3 + 2] + vertex_offset
             });
+
+            nav_indices.push_back((int)(value.indices[i * 3 + 0] + vertex_offset));
+            nav_indices.push_back((int)(value.indices[i * 3 + 1] + vertex_offset));
+            nav_indices.push_back((int)(value.indices[i * 3 + 2] + vertex_offset));
         }
 
         vertex_offset += value.vertices.size() / 3;
@@ -323,6 +396,8 @@ void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
         physics_shape = result.Get();
     else
         throw std::runtime_error("Failed to create physics shape for map: " + std::string(result.GetError()));
+
+    build_navmesh(nav_vertices, nav_indices);
 }
 
 void Map::calculate_uvs(
@@ -359,15 +434,6 @@ std::pair<glm::vec3, float> Map::plane_from_points(
     ));
     const float distance = -glm::dot(normal, p1);
     return { normal, distance };
-}
-
-Map::~Map()
-{
-    for (auto& draw_call : draw_calls)
-    {
-        delete draw_call.mesh;
-        delete draw_call.texture;
-    }
 }
 
 glm::vec3 Map::Entity::parse_vec3(
@@ -415,4 +481,115 @@ bool Map::Entity::parse_bool(
     bool x;
     iss >> x;
     return x;
+}
+
+void Map::build_navmesh(const std::vector<float>& vertices, const std::vector<int>& indices)
+{
+    const int nverts = (int)vertices.size() / 3;
+    const int ntris = (int)indices.size() / 3;
+    if (nverts == 0 || ntris == 0) return;
+
+    float bmin[3], bmax[3];
+    rcCalcBounds(vertices.data(), nverts, bmin, bmax);
+
+    constexpr float AGENT_HEIGHT = Enemy::ENEMY_HEIGHT;
+    constexpr float AGENT_RADIUS = Enemy::ENEMY_RADIUS;
+    constexpr float AGENT_MAX_CLIMB = 0.4f;
+    constexpr float AGENT_MAX_SLOPE = 45.0f;
+
+    rcConfig cfg = {};
+    cfg.cs = 0.15f;
+    cfg.ch = 0.1f;
+    cfg.walkableSlopeAngle = AGENT_MAX_SLOPE;
+    cfg.walkableHeight = (int)std::ceil(AGENT_HEIGHT / cfg.ch);
+    cfg.walkableClimb = (int)std::floor(AGENT_MAX_CLIMB / cfg.ch);
+    cfg.walkableRadius = (int)std::ceil(AGENT_RADIUS / cfg.cs);
+    cfg.maxEdgeLen = (int)(12.0f / cfg.cs);
+    cfg.maxSimplificationError = 1.3f;
+    cfg.minRegionArea = (int)rcSqr(8);
+    cfg.mergeRegionArea = (int)rcSqr(20);
+    cfg.maxVertsPerPoly = 6;
+    cfg.detailSampleDist = 6.0f * cfg.cs;
+    cfg.detailSampleMaxError = cfg.ch;
+    rcVcopy(cfg.bmin, bmin);
+    rcVcopy(cfg.bmax, bmax);
+    rcCalcGridSize(cfg.bmin, cfg.bmax, cfg.cs, &cfg.width, &cfg.height);
+
+    rcContext ctx;
+
+    rcHeightfield* hf = rcAllocHeightfield();
+    rcCreateHeightfield(&ctx, *hf, cfg.width, cfg.height, cfg.bmin, cfg.bmax, cfg.cs, cfg.ch);
+
+    std::vector<unsigned char> tri_areas(ntris, 0);
+    rcMarkWalkableTriangles(&ctx, cfg.walkableSlopeAngle, vertices.data(), nverts, indices.data(), ntris, tri_areas.data());
+    rcRasterizeTriangles(&ctx, vertices.data(), nverts, indices.data(), tri_areas.data(), ntris, *hf, cfg.walkableClimb);
+
+    rcFilterLowHangingWalkableObstacles(&ctx, cfg.walkableClimb, *hf);
+    rcFilterLedgeSpans(&ctx, cfg.walkableHeight, cfg.walkableClimb, *hf);
+    rcFilterWalkableLowHeightSpans(&ctx, cfg.walkableHeight, *hf);
+
+    rcCompactHeightfield* chf = rcAllocCompactHeightfield();
+    rcBuildCompactHeightfield(&ctx, cfg.walkableHeight, cfg.walkableClimb, *hf, *chf);
+    rcFreeHeightField(hf);
+
+    rcErodeWalkableArea(&ctx, cfg.walkableRadius, *chf);
+    rcBuildDistanceField(&ctx, *chf);
+    rcBuildRegions(&ctx, *chf, 0, cfg.minRegionArea, cfg.mergeRegionArea);
+
+    rcContourSet* cset = rcAllocContourSet();
+    rcBuildContours(&ctx, *chf, cfg.maxSimplificationError, cfg.maxEdgeLen, *cset);
+
+    rcPolyMesh* pmesh = rcAllocPolyMesh();
+    rcBuildPolyMesh(&ctx, *cset, cfg.maxVertsPerPoly, *pmesh);
+
+    rcPolyMeshDetail* dmesh = rcAllocPolyMeshDetail();
+    rcBuildPolyMeshDetail(&ctx, *pmesh, *chf, cfg.detailSampleDist, cfg.detailSampleMaxError, *dmesh);
+
+    rcFreeCompactHeightfield(chf);
+    rcFreeContourSet(cset);
+
+    for (int i = 0; i < pmesh->npolys; ++i)
+        if (pmesh->areas[i] == RC_WALKABLE_AREA)
+            pmesh->flags[i] = 1;
+
+    dtNavMeshCreateParams params = {};
+    params.verts = pmesh->verts;
+    params.vertCount = pmesh->nverts;
+    params.polys = pmesh->polys;
+    params.polyAreas = pmesh->areas;
+    params.polyFlags = pmesh->flags;
+    params.polyCount = pmesh->npolys;
+    params.nvp = pmesh->nvp;
+    params.detailMeshes = dmesh->meshes;
+    params.detailVerts = dmesh->verts;
+    params.detailVertsCount = dmesh->nverts;
+    params.detailTris = dmesh->tris;
+    params.detailTriCount = dmesh->ntris;
+    params.walkableHeight = AGENT_HEIGHT;
+    params.walkableRadius = AGENT_RADIUS;
+    params.walkableClimb = AGENT_MAX_CLIMB;
+    rcVcopy(params.bmin, pmesh->bmin);
+    rcVcopy(params.bmax, pmesh->bmax);
+    params.cs = cfg.cs;
+    params.ch = cfg.ch;
+    params.buildBvTree = true;
+
+    unsigned char* nav_data = nullptr;
+    int nav_data_size = 0;
+    if (!dtCreateNavMeshData(&params, &nav_data, &nav_data_size))
+    {
+        rcFreePolyMesh(pmesh);
+        rcFreePolyMeshDetail(dmesh);
+        throw std::runtime_error("Failed to build navmesh data");
+    }
+
+    nav_mesh = dtAllocNavMesh();
+    if (dtStatusFailed(nav_mesh->init(nav_data, nav_data_size, DT_TILE_FREE_DATA)))
+        throw std::runtime_error("Failed to init navmesh");
+
+    nav_query = dtAllocNavMeshQuery();
+    nav_query->init(nav_mesh, 2048);
+
+    rcFreePolyMesh(pmesh);
+    rcFreePolyMeshDetail(dmesh);
 }

@@ -21,6 +21,7 @@ public:
 
     void update(const float delta);
     void spawn_decal(const glm::vec3 position, const glm::vec3 direction);
+    std::vector<glm::vec3> find_path(const glm::vec3& start, const glm::vec3& end) const;
 
     Camera camera;
     Player* player = nullptr;

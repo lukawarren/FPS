@@ -22,3 +22,6 @@
 [submodule "lib/tinyobjloader"]
 	path = lib/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "lib/recastnavigation"]
+	path = lib/recastnavigation
+	url = https://github.com/recastnavigation/recastnavigation.git
