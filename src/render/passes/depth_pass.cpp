@@ -53,6 +53,14 @@ void DepthPass::execute(
         draw_call.mesh->draw(render_pass);
     }
 
+    // Draw torches
+    models.at(Model::ID::TORCH)->mesh->bind(render_pass);
+    for (const auto& light : world.spotlights)
+    {
+        render_pass.push_model_matrix(light.get_model_matrix());
+        models.at(Model::ID::TORCH)->mesh->draw(render_pass);
+    }
+
     // Draw weapon
     render_pass.push_model_matrix(weapon_model);
     models.at(world.player->weapon.model)->mesh->bind(render_pass);

@@ -58,10 +58,10 @@ World::World(
 
         else if (class_name == "enemy")
         {
-            const glm::vec3 position = entity.parse_vec3("origin");
-            enemies.emplace_back(std::make_unique<Enemy>(
-                *this, position
-            ));
+            // const glm::vec3 position = entity.parse_vec3("origin");
+            // enemies.emplace_back(std::make_unique<Enemy>(
+            //     *this, position
+            // ));
         }
     }
 

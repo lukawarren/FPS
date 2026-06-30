@@ -1,4 +1,5 @@
 #include "spotlight.h"
+#include "transform.h"
 
 Spotlight::Spotlight(
     const glm::vec3 position,
@@ -48,4 +49,12 @@ Spotlight::UniformBuffer Spotlight::get_disabled_uniform_buffer()
         .direction = glm::vec4(0.0f),
         .params = { 0.0f, 0.0f, 0.0f, 0.0f }
     };
+}
+
+glm::mat4 Spotlight::get_model_matrix() const
+{
+    Transform t;
+    t.position = position;
+    t.rotation.y = glm::degrees(std::atan2(direction.x, direction.z)) - 90.0f;
+    return t.matrix();
 }

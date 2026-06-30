@@ -34,4 +34,5 @@ public:
     glm::mat4 get_matrix() const;
     UniformBuffer get_uniform_buffer(const glm::mat4& matrix) const;
     static UniformBuffer get_disabled_uniform_buffer();
+    glm::mat4 get_model_matrix() const;
 };

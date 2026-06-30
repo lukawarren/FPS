@@ -6,7 +6,8 @@ Brushes:
 - https://opengameart.org/content/tiny-texture-pack-1
 
 Models:
-- https://opengameart.org/content/oldschool-afps-weapons#
+- https://opengameart.org/content/oldschool-afps-weapons
+- https://opengameart.org/content/wall-torch-1
 
 Sprites:
 - https://opengameart.org/content/bullet-decal
