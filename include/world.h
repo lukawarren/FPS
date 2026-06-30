@@ -6,6 +6,7 @@
 #include "map.h"
 #include "physics.h"
 #include "decal.h"
+#include "enemy.h"
 
 class World
 {
@@ -30,6 +31,7 @@ public:
 
     // Sprites
     std::deque<Decal> decals;
+    std::vector<Enemy> enemies;
 
     // Physics
     JPH::PhysicsSystem physics_system;

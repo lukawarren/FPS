@@ -13,8 +13,10 @@ void ShadowPass::execute(
     SDL_GPUCommandBuffer* command_buffer,
     const World& world,
     const std::unordered_map<Model::ID, Model*>& models,
+    const std::unordered_map<Decal::ID, Texture*>& sprites,
     const glm::mat4& light_matrix,
     const glm::mat4& weapon_model,
+    const Quad& quad,
     u8 slot
 )
 {
@@ -46,5 +48,16 @@ void ShadowPass::execute(
     {
         draw_call.mesh->bind(render_pass);
         draw_call.mesh->draw(render_pass);
+    }
+
+    // Draw enemies
+    // TODO: sort by ID's
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_factory.depth_pipeline_sprite);
+    sprites.at(Decal::ID::ENEMY)->bind(render_pass, texture_manager.sampler);
+    quad.bind(render_pass);
+    for (const auto& e : world.enemies)
+    {
+        render_pass.push_model_matrix(e.sprite.transform.matrix());
+        quad.draw(render_pass);
     }
 }

@@ -1,28 +1,14 @@
 #pragma once
 #include "common.h"
 #include "transform.h"
+#include "sprite.h"
 
-class Decal
+class Decal : public Sprite
 {
 public:
-    enum class ID
+    Decal(const glm::vec3 position, const glm::vec3 direction, const ID id) :
+        Sprite(position, direction, id)
     {
-        BULLET = 0
-    };
-
-    Decal(const glm::vec3 position, const glm::vec3 direction, const ID id) : id(id)
-    {
-        transform.position = position + direction * 0.01f;
         transform.scale = glm::vec3(0.1f);
-        transform.rotation.y = glm::degrees(std::atan2(-direction.x, -direction.z));
-        transform.rotation.x = glm::degrees(std::asin(direction.y));
     }
-
-    static inline constexpr std::array<const char*, 1> SPRITE_NAMES =
-    {
-        "bullet"
-    };
-
-    Transform transform;
-    ID id;
 };

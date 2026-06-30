@@ -121,8 +121,10 @@ void Renderer::render()
             command_buffer,
             *world,
             models,
+            sprites,
             lighting.matrices[i],
             weapon_model,
+            *quad,
             (u8)i
         );
 

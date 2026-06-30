@@ -13,3 +13,8 @@
     far(float) : "Far Plane" : "10.0" : "The maximum reach distance of the light."
     angle(float) : "Cone Angle" : "60.0" : "The outer cone inner/outer angle in degrees."
 ]
+
+
+@PointClass size(-16 -16 0, 16 16 120) color(255 0 0) = enemy : "Enemy"
+[
+]

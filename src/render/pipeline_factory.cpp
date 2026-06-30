@@ -11,6 +11,8 @@ PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_m
     diffuse_fs = device.compile_shader("diffuse.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
     depth_vs = device.compile_shader("depth.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
     depth_fs = device.compile_shader("depth.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    depth_sprite_vs = device.compile_shader("depth_sprite.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    depth_sprite_fs = device.compile_shader("depth_sprite.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
     sprite_vs = device.compile_shader("sprite.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
     sprite_fs = device.compile_shader("sprite.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
     quad_vs = device.compile_shader("quad.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
@@ -31,6 +33,12 @@ PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_m
         depth_texture_format
     );
 
+    depth_pipeline_sprite = create_depth_pipeline<true>(
+        depth_sprite_vs,
+        depth_sprite_fs,
+        depth_texture_format
+    );
+
     depth_pipeline_texture_array = create_depth_pipeline(
         depth_vs,
         depth_fs,
@@ -41,7 +49,7 @@ PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_m
         sprite_vs,
         sprite_fs,
         SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT,
-        depth_texture_format
+        depth_texture_array_format
     );
 
     downsample_pipeline = create_downsample_pipeline(
@@ -69,6 +77,8 @@ PipelineFactory::~PipelineFactory()
     SDL_ReleaseGPUShader(device, diffuse_fs);
     SDL_ReleaseGPUShader(device, depth_vs);
     SDL_ReleaseGPUShader(device, depth_fs);
+    SDL_ReleaseGPUShader(device, depth_sprite_vs);
+    SDL_ReleaseGPUShader(device, depth_sprite_fs);
     SDL_ReleaseGPUShader(device, sprite_vs);
     SDL_ReleaseGPUShader(device, sprite_fs);
     SDL_ReleaseGPUShader(device, quad_vs);
@@ -78,6 +88,7 @@ PipelineFactory::~PipelineFactory()
 
     SDL_ReleaseGPUGraphicsPipeline(device, diffuse_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, depth_pipeline);
+    SDL_ReleaseGPUGraphicsPipeline(device, depth_pipeline_sprite);
     SDL_ReleaseGPUGraphicsPipeline(device, depth_pipeline_texture_array);
     SDL_ReleaseGPUGraphicsPipeline(device, sprite_pipeline);
     SDL_ReleaseGPUGraphicsPipeline(device, downsample_pipeline);
@@ -163,14 +174,31 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_diffuse_pipeline(
     return check_pipeline(pipeline);
 }
 
+template<bool is_quad>
 SDL_GPUGraphicsPipeline* PipelineFactory::create_depth_pipeline(
     SDL_GPUShader* vs,
     SDL_GPUShader* fs,
     SDL_GPUTextureFormat depth_format
 )
 {
-    const auto description = Mesh::Vertex::get_vertex_buffer_description();
-    const auto attributes = Mesh::Vertex::get_vertex_attributes();
+    const auto description =
+        is_quad ? Quad::Vertex::get_vertex_buffer_description() : Mesh::Vertex::get_vertex_buffer_description();
+
+    const void* attributes_ptr = nullptr;
+    size_t attributes_size = 0;
+
+    if constexpr (is_quad)
+    {
+        static const auto attributes = Quad::Vertex::get_vertex_attributes();
+        attributes_ptr = &attributes[0];
+        attributes_size = attributes.size();
+    }
+    else
+    {
+        static const auto attributes = Mesh::Vertex::get_vertex_attributes();
+        attributes_ptr = &attributes[0];
+        attributes_size = attributes.size();
+    }
 
     SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
     {
@@ -180,14 +208,14 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_depth_pipeline(
         {
             .vertex_buffer_descriptions = &description,
             .num_vertex_buffers = 1,
-            .vertex_attributes = &attributes[0],
-            .num_vertex_attributes = attributes.size()
+            .vertex_attributes = (SDL_GPUVertexAttribute*)attributes_ptr,
+            .num_vertex_attributes = (u32)attributes_size
         },
         .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
         .rasterizer_state =
         {
             .fill_mode = SDL_GPU_FILLMODE_FILL,
-            .cull_mode = SDL_GPU_CULLMODE_BACK,
+            .cull_mode = is_quad ? SDL_GPU_CULLMODE_NONE : SDL_GPU_CULLMODE_BACK,
             .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
             .depth_bias_constant_factor = 0.0f,
             .depth_bias_clamp = 0.0f,

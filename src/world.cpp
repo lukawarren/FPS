@@ -50,8 +50,15 @@ World::World(
         {
             const glm::vec3 position = entity.parse_vec3("origin");
             const float angle = entity.parse_float("angle");
-            player_position = position + glm::vec3(0.0f, Player::PLAYER_HEIGHT / 2.0f, 0.0f);
+            player_position = position +
+                glm::vec3(0.0f, Player::PLAYER_HEIGHT / 2.0f, 0.0f);
             player_yaw = 90.0f - angle;
+        }
+
+        else if (class_name == "enemy")
+        {
+            const glm::vec3 position = entity.parse_vec3("origin");
+            enemies.emplace_back(position);
         }
     }
 
@@ -71,6 +78,11 @@ void World::update(const float delta)
 
     if (error != JPH::EPhysicsUpdateError::None)
         dbg("Warning: physics update error", (int)error);
+
+    // Enemies
+    const glm::vec3 direction = -camera.direction_vector();
+    for (auto& e : enemies)
+        e.update(direction);
 
     camera.pitch = player->head_pitch;
     camera.yaw = player->head_yaw;
