@@ -12,3 +12,4 @@ Models:
 Sprites:
 - https://opengameart.org/content/bullet-decal
 - https://opengameart.org/content/skeleton-knight
+- https://opengameart.org/content/wgstudio-fire-animation-loop

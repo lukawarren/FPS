@@ -45,6 +45,13 @@ World::World(
                 far,
                 glm::radians(angle)
             );
+
+            animated_sprites.emplace_back(AnimatedSprite(
+                position + direction * 0.42f + glm::vec3(0.0f, 0.3f, 0.0f),
+                { 1.0f, 0.0f, 0.0f },
+                Sprite::ID::FIRE,
+                glm::vec3(0.4f)
+            ));
         }
 
         else if (class_name == "info_player_start")
@@ -58,10 +65,10 @@ World::World(
 
         else if (class_name == "enemy")
         {
-            // const glm::vec3 position = entity.parse_vec3("origin");
-            // enemies.emplace_back(std::make_unique<Enemy>(
-            //     *this, position
-            // ));
+            const glm::vec3 position = entity.parse_vec3("origin");
+            enemies.emplace_back(std::make_unique<Enemy>(
+                *this, position
+            ));
         }
     }
 
@@ -98,6 +105,13 @@ void World::update(const float delta)
         }),
         enemies.end()
     );
+
+    // Sprites
+    for (auto& s : animated_sprites)
+    {
+        s.face(direction);
+        s.advance();
+    }
 
     camera.pitch = player->head_pitch;
     camera.yaw = player->head_yaw;

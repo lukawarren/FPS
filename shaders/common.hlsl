@@ -10,7 +10,7 @@ struct Spotlight
 #define GAMMA 2.2f
 #define AMBIENT 0.1f
 #define MAX_SPOTLIGHTS 6
-#define POINT_INTENSITY 1.0f
+#define POINT_INTENSITY 0.3f
 #define BIAS (0.5f / 10000.0f)
 
 cbuffer UniformBlock : register(b0, space1)

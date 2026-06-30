@@ -79,13 +79,21 @@ void SpritePass::execute(
         1
     );
 
-    // TODO: sort by ID's
-    sprites.at(Decal::ID::BULLET)->bind(render_pass, texture_manager.sampler);
+    VertexUniforms uniforms;
     quad.bind(render_pass);
 
+    // TODO: sort by ID's
+    sprites.at(Decal::ID::BULLET)->bind(render_pass, texture_manager.sampler);
     for (const auto& d : world.decals)
     {
-        render_pass.push_model_matrix(d.transform.matrix());
+        uniforms.model = d.transform.matrix();
+        uniforms.spritesheet_info = d.get_spritesheet_info();
+        SDL_PushGPUVertexUniformData(
+            command_buffer,
+            1,
+            &uniforms,
+            sizeof(uniforms)
+        );
 
         quad.draw(render_pass);
     }
@@ -94,7 +102,31 @@ void SpritePass::execute(
     sprites.at(Decal::ID::ENEMY)->bind(render_pass, texture_manager.sampler);
     for (const auto& e : world.enemies)
     {
-        render_pass.push_model_matrix(e->sprite.transform.matrix());
+        uniforms.model = e->sprite.transform.matrix();
+        uniforms.spritesheet_info = e->sprite.get_spritesheet_info();
+        SDL_PushGPUVertexUniformData(
+            command_buffer,
+            1,
+            &uniforms,
+            sizeof(uniforms)
+        );
+
+        quad.draw(render_pass);
+    }
+
+    // TODO: sort by ID's
+    sprites.at(Decal::ID::FIRE)->bind(render_pass, texture_manager.sampler);
+    for (const auto& e : world.animated_sprites)
+    {
+        uniforms.model = e.transform.matrix();
+        uniforms.spritesheet_info = e.get_spritesheet_info();
+        SDL_PushGPUVertexUniformData(
+            command_buffer,
+            1,
+            &uniforms,
+            sizeof(uniforms)
+        );
+
         quad.draw(render_pass);
     }
 }

@@ -27,6 +27,12 @@ public:
         const DiffusePass::FragmentUniforms& fragment_uniforms
     );
 
+    struct VertexUniforms
+    {
+        glm::mat4 model;
+        glm::vec4 spritesheet_info; // (x, y) = scale, (z, w) = offset
+    };
+
 private:
     Device& device;
     PipelineFactory& pipeline_factory;

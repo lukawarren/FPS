@@ -7,6 +7,7 @@
 #include "physics.h"
 #include "decal.h"
 #include "enemy.h"
+#include "animated_sprite.h"
 
 class World
 {
@@ -33,6 +34,7 @@ public:
     // Sprites; enemies need constant addresses for physics user pointer
     std::deque<Decal> decals;
     std::vector<std::unique_ptr<Enemy>> enemies;
+    std::vector<AnimatedSprite> animated_sprites;
 
     // Physics
     JPH::PhysicsSystem physics_system;

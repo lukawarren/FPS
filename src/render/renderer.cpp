@@ -32,7 +32,7 @@ Renderer::Renderer(const std::string& title, const u32 width, const u32 height) 
     for (size_t i = 0; i < Decal::SPRITE_NAMES.size(); i++)
     {
         sprites[(Decal::ID)i] = new Texture(
-            std::string(Decal::SPRITE_NAMES[i]) + ".png",
+            std::string(Decal::SPRITE_NAMES[i].first) + ".png",
             device.device,
             copy_pass,
             SPRITE_ROOT

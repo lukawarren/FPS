@@ -19,6 +19,7 @@ cbuffer PushBlock : register(b0, space1)
 cbuffer PushBlockTwo : register(b1, space1)
 {
     float4x4 model;
+    float4 spritesheet_info;
 };
 
 VertexOutput main(VertexInput input)
@@ -27,6 +28,6 @@ VertexOutput main(VertexInput input)
     // when we use the output as a depth-prepass
     VertexOutput output;
     output.position = mul(projection, mul(view, mul(model, float4(input.position, 0.0f, 1.0f))));
-    output.uv = input.uv;
+    output.uv = input.uv * spritesheet_info.xy + spritesheet_info.zw;
     return output;
 }
