@@ -178,10 +178,10 @@ Renderer::LightingState Renderer::collect_lights() const
 
     // Gather candidate world lights with their distance to the player
     std::vector<std::pair<float, Spotlight*>> candidates;
-    candidates.reserve(world->spotlights.size());
+    candidates.reserve(world->torchlights.size());
     const glm::vec3 player_pos = world->player->position;
 
-    for (auto& light : world->spotlights)
+    for (auto& light : world->torchlights)
     {
         const float dist2 = glm::length(light.position - world->player->position);
         candidates.emplace_back(dist2, &light);

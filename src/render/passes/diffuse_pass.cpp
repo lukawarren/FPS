@@ -88,7 +88,7 @@ void DiffusePass::execute(
     // Draw torches
     models.at(Model::ID::TORCH)->mesh->bind(render_pass);
     models.at(Model::ID::TORCH)->texture->bind(render_pass, texture_manager.sampler);
-    for (const auto& light : world.spotlights)
+    for (const auto& light : world.torchlights)
     {
         render_pass.push_model_matrix(light.get_model_matrix());
         models.at(Model::ID::TORCH)->mesh->draw(render_pass);

@@ -38,7 +38,7 @@ World::World(
                 std::cos(pitch_rad) * std::sin(yaw_rad)
             };
 
-            spotlights.emplace_back(
+            torchlights.emplace_back(
                 position - direction * 8.0f * Map::METRES_PER_UNIT,
                 direction,
                 glm::normalize(colour / 255.0f) * intensity,
@@ -53,6 +53,11 @@ World::World(
                 Sprite::ID::FIRE,
                 glm::vec3(0.4f)
             ));
+
+            audio.play_3d(
+                Audio::ID::FIRE,
+                { position.x, position.y, position.z }
+            );
         }
 
         else if (class_name == "info_player_start")
@@ -115,6 +120,7 @@ void World::update(const float delta)
         s.advance();
     }
 
+    // Camera
     camera.pitch = player->head_pitch;
     camera.yaw = player->head_yaw;
     camera.position = {
@@ -122,6 +128,18 @@ void World::update(const float delta)
         player->position.y - Player::PLAYER_HEIGHT / 2.0f + Player::PLAYER_EYE_HEIGHT + player->head_bob_offset,
         player->position.z
     };
+
+    // Audio
+    audio.set_listener(
+        { camera.position.x, camera.position.y, camera.position.z },
+        { -direction.x, -direction.y, -direction.z }
+    );
+
+    // Lights
+    for (auto& e : torchlights)
+        e.update(time);
+
+    time += delta;
 }
 
 void World::spawn_decal(const glm::vec3 position, const glm::vec3 direction)

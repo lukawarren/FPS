@@ -2,7 +2,7 @@
 #include "common.h"
 #include "camera.h"
 #include "player.h"
-#include "spotlight.h"
+#include "torchlight.h"
 #include "map.h"
 #include "physics.h"
 #include "decal.h"
@@ -30,9 +30,10 @@ public:
     Player* player = nullptr;
     Map* map = nullptr;
     Audio& audio;
+    float time = 0.0f;
 
     // Lighting
-    std::vector<Spotlight> spotlights;
+    std::vector<Torchlight> torchlights;
 
     // Sprites; enemies need constant addresses for physics user pointer
     std::deque<Decal> decals;

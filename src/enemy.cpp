@@ -2,7 +2,7 @@
 #include "player.h"
 #include "world.h"
 
-constexpr static inline float SPEED = 4.0f;
+constexpr static inline float SPEED = 0.0f;//4.0f;
 constexpr static inline float WAYPOINT_THRESHOLD = 0.05f;
 constexpr static inline float REPATH_INTERVAL = 0.5f;
 

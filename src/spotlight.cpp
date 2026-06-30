@@ -21,9 +21,8 @@ glm::mat4 Spotlight::get_matrix() const
 
     // Fallback up-vector if pointing straight up/down
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-    if (glm::abs(glm::dot(direction, up)) > 0.99f) {
+    if (glm::abs(glm::dot(direction, up)) > 0.99f)
         up = glm::vec3(0.0f, 0.0f, 1.0f);
-    }
 
     const glm::mat4 view = glm::lookAt(position, target, up);
     return projection * view;
@@ -49,12 +48,4 @@ Spotlight::UniformBuffer Spotlight::get_disabled_uniform_buffer()
         .direction = glm::vec4(0.0f),
         .params = { 0.0f, 0.0f, 0.0f, 0.0f }
     };
-}
-
-glm::mat4 Spotlight::get_model_matrix() const
-{
-    Transform t;
-    t.position = position;
-    t.rotation.y = glm::degrees(std::atan2(direction.x, direction.z)) - 90.0f;
-    return t.matrix();
 }

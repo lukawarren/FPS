@@ -23,6 +23,10 @@ Audio::Audio()
         throw std::runtime_error("Failed to initialise audio resource manager");
     }
 
+    ma_engine_listener_set_position(&engine, 0, 0.0f, 0.0f, 0.0f);
+    ma_engine_listener_set_direction(&engine, 0, 0.0f, 0.0f, -1.0f);
+    ma_engine_listener_set_world_up(&engine, 0, 0.0f, 1.0f, 0.0f);
+
     for (size_t i = 0; i < AUDIO_NAMES.size(); i++)
     {
         const ID id = (ID)i;
@@ -50,14 +54,14 @@ Audio::Audio()
 
         cache_data_sources[id] = data_source;
 
-        // Looping sounds (e.g. ambience) get one persistent ma_sound; don't duplicate
+        // Looping sounds (e.g. ambience) get one persistent ma_sound
         if (looping)
         {
             ma_sound* sound = (ma_sound*)malloc(sizeof(ma_sound));
             result = ma_sound_init_from_data_source(
                 &engine,
                 data_source,
-                MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_LOOPING,
+                MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_LOOPING | MA_SOUND_FLAG_NO_SPATIALIZATION,
                 NULL,
                 sound
             );
@@ -75,7 +79,13 @@ Audio::Audio()
     ma_sound_set_volume(looping_sounds[ID::AMBIENCE], 0.2f);
 }
 
-void Audio::create_instance(const ID id, ma_resource_manager_data_source*& out_data_source, ma_sound*& out_sound, const bool looping)
+void Audio::create_instance(
+    const ID id,
+    ma_resource_manager_data_source*& out_data_source,
+    ma_sound*& out_sound,
+    const bool looping,
+    const bool spatial
+)
 {
     const std::string path = AUDIO_ROOT + AUDIO_NAMES[(size_t)id].first;
 
@@ -100,7 +110,9 @@ void Audio::create_instance(const ID id, ma_resource_manager_data_source*& out_d
         return;
     }
 
-    flags = MA_SOUND_FLAG_DECODE | (looping ? MA_SOUND_FLAG_LOOPING : 0);
+    flags = MA_SOUND_FLAG_DECODE |
+        (looping ? MA_SOUND_FLAG_LOOPING : 0) |
+        (spatial ? 0 : MA_SOUND_FLAG_NO_SPATIALIZATION);
 
     out_sound = (ma_sound*)malloc(sizeof(ma_sound));
     result = ma_sound_init_from_data_source(
@@ -136,7 +148,7 @@ void Audio::play(const ID id, const float pitch)
 
     ma_resource_manager_data_source* data_source = nullptr;
     ma_sound* sound = nullptr;
-    create_instance(id, data_source, sound, false);
+    create_instance(id, data_source, sound, false, false);
 
     if (!sound)
         return;
@@ -146,6 +158,43 @@ void Audio::play(const ID id, const float pitch)
 
     ma_sound_start(sound);
     active_sounds.push_back({ data_source, sound });
+}
+
+void Audio::play_3d(
+    const ID id,
+    const ma_vec3f position,
+    const float pitch,
+    const float min_distance,
+    const float max_distance
+)
+{
+    ma_sound* sound;
+    ma_resource_manager_data_source* data_source = nullptr;
+    create_instance(id, data_source, sound, false, true);
+
+    if (!sound)
+        return;
+
+    if (pitch != 1.0f)
+        ma_sound_set_pitch(sound, pitch);
+
+    ma_sound_set_attenuation_model(sound, ma_attenuation_model_inverse);
+    ma_sound_set_rolloff(sound, 1.0f);
+    ma_sound_set_min_distance(sound, min_distance);
+    ma_sound_set_max_distance(sound, max_distance);
+    ma_sound_set_position(sound, position.x, position.y, position.z);
+    ma_sound_set_looping(sound, AUDIO_NAMES[(size_t)id].second);
+
+    ma_sound_start(sound);
+
+    active_sounds.push_back({ data_source, sound });
+}
+
+void Audio::set_listener(const ma_vec3f position, const ma_vec3f direction, const ma_vec3f up)
+{
+    ma_engine_listener_set_position(&engine, 0, position.x, position.y, position.z);
+    ma_engine_listener_set_direction(&engine, 0, direction.x, direction.y, direction.z);
+    ma_engine_listener_set_world_up(&engine, 0, up.x, up.y, up.z);
 }
 
 void Audio::update()
