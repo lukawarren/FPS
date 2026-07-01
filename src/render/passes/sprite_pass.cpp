@@ -83,7 +83,7 @@ void SpritePass::execute(
     quad.bind(render_pass);
 
     // TODO: sort by ID's
-    sprites.at(Decal::ID::BULLET)->bind(render_pass, texture_manager.sampler);
+    sprites.at(Sprite::ID::BULLET)->bind(render_pass, texture_manager.sampler);
     for (const auto& d : world.decals)
     {
         uniforms.model = d.transform.matrix();
@@ -99,7 +99,7 @@ void SpritePass::execute(
     }
 
     // TODO: sort by ID's
-    sprites.at(Decal::ID::ENEMY)->bind(render_pass, texture_manager.sampler);
+    sprites.at(Sprite::ID::ENEMY)->bind(render_pass, texture_manager.sampler);
     for (const auto& e : world.enemies)
     {
         uniforms.model = e->sprite.transform.matrix();
@@ -115,7 +115,7 @@ void SpritePass::execute(
     }
 
     // TODO: sort by ID's
-    sprites.at(Decal::ID::FIRE)->bind(render_pass, texture_manager.sampler);
+    sprites.at(Sprite::ID::FIRE)->bind(render_pass, texture_manager.sampler);
     for (const auto& e : world.animated_sprites)
     {
         uniforms.model = e.transform.matrix();
