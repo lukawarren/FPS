@@ -41,7 +41,15 @@ file(GLOB_RECURSE SOURCES
     lib/tiny_csg/csg.cpp
     lib/tiny_csg/rebuild.cpp
 )
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME}
+    ${SOURCES}
+    lib/imgui/imgui.cpp
+    lib/imgui/imgui_widgets.cpp
+    lib/imgui/imgui_tables.cpp
+    lib/imgui/imgui_draw.cpp
+    lib/imgui/backends/imgui_impl_sdl3.cpp
+    lib/imgui/backends/imgui_impl_sdlgpu3.cpp
+)
 
 # Target Configurations
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -49,6 +57,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     lib/stb
     lib/dbg-macro/
     lib/tiny_csg/
+    lib/imgui/
+    lib/imgui/backends
     lib/
     ${JoltPhysics_SOURCE_DIR}/..
 )

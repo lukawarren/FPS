@@ -36,6 +36,7 @@ Device::Device(const std::string& title, u32 width, u32 height)
     this->swapchain_width = w;
     this->swapchain_height = h;
     swapchain_format = SDL_GetGPUSwapchainTextureFormat(device, window->get_window());
+    window->size = { w, h };
 }
 
 Device::~Device()
@@ -72,6 +73,8 @@ std::optional<SDL_GPUTexture*> Device::get_swapchain_texture(SDL_GPUCommandBuffe
     swapchain_width = width;
     swapchain_height = height;
     swapchain_format = format;
+
+    window->size = { width, height };
 
     return { texture };
 }

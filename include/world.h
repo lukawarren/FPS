@@ -15,9 +15,9 @@ class World
 public:
     World(
         const std::string& filename,
-        Window* window,
         SDL_GPUDevice* device,
         SDL_GPUCopyPass* copy_pass,
+        Window& window,
         Audio& audio
     );
     ~World();
@@ -29,8 +29,6 @@ public:
     Camera camera;
     Player* player = nullptr;
     Map* map = nullptr;
-    Audio& audio;
-    float time = 0.0f;
 
     // Lighting
     std::vector<Torchlight> torchlights;
@@ -46,6 +44,14 @@ public:
 
 private:
     void setup_physics();
+    void update_debug_mode(const float delta);
+    void update_freecam(const float delta);
+
+    Window& window;
+    Audio& audio;
+    float time = 0.0f;
+    bool debug_mode = false;
+    bool mouse_captured = true;
 
     // Physics
     JPH::JobSystemThreadPool* job_system;

@@ -20,10 +20,13 @@ static constexpr float MAX_RAY_DISTANCE = 100.0f;
 
 static constexpr float STEP_DELAY       = 0.4f;
 
+static constexpr float HUD_PADDING      = 10.0f;
+static constexpr float CROSSHAIR_SIZE   = 10.0f;
+
 Player::Player(
     const glm::vec3 position,
     const float yaw,
-    Window* window,
+    Window& window,
     World& world,
     Audio& audio
 ) : position(position),
@@ -33,8 +36,8 @@ Player::Player(
     world(world),
     audio(audio)
 {
-    mouse_position = window->get_mouse_position();
-    window->capture_mouse();
+    mouse_position = window.get_mouse_position();
+    window.capture_mouse();
 
     // Init physics
     JPH::Ref<JPH::BoxShape> shape = new JPH::BoxShape(
@@ -65,8 +68,8 @@ void Player::update(const float delta)
     handle_input(delta);
     flashlight.update(position, world.camera.pitch, world.camera.yaw);
     weapon.update(
-        window->get_mouse_button(SDL_BUTTON_LEFT),
-        window->get_mouse_button_pressed(SDL_BUTTON_LEFT),
+        window.get_mouse_button(SDL_BUTTON_LEFT),
+        window.get_mouse_button_pressed(SDL_BUTTON_LEFT),
         delta
     );
 
@@ -78,9 +81,12 @@ void Player::update(const float delta)
         center.GetZ()
     };
 
-    if (window->get_key_pressed(SDL_SCANCODE_K))
-        character->SetPosition(character->GetPosition() + JPH::RVec3(0.0f, 100.0f, 0.0f));
+    update_audio(original_position, grounded_this_frame, delta);
+    draw_hud();
+}
 
+void Player::update_audio(const glm::vec3 original_position, const bool grounded_this_frame, const float delta)
+{
     // Walking sounds
     if (is_walking())
     {
@@ -108,13 +114,38 @@ void Player::update(const float delta)
         audio.play(Audio::ID::STEPS_BEGIN);
 }
 
+void Player::draw_hud() const
+{
+    auto draw = ImGui::GetBackgroundDrawList();
+    const float offset_y = window.size.y - ImGui::GetTextLineHeight() - HUD_PADDING;
+
+    const ImVec2 centre = { window.size.x / 2.0f, window.size.y / 2.0f };
+
+    draw->AddLine(
+        { centre.x, centre.y - CROSSHAIR_SIZE + 1.0f },
+        { centre.x, centre.y + CROSSHAIR_SIZE },
+        IM_COL32_WHITE
+    );
+
+    draw->AddLine(
+        { centre.x - CROSSHAIR_SIZE, centre.y },
+        { centre.x + CROSSHAIR_SIZE, centre.y },
+        IM_COL32_WHITE
+    );
+
+    draw->AddText({ HUD_PADDING, offset_y }, IM_COL32_WHITE, "Health: 100");
+
+    ImVec2 ammo_size = ImGui::CalcTextSize("Ammo: 25");
+    draw->AddText({ window.size.x - HUD_PADDING - ammo_size.x, offset_y }, IM_COL32_WHITE, "Ammo: 25");
+}
+
 glm::vec2 Player::read_movement_input() const
 {
     glm::vec2 movement = {};
-    if (window->get_key(SDL_SCANCODE_W)) movement.y += 1.0f;
-    if (window->get_key(SDL_SCANCODE_S)) movement.y -= 1.0f;
-    if (window->get_key(SDL_SCANCODE_A)) movement.x -= 1.0f;
-    if (window->get_key(SDL_SCANCODE_D)) movement.x += 1.0f;
+    if (window.get_key(SDL_SCANCODE_W)) movement.y += 1.0f;
+    if (window.get_key(SDL_SCANCODE_S)) movement.y -= 1.0f;
+    if (window.get_key(SDL_SCANCODE_A)) movement.x -= 1.0f;
+    if (window.get_key(SDL_SCANCODE_D)) movement.x += 1.0f;
 
     if (movement.x != 0.0f || movement.y != 0.0f)
         movement = glm::normalize(movement);
@@ -126,10 +157,10 @@ bool Player::is_walking() const
 {
     return
         character->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround && (
-        window->get_key(SDL_SCANCODE_W) ||
-        window->get_key(SDL_SCANCODE_S) ||
-        window->get_key(SDL_SCANCODE_A) ||
-        window->get_key(SDL_SCANCODE_D)
+        window.get_key(SDL_SCANCODE_W) ||
+        window.get_key(SDL_SCANCODE_S) ||
+        window.get_key(SDL_SCANCODE_A) ||
+        window.get_key(SDL_SCANCODE_D)
     );
 }
 
@@ -174,7 +205,7 @@ void Player::update_velocity(const glm::vec2& wishdir, const float wishspeed, co
     float vertical_velocity = grounded ? 0.0f : current_velocity.GetY();
 
     vertical_velocity -= GRAVITY;
-    if (grounded && window->get_key(SDL_SCANCODE_SPACE))
+    if (grounded && window.get_key(SDL_SCANCODE_SPACE))
         vertical_velocity = JUMP_SPEED;
 
     if (grounded)
@@ -198,7 +229,7 @@ void Player::update_velocity(const glm::vec2& wishdir, const float wishspeed, co
 void Player::update_mouse_look()
 {
     const float sensitivity = 0.2f;
-    const glm::vec2 mouse_movement = window->get_mouse_movement();
+    const glm::vec2 mouse_movement = window.get_mouse_movement();
     head_yaw += mouse_movement.x * sensitivity;
     head_pitch += mouse_movement.y * sensitivity;
     head_pitch = std::max(std::min(head_pitch, 89.0f), -89.0f);
@@ -250,7 +281,7 @@ void Player::handle_input(const float delta)
     update_mouse_look();
     update_view_juice(movement, delta);
 
-    if (window->get_key_pressed(SDL_SCANCODE_F))
+    if (window.get_key_pressed(SDL_SCANCODE_F))
         flashlight.enabled = !flashlight.enabled;
 }
 

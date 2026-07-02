@@ -45,7 +45,7 @@ Renderer::Renderer(
     }
 
     // Load world
-    world = new World("map3.map", device.window, device.device, copy_pass, audio);
+    world = new World("map3.map", device.device, copy_pass, *device.window, audio);
 
     SDL_EndGPUCopyPass(copy_pass);
 
@@ -70,12 +70,17 @@ Renderer::Renderer(
         );
 #endif
 
+    init_imgui();
     dbg("TODO: don't use uniform buffer for lights");
 }
 
 Renderer::~Renderer()
 {
     device.wait_for_idle();
+
+    ImGui_ImplSDL3_Shutdown();
+    ImGui_ImplSDLGPU3_Shutdown();
+    ImGui::DestroyContext();
 
     for (size_t i = 0; i < Model::MODEL_NAMES.size(); i++)
         delete models[(Model::ID)i];
@@ -89,8 +94,13 @@ Renderer::~Renderer()
 
 bool Renderer::update()
 {
+    ImGui_ImplSDLGPU3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
     device.window->update();
     world->update(1.0f / 60.0f);
+
     return !device.window->should_close();
 }
 
@@ -166,7 +176,48 @@ void Renderer::render()
 
     composite_pass.execute(command_buffer, swapchain_texture.value());
 
+    // ImGui will crash on un-maximising as uses old dimensions?
+    if (!device.did_swapchain_format_change())
+    {
+        ImGui::Render();
+        ImDrawData* draw_data = ImGui::GetDrawData();
+        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
+
+        SDL_GPUColorTargetInfo target_info = {};
+        target_info.texture = swapchain_texture.value();
+        target_info.clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
+        target_info.load_op = SDL_GPU_LOADOP_LOAD;
+        target_info.store_op = SDL_GPU_STOREOP_STORE;
+        target_info.mip_level = 0;
+        target_info.layer_or_depth_plane = 0;
+        target_info.cycle = false;
+        SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr);
+        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
+        SDL_EndGPURenderPass(render_pass);
+    }
+    else ImGui::Render();
+
     SDL_SubmitGPUCommandBuffer(command_buffer);
+}
+
+void Renderer::init_imgui()
+{
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+    ImGui::StyleColorsLight();
+    ImGui::GetStyle().FontSizeBase = 25.0f;
+
+    ImGui_ImplSDL3_InitForSDLGPU(device.window->get_window());
+    ImGui_ImplSDLGPU3_InitInfo init_info = {};
+    init_info.Device = device.device;
+    init_info.ColorTargetFormat = device.swapchain_format;
+    init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
+    init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
+    init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
+    ImGui_ImplSDLGPU3_Init(&init_info);
 }
 
 Renderer::LightingState Renderer::collect_lights() const
@@ -179,11 +230,11 @@ Renderer::LightingState Renderer::collect_lights() const
     // Gather candidate world lights with their distance to the player
     std::vector<std::pair<float, Spotlight*>> candidates;
     candidates.reserve(world->torchlights.size());
-    const glm::vec3 player_pos = world->player->position;
+    const glm::vec3 player_pos = world->camera.position;
 
     for (auto& light : world->torchlights)
     {
-        const float dist2 = glm::length(light.position - world->player->position);
+        const float dist2 = glm::length(light.position - world->camera.position);
         candidates.emplace_back(dist2, &light);
     }
 

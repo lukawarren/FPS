@@ -2,11 +2,11 @@
 
 World::World(
     const std::string& filename,
-    Window* window,
     SDL_GPUDevice* device,
     SDL_GPUCopyPass* copy_pass,
+    Window& window,
     Audio& audio
-) : audio(audio)
+) : window(window), audio(audio)
 {
     map = new Map(filename, device, copy_pass);
     setup_physics();
@@ -87,31 +87,35 @@ void World::update(const float delta)
 {
     JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
 
-    // Need 1 collision step for every 60 FPS
-    const float divisions_of_60 = (1.0f / 60.0f) / delta;
-    player->update(delta);
-    const JPH::EPhysicsUpdateError error = physics_system.Update(delta, divisions_of_60, &allocator, job_system);
-
-    if (error != JPH::EPhysicsUpdateError::None)
-        dbg("Warning: physics update error", (int)error);
-
-    // Enemies
     const glm::vec3 direction = -camera.direction_vector();
-    for (auto& e : enemies)
-        e->update(*this, delta, direction);
 
-    // Remove dead enemies
-    for (const auto& e : enemies)
-        if (e->is_dead())
-            body_interface.RemoveBody(e->body_id);
+    if (!debug_mode)
+    {
+        // Need 1 collision step for every 60 FPS
+        const float divisions_of_60 = (1.0f / 60.0f) / delta;
+        player->update(delta);
+        const JPH::EPhysicsUpdateError error = physics_system.Update(delta, divisions_of_60, &allocator, job_system);
 
-    enemies.erase(std::remove_if(
-        enemies.begin(), enemies.end(),
-        [](const auto& e) {
-            return e->is_dead();
-        }),
-        enemies.end()
-    );
+        if (error != JPH::EPhysicsUpdateError::None)
+            dbg("Warning: physics update error", (int)error);
+
+        // Enemies
+        for (auto& e : enemies)
+            e->update(*this, delta, direction);
+
+        // Remove dead enemies
+        for (const auto& e : enemies)
+            if (e->is_dead())
+                body_interface.RemoveBody(e->body_id);
+
+        enemies.erase(std::remove_if(
+            enemies.begin(), enemies.end(),
+            [](const auto& e) {
+                return e->is_dead();
+            }),
+            enemies.end()
+        );
+    }
 
     // Sprites
     for (auto& s : animated_sprites)
@@ -120,14 +124,29 @@ void World::update(const float delta)
         s.advance();
     }
 
+    // Debug toggle
+    if (window.get_key_pressed(SDL_SCANCODE_ESCAPE))
+    {
+        debug_mode = !debug_mode;
+        if (!debug_mode && !mouse_captured)
+        {
+            window.capture_mouse();
+            mouse_captured = true;
+        }
+    }
+
     // Camera
-    camera.pitch = player->head_pitch;
-    camera.yaw = player->head_yaw;
-    camera.position = {
-        player->position.x,
-        player->position.y - Player::PLAYER_HEIGHT / 2.0f + Player::PLAYER_EYE_HEIGHT + player->head_bob_offset,
-        player->position.z
-    };
+    if (!debug_mode)
+    {
+        camera.pitch = player->head_pitch;
+        camera.yaw = player->head_yaw;
+        camera.position = {
+            player->position.x,
+            player->position.y - Player::PLAYER_HEIGHT / 2.0f + Player::PLAYER_EYE_HEIGHT + player->head_bob_offset,
+            player->position.z
+        };
+    }
+    else update_debug_mode(delta);
 
     // Audio
     audio.set_listener(
@@ -194,6 +213,76 @@ void World::setup_physics()
     // Now that all colliders are added, optimise collisions
     physics_system.OptimizeBroadPhase();
 }
+
+void World::update_debug_mode(const float delta)
+{
+    update_freecam(delta);
+}
+
+void World::update_freecam(const float delta)
+{
+    const float freecam_speed = 10.0f;
+
+    glm::vec2 movement = {};
+    if (window.get_key(SDL_SCANCODE_W)) movement.y += 1.0f;
+    if (window.get_key(SDL_SCANCODE_S)) movement.y -= 1.0f;
+    if (window.get_key(SDL_SCANCODE_A)) movement.x -= 1.0f;
+    if (window.get_key(SDL_SCANCODE_D)) movement.x += 1.0f;
+
+    if (movement.x != 0.0f || movement.y != 0.0f)
+        movement = glm::normalize(movement);
+
+    const float pitch_rad = glm::radians(-camera.pitch);
+    const float yaw_rad = glm::radians(-camera.yaw);
+
+    const glm::vec3 forward = {
+        -std::sin(yaw_rad) * std::cos(pitch_rad),
+        std::sin(pitch_rad),
+        -std::cos(yaw_rad) * std::cos(pitch_rad)
+    };
+
+    const glm::vec3 right = {
+        std::cos(yaw_rad),
+        0.0f,
+        -std::sin(yaw_rad)
+    };
+
+    const glm::vec3 up = {
+        std::sin(yaw_rad) * std::sin(pitch_rad),
+        std::cos(pitch_rad),
+        std::cos(yaw_rad) * std::sin(pitch_rad)
+    };
+
+    // Apply movement
+    const float speed = freecam_speed * delta;
+    camera.position += forward * movement.y * speed;
+    camera.position += right * movement.x * speed;
+
+    // Vertical movement
+    if (window.get_key(SDL_SCANCODE_Q)) camera.position -= up * speed;
+    if (window.get_key(SDL_SCANCODE_E)) camera.position += up * speed;
+
+    // Mouse Look
+    if (mouse_captured)
+    {
+        const float sensitivity = 0.2f;
+        const glm::vec2 mouse_movement = window.get_mouse_movement();
+        camera.yaw += mouse_movement.x * sensitivity;
+        camera.pitch += mouse_movement.y * sensitivity;
+        camera.pitch = std::max(std::min(camera.pitch, 89.0f), -89.0f);
+    }
+
+    // Cursor Toggle
+    if (window.get_key_pressed(SDL_SCANCODE_LSHIFT))
+    {
+        mouse_captured = !mouse_captured;
+        if (mouse_captured)
+            window.capture_mouse();
+        else
+            window.uncapture_mouse();
+    }
+}
+
 
 World::~World()
 {

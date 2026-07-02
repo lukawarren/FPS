@@ -88,23 +88,25 @@ void Window::update()
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
+        ImGui_ImplSDL3_ProcessEvent(&event);
+
         if (event.type == SDL_EVENT_QUIT)
         {
             closed = true;
         }
         else if (event.type == SDL_EVENT_KEY_DOWN)
         {
-            if (event.key.key == SDLK_ESCAPE)
+            if (event.key.key == SDLK_Q)
             {
                 closed = true;
             }
 
-            if (event.key.repeat == 0)
+            if (event.key.repeat == 0 && !ImGui::GetIO().WantCaptureKeyboard)
             {
                 just_pressed_keys.insert(event.key.scancode);
             }
         }
-        else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+        else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && !ImGui::GetIO().WantCaptureMouse)
         {
             just_pressed_mouse_buttons.insert(event.button.button);
         }

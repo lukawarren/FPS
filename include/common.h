@@ -52,6 +52,11 @@
 
 #include <miniaudio/miniaudio.h>
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlgpu3.h>
+
 #define DBG_MACRO_NO_WARNING
 #include <dbg.h>
 
@@ -74,7 +79,7 @@ inline std::string AUDIO_ROOT = "../res/audio/";
 
 struct QualitySettings
 {
-    u32 inverse_render_scale = 4;
+    u32 inverse_render_scale = 1;
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
     u32 bloom_downsamples = 5;

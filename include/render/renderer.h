@@ -36,6 +36,8 @@ private:
         u32 n_lights;
     };
 
+    void init_imgui();
+
     LightingState collect_lights() const;
 
     static Quad* create_quad(Device& device);

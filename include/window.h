@@ -25,6 +25,9 @@ public:
     bool get_mouse_button(uint8_t button);
     bool get_mouse_button_pressed(uint8_t button);
 
+    // Managed by device; used by gameplay code
+    glm::vec2 size;
+
 private:
     SDL_GPUDevice* device;
     SDL_Window* window = nullptr;

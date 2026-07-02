@@ -15,7 +15,7 @@ public:
     Player(
         const glm::vec3 position,
         const float yaw,
-        Window* window,
+        Window& window,
         World& world,
         Audio& audio
     );
@@ -37,6 +37,8 @@ public:
 
 private:
     void handle_input(const float delta);
+    void update_audio(const glm::vec3 original_position, const bool grounded_this_frame, const float delta);
+    void draw_hud() const;
     void on_fire();
 
     glm::vec2 read_movement_input() const;
@@ -61,5 +63,5 @@ private:
 
     World& world;
     Audio& audio;
-    Window* window;
+    Window& window;
 };
