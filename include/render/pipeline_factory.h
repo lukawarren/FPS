@@ -13,7 +13,6 @@ public:
 
     SDL_GPUGraphicsPipeline* diffuse_pipeline;
     SDL_GPUGraphicsPipeline* depth_pipeline;
-    SDL_GPUGraphicsPipeline* depth_pipeline_sprite;
     SDL_GPUGraphicsPipeline* depth_pipeline_texture_array;
     SDL_GPUGraphicsPipeline* sprite_pipeline;
     SDL_GPUGraphicsPipeline* downsample_pipeline;
@@ -28,7 +27,6 @@ private:
         SDL_GPUTextureFormat depth_format
     );
 
-    template<bool is_quad = false>
     SDL_GPUGraphicsPipeline* create_depth_pipeline(
         SDL_GPUShader* vs,
         SDL_GPUShader* fs,
@@ -66,8 +64,6 @@ private:
     SDL_GPUShader* diffuse_fs;
     SDL_GPUShader* depth_vs;
     SDL_GPUShader* depth_fs;
-    SDL_GPUShader* depth_sprite_vs;
-    SDL_GPUShader* depth_sprite_fs;
     SDL_GPUShader* sprite_vs;
     SDL_GPUShader* sprite_fs;
     SDL_GPUShader* quad_vs;

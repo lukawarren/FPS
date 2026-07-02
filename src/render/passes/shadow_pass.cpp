@@ -1,6 +1,5 @@
 #include "render/passes/shadow_pass.h"
 #include "render/render_pass.h"
-#include "render/passes/sprite_pass.h"
 
 ShadowPass::ShadowPass(
     PipelineFactory& pipeline_factory,
@@ -49,17 +48,5 @@ void ShadowPass::execute(
     {
         draw_call.mesh->bind(render_pass);
         draw_call.mesh->draw(render_pass);
-    }
-
-    // Draw enemies
-    // TODO: sort by ID's
-    SpritePass::VertexUniforms uniforms;
-    sprites.at(Decal::ID::BULLET)->bind(render_pass, texture_manager.sampler);
-    quad.bind(render_pass);
-    for (const auto& e : world.enemies)
-    {
-        uniforms.model = e->sprite.transform.matrix();
-        uniforms.spritesheet_info = e->sprite.get_spritesheet_info();
-        quad.draw(render_pass);
     }
 }
