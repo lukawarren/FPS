@@ -18,8 +18,6 @@ static constexpr float BOB_AMOUNT       = 0.10f;
 
 static constexpr float MAX_RAY_DISTANCE = 100.0f;
 
-static constexpr float STEP_DELAY       = 0.4f;
-
 static constexpr float HUD_PADDING      = 10.0f;
 static constexpr float CROSSHAIR_SIZE   = 10.0f;
 
@@ -87,27 +85,26 @@ void Player::update(const float delta)
 
 void Player::update_audio(const glm::vec3 original_position, const bool grounded_this_frame, const float delta)
 {
-    // Walking sounds
-    if (is_walking())
+    if (is_walking() && glm::length2(position - original_position) > 0.001f)
     {
-        if (step_time <= 0.0f)
+        const float bob_sign = std::sin(bob_time);
+        const bool crossed_up = bob_sign >= 0.0f && last_bob_sign < 0.0f;
+
+        if (crossed_up)
         {
-            if (glm::length2(position - original_position) > 0.001f)
-                audio.play(
-                    (Audio::ID)(
-                        (u32)Audio::ID::STEPS_BEGIN + (
-                            step %
-                            ((u32)Audio::ID::STEPS_FINAL - (u32)Audio::ID::STEPS_BEGIN + 1)
-                        )
+            audio.play(
+                (Audio::ID)(
+                    (u32)Audio::ID::STEPS_BEGIN + (
+                        step %
+                        ((u32)Audio::ID::STEPS_FINAL - (u32)Audio::ID::STEPS_BEGIN + 1)
                     )
-                );
-            step_time = STEP_DELAY + delta;
+                )
+            );
             step++;
         }
 
-        step_time -= delta;
+        last_bob_sign = bob_sign;
     }
-    else step_time = 0.0f;
 
     // Landing sound
     if (!grounded_this_frame && character->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround)
@@ -241,7 +238,6 @@ void Player::update_view_juice(const glm::vec2& movement, const float delta)
     const JPH::Vec3 velocity = character->GetLinearVelocity();
     const float speed_ratio = glm::min(glm::length(glm::vec2(velocity.GetX(), velocity.GetZ())) / MOVE_SPEED, 1.0f);
 
-    // View bob, only while walking on the ground
     if (grounded && speed_ratio > 0.01f)
     {
         bob_time += delta * BOB_FREQUENCY * speed_ratio;
@@ -250,6 +246,8 @@ void Player::update_view_juice(const glm::vec2& movement, const float delta)
     else
     {
         head_bob_offset = glm::mix(head_bob_offset, 0.0f, 1.0f - std::exp(-BOB_FREQUENCY * delta));
+        bob_time = 0.0f;
+        last_bob_sign = 0.0f;
     }
 }
 

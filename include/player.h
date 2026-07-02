@@ -57,7 +57,7 @@ private:
     std::optional<Hit> get_hit() const;
 
     u32 step = 0;
-    float step_time = 0.0f;
+    float last_bob_sign = 0.0f;
     float bob_time = 0.0f;
     glm::vec2 mouse_position;
 
