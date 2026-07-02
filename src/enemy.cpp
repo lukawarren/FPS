@@ -2,9 +2,10 @@
 #include "player.h"
 #include "world.h"
 
-constexpr static inline float SPEED = 0.0f;//4.0f;
+constexpr static inline float SPEED = 4.0f;
 constexpr static inline float WAYPOINT_THRESHOLD = 0.05f;
 constexpr static inline float REPATH_INTERVAL = 0.5f;
+constexpr static inline float DETECT_RADIUS = 10.0f;
 
 Enemy::Enemy(World& world, const glm::vec3 position) : sprite(
     position,
@@ -43,6 +44,13 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
 {
     sprite.face(direction * glm::vec3(1.0f, 0.0f, 1.0f));
 
+    if (!can_see_player(world))
+    {
+        path.clear();
+        repath_timer = 0.0f;
+        return;
+    }
+
     // Continuously replan toward the player's current position
     repath_timer -= delta;
     if (repath_timer <= 0.0f)
@@ -62,6 +70,7 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
     if (path.empty() || path_index >= path.size())
         return;
 
+    // Get true length as likely to normalise anyway later
     glm::vec3 to_target = path[path_index] - sprite.transform.position;
     float distance = glm::length(to_target);
 
@@ -76,7 +85,7 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
         distance = glm::length(to_target);
     }
 
-    if (distance > 0.0001f)
+    if (distance > 0.01f)
     {
         const glm::vec3 move_direction = to_target / distance;
         const float step = glm::min(SPEED * delta, distance);
@@ -99,4 +108,10 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
 void Enemy::damage(const float damage)
 {
     health -= damage;
+}
+
+bool Enemy::can_see_player(const World& world) const
+{
+    return glm::length2(world.player->position - sprite.transform.position) <
+        DETECT_RADIUS * DETECT_RADIUS;
 }

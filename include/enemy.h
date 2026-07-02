@@ -11,6 +11,7 @@ public:
     Enemy(World& world, const glm::vec3 position);
     void update(World& world, const float delta, const glm::vec3 direction);
     void damage(const float damage);
+
     inline bool is_dead() const { return health <= 0.0f; }
 
     Sprite sprite;
@@ -24,4 +25,6 @@ private:
     size_t path_index = 0;
     float repath_timer = 0.0f;
     float health = 100.0f;
+
+    bool can_see_player(const World& world) const;
 };
