@@ -8,7 +8,7 @@ public:
     TextureManager(const Device& device);
     ~TextureManager();
 
-    void on_swapchain_format_change(const Device& device);
+    void on_swapchain_format_change();
 
     // Diffuse pass
     SDL_GPUTexture* diffuse_texture;
@@ -24,14 +24,16 @@ public:
     // Bloom passes
     SDL_GPUSampler* bloom_sampler;
     std::array<SDL_GPUTexture*, QUALITY_SETTINGS.bloom_downsamples> bloom_textures;
-    u32 get_bloom_texture_width(const Device& device, const u32 level);
-    u32 get_bloom_texture_height(const Device& device, const u32 level);
+    u32 get_bloom_texture_width(const u32 level);
+    u32 get_bloom_texture_height(const u32 level);
 
 private:
-    void create_diffuse_texture(const Device& device);
-    void create_depth_texture(const Device& device);
-    void create_shadow_map(const Device& device);
-    void create_bloom_textures(const Device& device);
+    SDL_GPUTexture* create_texture(const SDL_GPUTextureCreateInfo& info);
 
-    SDL_GPUDevice* device;
+    void create_diffuse_texture();
+    void create_depth_texture();
+    void create_shadow_map();
+    void create_bloom_textures();
+
+    const Device& device;
 };

@@ -113,7 +113,7 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_diffuse_pipeline(
         .enable_blend = false
     };
 
-    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    const SDL_GPUGraphicsPipelineCreateInfo pipeline_info =
     {
         .vertex_shader = vs,
         .fragment_shader = fs,
@@ -158,9 +158,9 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_diffuse_pipeline(
             .has_depth_stencil_target = true
         },
         .props = 0
-    });
+    };
 
-    return check_pipeline(pipeline);
+    return check_pipeline(SDL_CreateGPUGraphicsPipeline(device, &pipeline_info));
 }
 
 SDL_GPUGraphicsPipeline* PipelineFactory::create_depth_pipeline(
@@ -172,7 +172,7 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_depth_pipeline(
     const auto description = Mesh::Vertex::get_vertex_buffer_description();
     const auto attributes = Mesh::Vertex::get_vertex_attributes();
 
-    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    const SDL_GPUGraphicsPipelineCreateInfo pipeline_info =
     {
         .vertex_shader = vs,
         .fragment_shader = fs,
@@ -217,9 +217,9 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_depth_pipeline(
             .has_depth_stencil_target = true
         },
         .props = 0
-    });
+    };
 
-    return check_pipeline(pipeline);
+    return check_pipeline(SDL_CreateGPUGraphicsPipeline(device, &pipeline_info));
 }
 
 SDL_GPUGraphicsPipeline* PipelineFactory::create_sprite_pipeline(
@@ -247,7 +247,7 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_sprite_pipeline(
         .enable_color_write_mask = false
     };
 
-    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    const SDL_GPUGraphicsPipelineCreateInfo pipeline_info =
     {
         .vertex_shader = vs,
         .fragment_shader = fs,
@@ -292,9 +292,9 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_sprite_pipeline(
             .has_depth_stencil_target = true
         },
         .props = 0
-    });
+    };
 
-    return check_pipeline(pipeline);
+    return check_pipeline(SDL_CreateGPUGraphicsPipeline(device, &pipeline_info));
 }
 
 SDL_GPUGraphicsPipeline* PipelineFactory::create_downsample_pipeline(
@@ -313,7 +313,7 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_downsample_pipeline(
         .enable_blend = false
     };
 
-    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    const SDL_GPUGraphicsPipelineCreateInfo pipeline_info =
     {
         .vertex_shader = vs,
         .fragment_shader = fs,
@@ -358,9 +358,9 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_downsample_pipeline(
             .has_depth_stencil_target = false
         },
         .props = 0
-    });
+    };
 
-    return check_pipeline(pipeline);
+    return check_pipeline(SDL_CreateGPUGraphicsPipeline(device, &pipeline_info));
 }
 
 SDL_GPUGraphicsPipeline* PipelineFactory::create_upsample_pipeline(
@@ -387,7 +387,7 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_upsample_pipeline(
         .enable_color_write_mask = false
     };
 
-    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    const SDL_GPUGraphicsPipelineCreateInfo pipeline_info =
     {
         .vertex_shader = vs,
         .fragment_shader = fs,
@@ -432,9 +432,9 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_upsample_pipeline(
             .has_depth_stencil_target = false
         },
         .props = 0
-    });
+    };
 
-    return check_pipeline(pipeline);
+    return check_pipeline(SDL_CreateGPUGraphicsPipeline(device, &pipeline_info));
 }
 
 SDL_GPUGraphicsPipeline* PipelineFactory::create_composite_pipeline(
@@ -453,7 +453,7 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_composite_pipeline(
         .enable_blend = false
     };
 
-    SDL_GPUGraphicsPipeline* pipeline = SDL_CreateGPUGraphicsPipeline(device, &(SDL_GPUGraphicsPipelineCreateInfo)
+    const SDL_GPUGraphicsPipelineCreateInfo pipeline_info =
     {
         .vertex_shader = vs,
         .fragment_shader = fs,
@@ -498,9 +498,9 @@ SDL_GPUGraphicsPipeline* PipelineFactory::create_composite_pipeline(
             .has_depth_stencil_target = false
         },
         .props = 0
-    });
+    };
 
-    return check_pipeline(pipeline);
+    return check_pipeline(SDL_CreateGPUGraphicsPipeline(device, &pipeline_info));
 }
 
 SDL_GPUGraphicsPipeline* PipelineFactory::check_pipeline(SDL_GPUGraphicsPipeline* pipeline) const

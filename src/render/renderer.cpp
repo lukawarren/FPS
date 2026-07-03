@@ -116,7 +116,7 @@ void Renderer::render()
 
     if (device.did_swapchain_format_change())
     {
-        texture_manager.on_swapchain_format_change(device);
+        texture_manager.on_swapchain_format_change();
         pipeline_factory.on_swapchain_format_change(device.swapchain_format);
     }
 

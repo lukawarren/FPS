@@ -23,9 +23,9 @@ void BloomPass::downsample(SDL_GPUCommandBuffer* command_buffer)
 {
     for (u32 level = 0; level < QUALITY_SETTINGS.bloom_downsamples; level++)
     {
-        const RenderPass render_pass(
+        const RenderPass<1> render_pass(
             command_buffer,
-            &(SDL_GPUColorTargetInfo) {
+            {{{
                 .texture = texture_manager.bloom_textures[level],
                 .mip_level = 0,
                 .layer_or_depth_plane = 0,
@@ -37,26 +37,20 @@ void BloomPass::downsample(SDL_GPUCommandBuffer* command_buffer)
                 .resolve_layer = 0,
                 .cycle = true,
                 .cycle_resolve_texture = false
-            },
-            1,
-            NULL
+            }}}
         );
 
         SDL_BindGPUGraphicsPipeline(render_pass, pipeline_factory.downsample_pipeline);
 
         render_pass.set_viewport(
-            (float)texture_manager.get_bloom_texture_width(device, level),
-            (float)texture_manager.get_bloom_texture_height(device, level)
+            (float)texture_manager.get_bloom_texture_width(level),
+            (float)texture_manager.get_bloom_texture_height(level)
         );
 
-        SDL_BindGPUFragmentSamplers(
-            render_pass,
+        render_pass.bind_fragment_sampler(
             0,
-            &(SDL_GPUTextureSamplerBinding) {
-                .texture = (level == 0 ? texture_manager.diffuse_texture : texture_manager.bloom_textures[level - 1]),
-                .sampler = texture_manager.bloom_sampler
-            },
-            1
+            (level == 0 ? texture_manager.diffuse_texture : texture_manager.bloom_textures[level - 1]),
+            texture_manager.bloom_sampler
         );
 
         quad.bind(render_pass);
@@ -71,9 +65,9 @@ void BloomPass::upsample(SDL_GPUCommandBuffer* command_buffer)
         const u32 target_level = (u32)texture_manager.bloom_textures.size() - level - 2;
         const u32 source_level = (u32)texture_manager.bloom_textures.size() - level - 1;
 
-        const RenderPass render_pass(
+        const RenderPass<1> render_pass(
             command_buffer,
-            &(SDL_GPUColorTargetInfo) {
+            {{{
                 .texture = texture_manager.bloom_textures[target_level],
                 .mip_level = 0,
                 .layer_or_depth_plane = 0,
@@ -85,26 +79,20 @@ void BloomPass::upsample(SDL_GPUCommandBuffer* command_buffer)
                 .resolve_layer = 0,
                 .cycle = false,
                 .cycle_resolve_texture = false
-            },
-            1,
-            NULL
+            }}}
         );
 
         SDL_BindGPUGraphicsPipeline(render_pass, pipeline_factory.upsample_pipeline);
 
         render_pass.set_viewport(
-            (float)texture_manager.get_bloom_texture_width(device, target_level),
-            (float)texture_manager.get_bloom_texture_height(device, target_level)
+            (float)texture_manager.get_bloom_texture_width(target_level),
+            (float)texture_manager.get_bloom_texture_height(target_level)
         );
 
-        SDL_BindGPUFragmentSamplers(
-            render_pass,
+        render_pass.bind_fragment_sampler(
             0,
-            &(SDL_GPUTextureSamplerBinding) {
-                .texture = texture_manager.bloom_textures[source_level],
-                .sampler = texture_manager.bloom_sampler
-            },
-            1
+            texture_manager.bloom_textures[source_level],
+            texture_manager.bloom_sampler
         );
 
         quad.bind(render_pass);

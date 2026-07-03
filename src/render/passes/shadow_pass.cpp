@@ -20,11 +20,9 @@ void ShadowPass::execute(
     u8 slot
 )
 {
-    const RenderPass render_pass(
+    const RenderPass<0> render_pass(
         command_buffer,
-        NULL,
-        0,
-        &(SDL_GPUDepthStencilTargetInfo) {
+        {
             .texture = texture_manager.shadow_map,
             .clear_depth = 1.0f,
             .load_op = SDL_GPU_LOADOP_CLEAR,

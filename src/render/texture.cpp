@@ -17,7 +17,7 @@ Texture::Texture(
         throw std::runtime_error("Failed to load texture " + path);
 
     // Need colour target for mipmap generation
-    texture = SDL_CreateGPUTexture(device, &(SDL_GPUTextureCreateInfo){
+    const SDL_GPUTextureCreateInfo texture_info = {
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET,
@@ -27,16 +27,18 @@ Texture::Texture(
         .num_levels = (u32)std::floor(std::log2(std::max(width, height))) + 1,
         .sample_count = SDL_GPU_SAMPLECOUNT_1,
         .props = 0
-    });
+    };
+    texture = SDL_CreateGPUTexture(device, &texture_info);
 
     // Create transfer buffer for uploading data
+    const SDL_GPUTransferBufferCreateInfo transfer_info = {
+        .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+        .size = (u32)sizeof(u32) * width * height,
+        .props = 0
+    };
     SDL_GPUTransferBuffer* transfer_buffer = SDL_CreateGPUTransferBuffer(
         device,
-        &(SDL_GPUTransferBufferCreateInfo){
-            .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-            .size = (u32)sizeof(u32) * width * height,
-            .props = 0
-        }
+        &transfer_info
     );
 
     // Copy CPU-wise
@@ -45,25 +47,27 @@ Texture::Texture(
     SDL_UnmapGPUTransferBuffer(device, transfer_buffer);
 
     // Copy GPU-wise
+    const SDL_GPUTextureTransferInfo texture_transfer_info = {
+        .transfer_buffer = transfer_buffer,
+        .offset = 0,
+        .pixels_per_row = (u32)width,
+        .rows_per_layer = (u32)height
+    };
+    const SDL_GPUTextureRegion region = {
+        .texture = texture,
+        .mip_level = 0,
+        .layer = 0,
+        .x = 0,
+        .y = 0,
+        .z = 0,
+        .w = (u32)width,
+        .h = (u32)height,
+        .d = 1
+    };
     SDL_UploadToGPUTexture(
         copy_pass,
-        &(SDL_GPUTextureTransferInfo) {
-            .transfer_buffer = transfer_buffer,
-            .offset = 0,
-            .pixels_per_row = (u32)width,
-            .rows_per_layer = (u32)height
-        },
-        &(SDL_GPUTextureRegion) {
-            .texture = texture,
-            .mip_level = 0,
-            .layer = 0,
-            .x = 0,
-            .y = 0,
-            .z = 0,
-            .w = (u32)width,
-            .h = (u32)height,
-            .d = 1
-        },
+        &texture_transfer_info,
+        &region,
         false
     );
 
@@ -75,15 +79,12 @@ Texture::Texture(
 
 void Texture::bind(SDL_GPURenderPass* render_pass, SDL_GPUSampler* sampler)
 {
-    SDL_BindGPUFragmentSamplers(
-        render_pass,
-        0,
-        &(SDL_GPUTextureSamplerBinding) {
-            .texture = texture,
-            .sampler = sampler
-        },
-        1
-    );
+    const SDL_GPUTextureSamplerBinding binding = {
+        .texture = texture,
+        .sampler = sampler
+    };
+
+    SDL_BindGPUFragmentSamplers(render_pass, 0, &binding, 1);
 }
 
 void Texture::generate_mipmaps(SDL_GPUCommandBuffer* command_buffer)

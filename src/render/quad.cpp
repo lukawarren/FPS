@@ -14,20 +14,22 @@ Quad::Quad(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 {
     // Create GPU buffers
     const u32 vertex_size = (u32)sizeof(Vertex) * (u32)QUAD_VERTICES.size();
-    vertex_buffer = SDL_CreateGPUBuffer(device, &(SDL_GPUBufferCreateInfo) {
+    const SDL_GPUBufferCreateInfo vertex_info = {
         .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
         .size = vertex_size,
         .props = 0
-    });
+    };
+    vertex_buffer = SDL_CreateGPUBuffer(device, &vertex_info);
 
     // Create transfer buffer for uploading data
+    const SDL_GPUTransferBufferCreateInfo transfer_info = {
+        .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+        .size = vertex_size,
+        .props = 0
+    };
     SDL_GPUTransferBuffer* transfer_buffer = SDL_CreateGPUTransferBuffer(
         device,
-        &(SDL_GPUTransferBufferCreateInfo){
-            .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-            .size = vertex_size,
-            .props = 0
-        }
+        &transfer_info
     );
 
     // Copy CPU-wise
@@ -36,19 +38,16 @@ Quad::Quad(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
     SDL_UnmapGPUTransferBuffer(device, transfer_buffer);
 
     // Copy GPU-wise
-    SDL_UploadToGPUBuffer(
-        copy_pass,
-        &(SDL_GPUTransferBufferLocation) {
-            .transfer_buffer = transfer_buffer,
-            .offset = 0
-        },
-        &(SDL_GPUBufferRegion) {
-            .buffer = vertex_buffer,
-            .offset = 0,
-            .size = vertex_size
-        },
-        false
-    );
+    const SDL_GPUTransferBufferLocation location = {
+        .transfer_buffer = transfer_buffer,
+        .offset = 0
+    };
+    const SDL_GPUBufferRegion region = {
+        .buffer = vertex_buffer,
+        .offset = 0,
+        .size = vertex_size
+    };
+    SDL_UploadToGPUBuffer(copy_pass, &location, &region, false);
 
     // Destroy transfer buffer
     SDL_ReleaseGPUTransferBuffer(device, transfer_buffer);
@@ -57,15 +56,11 @@ Quad::Quad(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 
 void Quad::bind(SDL_GPURenderPass* render_pass) const
 {
-    SDL_BindGPUVertexBuffers(
-        render_pass,
-        0,
-        &(SDL_GPUBufferBinding) {
-            .buffer = vertex_buffer,
-            .offset = 0
-        },
-        1
-    );
+    const SDL_GPUBufferBinding binding = {
+        .buffer = vertex_buffer,
+        .offset = 0
+    };
+    SDL_BindGPUVertexBuffers(render_pass, 0, &binding, 1);
 }
 
 void Quad::draw(SDL_GPURenderPass* render_pass) const

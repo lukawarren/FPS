@@ -24,9 +24,9 @@ void SpritePass::execute(
     const DiffusePass::FragmentUniforms& fragment_uniforms
 )
 {
-    const RenderPass render_pass(
+    const RenderPass<1> render_pass(
         command_buffer,
-        &(SDL_GPUColorTargetInfo) {
+        {{{
             .texture = texture_manager.diffuse_texture,
             .mip_level = 0,
             .layer_or_depth_plane = 0,
@@ -38,9 +38,8 @@ void SpritePass::execute(
             .resolve_layer = 0,
             .cycle = false,
             .cycle_resolve_texture = false
-        },
-        1,
-        &(SDL_GPUDepthStencilTargetInfo) {
+        }}},
+        {
             .texture = texture_manager.depth_texture,
             .clear_depth = 1.0f,
             .load_op = SDL_GPU_LOADOP_LOAD,
@@ -69,14 +68,10 @@ void SpritePass::execute(
         sizeof(fragment_uniforms)
     );
 
-    SDL_BindGPUFragmentSamplers(
-        render_pass,
+    render_pass.bind_fragment_sampler(
         1,
-        &(SDL_GPUTextureSamplerBinding) {
-            .texture = texture_manager.shadow_map,
-            .sampler = texture_manager.shadow_map_sampler
-        },
-        1
+        texture_manager.shadow_map,
+        texture_manager.shadow_map_sampler
     );
 
     VertexUniforms uniforms;

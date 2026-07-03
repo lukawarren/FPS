@@ -10,25 +10,28 @@ Mesh::Mesh(
     // Create GPU buffers
     const u32 vertex_size = (u32)sizeof(Vertex) * (u32)vertices.size();
     const u32 index_size = (u32)sizeof(u32) * (u32)indices.size();
-    vertex_buffer = SDL_CreateGPUBuffer(device, &(SDL_GPUBufferCreateInfo) {
+    const SDL_GPUBufferCreateInfo vertex_info = {
         .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
         .size = vertex_size,
         .props = 0
-    });
-    index_buffer = SDL_CreateGPUBuffer(device, &(SDL_GPUBufferCreateInfo) {
+    };
+    const SDL_GPUBufferCreateInfo index_info = {
         .usage = SDL_GPU_BUFFERUSAGE_INDEX,
         .size = index_size,
         .props = 0
-    });
+    };
+    vertex_buffer = SDL_CreateGPUBuffer(device, &vertex_info);
+    index_buffer = SDL_CreateGPUBuffer(device, &index_info);
 
     // Create transfer buffer for uploading data
+    const SDL_GPUTransferBufferCreateInfo transfer_info = {
+        .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+        .size = vertex_size + index_size,
+        .props = 0
+    };
     SDL_GPUTransferBuffer* transfer_buffer = SDL_CreateGPUTransferBuffer(
         device,
-        &(SDL_GPUTransferBufferCreateInfo){
-            .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-            .size = vertex_size + index_size,
-            .props = 0
-        }
+        &transfer_info
     );
 
     // Copy CPU-wise
@@ -38,30 +41,28 @@ Mesh::Mesh(
     SDL_UnmapGPUTransferBuffer(device, transfer_buffer);
 
     // Copy GPU-wise
+    SDL_GPUTransferBufferLocation location = {
+        .transfer_buffer = transfer_buffer,
+        .offset = 0
+    };
+    SDL_GPUBufferRegion region = {
+        .buffer = vertex_buffer,
+        .offset = 0,
+        .size = vertex_size
+    };
     SDL_UploadToGPUBuffer(
         copy_pass,
-        &(SDL_GPUTransferBufferLocation) {
-            .transfer_buffer = transfer_buffer,
-            .offset = 0
-        },
-        &(SDL_GPUBufferRegion) {
-            .buffer = vertex_buffer,
-            .offset = 0,
-            .size = vertex_size
-        },
+        &location,
+        &region,
         false
     );
+    location.offset = vertex_size;
+    region.buffer = index_buffer;
+    region.size = index_size;
     SDL_UploadToGPUBuffer(
         copy_pass,
-        &(SDL_GPUTransferBufferLocation) {
-            .transfer_buffer = transfer_buffer,
-            .offset = vertex_size
-        },
-        &(SDL_GPUBufferRegion) {
-            .buffer = index_buffer,
-            .offset = 0,
-            .size = index_size
-        },
+        &location,
+        &region,
         false
     );
 
@@ -73,24 +74,19 @@ Mesh::Mesh(
 
 void Mesh::bind(SDL_GPURenderPass* render_pass) const
 {
-    SDL_BindGPUVertexBuffers(
-        render_pass,
-        0,
-        &(SDL_GPUBufferBinding) {
-            .buffer = vertex_buffer,
-            .offset = 0
-        },
-        1
-    );
+    const SDL_GPUBufferBinding vertex_binding = {
+        .buffer = vertex_buffer,
+        .offset = 0
+    };
 
-    SDL_BindGPUIndexBuffer(
-        render_pass,
-        &(SDL_GPUBufferBinding) {
-            .buffer = index_buffer,
-            .offset = 0
-        },
-        SDL_GPU_INDEXELEMENTSIZE_32BIT
-    );
+    SDL_BindGPUVertexBuffers(render_pass, 0, &vertex_binding, 1);
+
+    const SDL_GPUBufferBinding index_binding = {
+        .buffer = index_buffer,
+        .offset = 0
+    };
+
+    SDL_BindGPUIndexBuffer(render_pass, &index_binding, SDL_GPU_INDEXELEMENTSIZE_32BIT);
 }
 
 void Mesh::draw(SDL_GPURenderPass* render_pass) const

@@ -15,9 +15,9 @@ CompositePass::CompositePass(
 
 void CompositePass::execute(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture* swapchain_texture)
 {
-    const RenderPass render_pass(
+    const RenderPass<1> render_pass(
         command_buffer,
-        &(SDL_GPUColorTargetInfo) {
+        {{{
             .texture = swapchain_texture,
             .mip_level = 0,
             .layer_or_depth_plane = 0,
@@ -29,9 +29,7 @@ void CompositePass::execute(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture
             .resolve_layer = 0,
             .cycle = false,
             .cycle_resolve_texture = false
-        },
-        1,
-        NULL
+        }}}
     );
 
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_factory.composite_pipeline);
