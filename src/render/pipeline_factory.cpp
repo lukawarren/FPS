@@ -7,16 +7,16 @@ PipelineFactory::PipelineFactory(Device& device, const TextureManager& texture_m
     depth_texture_format = texture_manager.depth_texture_format;
     depth_texture_array_format = texture_manager.depth_texture_array_format;
 
-    diffuse_vs = device.compile_shader("diffuse.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
-    diffuse_fs = device.compile_shader("diffuse.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
-    depth_vs = device.compile_shader("depth.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
-    depth_fs = device.compile_shader("depth.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
-    sprite_vs = device.compile_shader("sprite.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
-    sprite_fs = device.compile_shader("sprite.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
-    quad_vs = device.compile_shader("quad.vs.hlsl", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
-    downsample_fs = device.compile_shader("downsample.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
-    upsample_fs = device.compile_shader("upsample.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
-    composite_fs = device.compile_shader("composite.ps.hlsl", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    diffuse_vs = device.compile_shader("diffuse", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    diffuse_fs = device.compile_shader("diffuse", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    depth_vs = device.compile_shader("depth", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    depth_fs = device.compile_shader("depth", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    sprite_vs = device.compile_shader("sprite", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    sprite_fs = device.compile_shader("sprite", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    quad_vs = device.compile_shader("quad", SDL_SHADERCROSS_SHADERSTAGE_VERTEX);
+    downsample_fs = device.compile_shader("downsample", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    upsample_fs = device.compile_shader("upsample", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
+    composite_fs = device.compile_shader("composite", SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT);
 
     diffuse_pipeline = create_diffuse_pipeline(
         diffuse_vs,

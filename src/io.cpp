@@ -25,12 +25,12 @@ std::pair<std::ifstream, std::streamsize> io_read_file(
     return { std::move(file), file_length };
 }
 
-u8* io_read_file(const std::string& filename)
+std::pair<u8*, size_t> io_read_file(const std::string& filename)
 {
     auto file = io_read_file(filename, 0);
     u8* buffer = new u8[file.second + 1];
     buffer[file.second] = '\0';
     file.first.read(reinterpret_cast<char*>(buffer), file.second);
     file.first.close();
-    return buffer;
+    return std::pair<u8*, size_t> { buffer, (size_t)file.second };
 }

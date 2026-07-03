@@ -89,41 +89,31 @@ SDL_GPUShader* Device::compile_shader(
     const SDL_ShaderCross_ShaderStage stage
 ) const
 {
-    u8* source = io_read_file(SHADER_ROOT + path);
-
-    SDL_ShaderCross_HLSL_Info hlsl_info = {};
-    hlsl_info.source = (const char*)source;
-    hlsl_info.entrypoint = "main";
-    hlsl_info.include_dir = SHADER_ROOT.c_str();
-    hlsl_info.defines = NULL;
-    hlsl_info.shader_stage = stage;
-    hlsl_info.props = 0;
-
-    size_t bytecode_size;
-    void* bytecode = SDL_ShaderCross_CompileSPIRVFromHLSL(&hlsl_info, &bytecode_size);
-    delete[] source;
-
-    if (bytecode == NULL)
-        throw std::runtime_error("Failed to compile shader " + std::string(path) + ": " + std::string(SDL_GetError()));
-
-    SDL_ShaderCross_SPIRV_Info spirv_info = {};
-    spirv_info.bytecode = (const u8*)bytecode;
-    spirv_info.bytecode_size = bytecode_size;
-    spirv_info.entrypoint = "main";
-    spirv_info.shader_stage = stage;
-    spirv_info.props = 0;
+    const auto source = io_read_file(
+        SHADER_ROOT + path + (stage == SDL_SHADERCROSS_SHADERSTAGE_VERTEX
+            ? ".vertex.hlsl.bin"
+            : ".fragment.hlsl.bin"
+        )
+    );
 
     SDL_ShaderCross_GraphicsShaderMetadata* reflect_info = SDL_ShaderCross_ReflectGraphicsSPIRV(
-        (const u8*)bytecode,
-        bytecode_size,
+        source.first,
+        source.second,
         0
     );
 
     if (reflect_info == NULL)
     {
-        SDL_free(bytecode);
+        delete[] source.first;
         throw std::runtime_error("Failed to reflect shader " + std::string(path) + ": " + std::string(SDL_GetError()));
     }
+
+    SDL_ShaderCross_SPIRV_Info spirv_info = {};
+    spirv_info.bytecode = source.first;
+    spirv_info.bytecode_size = source.second;
+    spirv_info.entrypoint = "main";
+    spirv_info.shader_stage = stage;
+    spirv_info.props = 0;
 
     SDL_GPUShader* shader = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
         device,
@@ -134,12 +124,12 @@ SDL_GPUShader* Device::compile_shader(
 
     if (shader == NULL)
     {
-        SDL_free(bytecode);
+        delete[] source.first;
         SDL_free(reflect_info);
         throw std::runtime_error("Failed to compile shader " + std::string(path) + " from SPIRV: " + std::string(SDL_GetError()));
     }
 
-    SDL_free(bytecode);
+    delete[] source.first;
     SDL_free(reflect_info);
     return shader;
 }

@@ -70,7 +70,7 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
-inline std::string SHADER_ROOT = "../shaders/";
+inline std::string SHADER_ROOT = "./shaders/";
 inline std::string TEXTURE_ROOT = "../res/trenchbroom/textures/";
 inline std::string MODEL_ROOT = "../res/trenchbroom/models/";
 inline std::string MAP_ROOT = "../res/maps/";
