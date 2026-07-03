@@ -53,8 +53,8 @@ void BloomPass::downsample(SDL_GPUCommandBuffer* command_buffer)
             render_pass,
             0,
             &(SDL_GPUTextureSamplerBinding) {
-                .sampler = texture_manager.bloom_sampler,
-                .texture = (level == 0 ? texture_manager.diffuse_texture : texture_manager.bloom_textures[level - 1])
+                .texture = (level == 0 ? texture_manager.diffuse_texture : texture_manager.bloom_textures[level - 1]),
+                .sampler = texture_manager.bloom_sampler
             },
             1
         );
@@ -101,8 +101,8 @@ void BloomPass::upsample(SDL_GPUCommandBuffer* command_buffer)
             render_pass,
             0,
             &(SDL_GPUTextureSamplerBinding) {
-                .sampler = texture_manager.bloom_sampler,
-                .texture = texture_manager.bloom_textures[source_level]
+                .texture = texture_manager.bloom_textures[source_level],
+                .sampler = texture_manager.bloom_sampler
             },
             1
         );

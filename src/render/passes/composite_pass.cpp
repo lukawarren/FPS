@@ -41,13 +41,13 @@ void CompositePass::execute(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture
     {
         SDL_GPUTextureSamplerBinding
         {
-            .sampler = texture_manager.sampler,
-            .texture = texture_manager.diffuse_texture
+            .texture = texture_manager.diffuse_texture,
+            .sampler = texture_manager.sampler
         },
         SDL_GPUTextureSamplerBinding
         {
-            .sampler = texture_manager.bloom_sampler,
-            .texture = texture_manager.bloom_textures[0]
+            .texture = texture_manager.bloom_textures[0],
+            .sampler = texture_manager.bloom_sampler
         }
     };
 

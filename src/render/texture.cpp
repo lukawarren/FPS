@@ -79,8 +79,8 @@ void Texture::bind(SDL_GPURenderPass* render_pass, SDL_GPUSampler* sampler)
         render_pass,
         0,
         &(SDL_GPUTextureSamplerBinding) {
-            .sampler = sampler,
-            .texture = texture
+            .texture = texture,
+            .sampler = sampler
         },
         1
     );

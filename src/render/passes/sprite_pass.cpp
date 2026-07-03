@@ -73,8 +73,8 @@ void SpritePass::execute(
         render_pass,
         1,
         &(SDL_GPUTextureSamplerBinding) {
-            .sampler = texture_manager.shadow_map_sampler,
-            .texture = texture_manager.shadow_map
+            .texture = texture_manager.shadow_map,
+            .sampler = texture_manager.shadow_map_sampler
         },
         1
     );
