@@ -13,7 +13,7 @@ struct Spotlight
 #define POINT_INTENSITY 0.3f
 #define BIAS (0.5f / 10000.0f)
 
-cbuffer UniformBlock : register(b0, space1)
+cbuffer UniformBlock : register(b0, space3)
 {
     Spotlight spotlights[MAX_SPOTLIGHTS];
 };

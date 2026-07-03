@@ -20,9 +20,6 @@ Renderer::Renderer(
     SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device.device);
     SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
 
-    // Load quad
-    Quad* quad = new Quad(device.device, copy_pass);
-
     // Load models
     for (size_t i = 0; i < Model::MODEL_NAMES.size(); i++)
     {
