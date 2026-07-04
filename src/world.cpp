@@ -24,7 +24,7 @@ World::World(
         {
             const glm::vec3 position = entity.parse_vec3("origin");
             const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(255.0f, 170.0f, 95.0f), false);
-            const float intensity = entity.parse_float("intensity", 100.0f);
+            const float intensity = entity.parse_float("intensity", 20.0f);
             const glm::vec3 angles = entity.parse_vec3("angles", { 0.0f, 0.0f, 0.0f }, false);
             const float near = entity.parse_float("near", 0.01f);
             const float far = entity.parse_float("far", 30.0f);
