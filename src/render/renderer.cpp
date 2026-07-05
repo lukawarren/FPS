@@ -173,6 +173,13 @@ void Renderer::render()
 
     composite_pass.execute(command_buffer, swapchain_texture.value());
 
+    debug_renderer.execute(
+        camera_view,
+        camera_projection,
+        (float)device.swapchain_width,
+        (float)device.swapchain_height
+    );
+
     // ImGui will crash on un-maximising as uses old dimensions?
     if (!device.did_swapchain_format_change())
     {

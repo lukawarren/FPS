@@ -1,4 +1,5 @@
 #include "world.h"
+#include "render/debug_renderer.h"
 
 World::World(
     const std::string& filename,
@@ -217,6 +218,29 @@ void World::setup_physics()
 void World::update_debug_mode(const float delta)
 {
     update_freecam(delta);
+
+    player->character->GetShape()->Draw(
+        DebugRenderer::debug_renderer,
+        player->character->GetWorldTransform(),
+        { 1.0f, 1.0f, 1.0f },
+        {},
+        false,
+        true
+    );
+
+    JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
+    for (const auto& enemy : enemies)
+    {
+        JPH::RefConst<JPH::Shape> shape = body_interface.GetShape(enemy->body_id);
+        shape->Draw(
+            DebugRenderer::debug_renderer,
+            body_interface.GetWorldTransform(enemy->body_id),
+            { 1.0f, 1.0f, 1.0f },
+            {},
+            false,
+            true
+        );
+    }
 }
 
 void World::update_freecam(const float delta)

@@ -137,4 +137,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_compile_options(${PROJECT_NAME} PRIVATE
     $<$<CXX_COMPILER_ID:Clang>:-Wno-address-of-temporary>
     $<$<CXX_COMPILER_ID:AppleClang>:-Wno-address-of-temporary>
+    -fno-rtti # To align with Jolt
 )

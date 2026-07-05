@@ -11,6 +11,7 @@
 #include "render/passes/sprite_pass.h"
 #include "render/passes/bloom_pass.h"
 #include "render/passes/composite_pass.h"
+#include "render/debug_renderer.h"
 #include "audio.h"
 #include "model.h"
 
@@ -53,6 +54,7 @@ private:
     SpritePass sprite_pass;
     BloomPass bloom_pass;
     CompositePass composite_pass;
+    DebugRenderer debug_renderer;
 
     World* world;
 };

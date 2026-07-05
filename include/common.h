@@ -11,6 +11,7 @@
 #include <thread>
 #include <functional>
 #include <deque>
+#include <string_view>
 
 #include <SDL3/SDL.h>
 #include <SDL3_shadercross/SDL_shadercross.h>
@@ -44,6 +45,7 @@
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/CollisionCollector.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Renderer/DebugRendererSimple.h>
 
 #include <Recast.h>
 #include <DetourNavMesh.h>

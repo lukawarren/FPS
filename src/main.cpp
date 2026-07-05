@@ -2,8 +2,8 @@
 #include "render/renderer.h"
 #include "audio.h"
 
-constexpr static inline int width = 800;
-constexpr static inline int height = 600;
+constexpr static inline int width = 1600;
+constexpr static inline int height = 900;
 
 int main()
 {
