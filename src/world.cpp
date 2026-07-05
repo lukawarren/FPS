@@ -72,7 +72,12 @@ World::World(
 
         else if (class_name == "enemy")
         {
-            const glm::vec3 position = entity.parse_vec3("origin");
+            const glm::vec3 position = entity.parse_vec3("origin") + glm::vec3 {
+                0.0f,
+                Enemy::ENEMY_HEIGHT / 2.0f,
+                0.0f
+            };
+
             enemies.emplace_back(std::make_unique<Enemy>(
                 *this, position
             ));
@@ -93,9 +98,9 @@ void World::update(const float delta)
     if (!debug_mode)
     {
         // Need 1 collision step for every 60 FPS
-        const float divisions_of_60 = (1.0f / 60.0f) / delta;
+        const float divisions_of_60 = std::max((1.0f / 60.0f) / delta, 1.0f);
         player->update(delta);
-        const JPH::EPhysicsUpdateError error = physics_system.Update(delta, divisions_of_60, &allocator, job_system);
+        const JPH::EPhysicsUpdateError error = physics_system.Update(delta, (int)divisions_of_60, &allocator, job_system);
 
         if (error != JPH::EPhysicsUpdateError::None)
             dbg("Warning: physics update error", (int)error);

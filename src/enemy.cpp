@@ -18,7 +18,6 @@ Enemy::Enemy(World& world, const glm::vec3 position) : sprite(
         ENEMY_HEIGHT / 2.0f,
         ENEMY_RADIUS
     };
-    sprite.transform.position.y += ENEMY_HEIGHT / 2.0f;
 
     JPH::Ref<JPH::BoxShape> shape = new JPH::BoxShape(
         { ENEMY_RADIUS, ENEMY_HEIGHT / 2.0f, ENEMY_RADIUS }

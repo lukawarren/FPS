@@ -9,7 +9,7 @@ struct Spotlight
 
 #define GAMMA 2.2f
 #define AMBIENT 0.05f
-#define MAX_SPOTLIGHTS 6
+#define MAX_SPOTLIGHTS 12
 #define POINT_INTENSITY 0.5f
 #define BIAS (0.5f / 10000.0f)
 

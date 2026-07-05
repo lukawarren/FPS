@@ -24,8 +24,7 @@ public:
     bool update();
     void render();
 
-    std::unordered_map<Model::ID, Model*> models;
-    std::unordered_map<Decal::ID, Texture*> sprites;
+    float delta;
 
 private:
     // Per-light data gathered once per frame and shared between the shadow
@@ -43,6 +42,9 @@ private:
 
     static Quad* create_quad(Device& device);
 
+    std::unordered_map<Model::ID, Model*> models;
+    std::unordered_map<Decal::ID, Texture*> sprites;
+
     Device device;
     TextureManager texture_manager;
     PipelineFactory pipeline_factory;
@@ -57,4 +59,6 @@ private:
     DebugRenderer debug_renderer;
 
     World* world;
+
+    u64 last_time;
 };

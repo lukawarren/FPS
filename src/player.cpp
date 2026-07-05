@@ -5,8 +5,8 @@
 #include "world.h"
 
 static constexpr float MOVE_SPEED       = 7.2f;
-static constexpr float JUMP_SPEED       = 8.4f;
-static constexpr float GRAVITY          = 0.48f;
+static constexpr float JUMP_SPEED       = 10.4f;
+static constexpr float GRAVITY          = 32.0f;
 static constexpr float ACCEL_RATE       = 12.0f;
 static constexpr float AIR_ACCEL_RATE   = 300.0f;
 static constexpr float FRICTION         = 6.0f;
@@ -201,7 +201,7 @@ void Player::update_velocity(const glm::vec2& wishdir, const float wishspeed, co
     glm::vec2 horizontal = { current_velocity.GetX(), current_velocity.GetZ() };
     float vertical_velocity = grounded ? 0.0f : current_velocity.GetY();
 
-    vertical_velocity -= GRAVITY;
+    vertical_velocity -= GRAVITY * delta;
     if (grounded && window.get_key(SDL_SCANCODE_SPACE))
         vertical_velocity = JUMP_SPEED;
 

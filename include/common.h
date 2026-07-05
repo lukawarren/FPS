@@ -85,7 +85,7 @@ struct QualitySettings
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
     u32 bloom_downsamples = 5;
-    u32 max_spotlights = 6;
+    u32 max_spotlights = 12;
     u32 max_decals = 100;
 };
 

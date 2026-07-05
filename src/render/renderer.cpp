@@ -42,7 +42,7 @@ Renderer::Renderer(
     }
 
     // Load world
-    world = new World("map3.map", device.device, copy_pass, *device.window, audio);
+    world = new World("map4.map", device.device, copy_pass, *device.window, audio);
 
     SDL_EndGPUCopyPass(copy_pass);
 
@@ -68,6 +68,8 @@ Renderer::Renderer(
 #endif
 
     init_imgui();
+    last_time = SDL_GetTicksNS();
+
     dbg("TODO: don't use uniform buffer for lights");
 }
 
@@ -96,7 +98,13 @@ bool Renderer::update()
     ImGui::NewFrame();
 
     device.window->update();
-    world->update(1.0f / 60.0f);
+
+    u64 time = SDL_GetTicksNS();
+    if (time - last_time == 0) time++;
+    const float delta = float(time - last_time) / 1000000000.0f;
+    last_time = time;
+
+    world->update(delta);
 
     return !device.window->should_close();
 }
