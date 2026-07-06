@@ -22,9 +22,22 @@ public:
     );
     ~World();
 
+    struct Hit
+    {
+        glm::vec3 position;
+        glm::vec3 normal;
+        std::optional<JPH::BodyID> body_id;
+    };
+
     void update(const float delta);
     void spawn_decal(const glm::vec3 position, const glm::vec3 direction);
     std::vector<glm::vec3> find_path(const glm::vec3& start, const glm::vec3& end) const;
+    std::optional<Hit> get_hit(
+        const glm::vec3& origin,
+        const glm::vec3& forward,
+        const float max_distance,
+        const std::optional<JPH::BodyID> ignore = std::nullopt
+    ) const;
 
     Camera camera;
     Player* player = nullptr;

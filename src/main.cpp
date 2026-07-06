@@ -15,6 +15,7 @@ int main()
 
     Audio audio;
     Renderer renderer("FPS", width, height, audio);
+    srand((u32)time(NULL));
 
     while (renderer.update())
     {

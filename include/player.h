@@ -47,15 +47,6 @@ private:
     void update_mouse_look();
     void update_view_juice(const glm::vec2& movement, const float delta);
 
-    struct Hit
-    {
-        glm::vec3 position;
-        glm::vec3 normal;
-        std::optional<JPH::BodyID> body_id;
-    };
-
-    std::optional<Hit> get_hit() const;
-
     u32 step = 0;
     float last_bob_sign = 0.0f;
     float bob_time = 0.0f;

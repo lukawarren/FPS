@@ -21,10 +21,20 @@ public:
     constexpr static inline float ENEMY_HEIGHT = 120 * Map::METRES_PER_UNIT;
 
 private:
+    enum class State
+    {
+        Inactive,
+        Activated,
+        Moving
+    } state = State::Inactive;
+
     std::vector<glm::vec3> path;
     size_t path_index = 0;
     float repath_timer = 0.0f;
+
     float health = 100.0f;
 
-    bool can_see_player(const World& world) const;
+    glm::vec3 get_player_detect_pos(const World& world) const;
+    glm::vec3 get_cover_pos(const World& world) const;
+    bool can_see_player_from(const World& world, const glm::vec3 position) const;
 };

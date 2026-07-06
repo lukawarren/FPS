@@ -17,6 +17,10 @@ struct VertexOutput
 float4 main(VertexOutput input) : SV_TARGET
 {
     float4 colour = sprite_texture.Sample(sprite_sampler, input.uv);
+
+    if (colour.a <= 0.0f)
+        discard;
+
     colour.xyz = pow(colour.xyz, GAMMA);
 
     return float4(

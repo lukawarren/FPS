@@ -46,6 +46,7 @@ Player::Player(
     settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -PLAYER_RADIUS);
     settings.mMaxSlopeAngle = glm::radians(45.0f);
     settings.mMass = 70.0f;
+    settings.mInnerBodyShape = shape;
 
     character = new JPH::CharacterVirtual(
         &settings,
@@ -285,7 +286,12 @@ void Player::handle_input(const float delta)
 
 void Player::on_fire()
 {
-    const auto hit = get_hit();
+    const auto hit = world.get_hit(
+        world.camera.position,
+        world.camera.direction_vector(),
+        MAX_RAY_DISTANCE,
+        character->GetInnerBodyID()
+    );
     if (!hit.has_value() || !hit->body_id.has_value()) return;
 
     const JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
@@ -311,61 +317,3 @@ void Player::on_fire()
     }
 }
 
-std::optional<Player::Hit> Player::get_hit() const
-{
-    const glm::vec3 forward = world.camera.direction_vector();
-    JPH::RVec3 start = {
-        world.camera.position.x + forward.x,
-        world.camera.position.y + forward.y,
-        world.camera.position.z + forward.z
-    };
-
-    JPH::RVec3 direction = JPH::RVec3 { forward.x, forward.y, forward.z } * MAX_RAY_DISTANCE;
-    JPH::RRayCast ray { start, direction };
-
-    JPH::RayCastSettings settings;
-    settings.SetBackFaceMode(JPH::EBackFaceMode::CollideWithBackFaces);
-
-    JPH::AllHitCollisionCollector<JPH::CastRayCollector> collector;
-    world.physics_system.GetNarrowPhaseQuery().CastRay(ray, settings, collector);
-
-    if (collector.HadHit())
-    {
-        // Sort hits to get the closest one if necessary
-        collector.Sort();
-
-        const JPH::RayCastResult& hit = collector.mHits[0];
-        JPH::Vec3 position = start + direction * hit.mFraction;
-        std::optional<JPH::BodyID> body_id = std::nullopt;
-
-        // Get surface normal
-        JPH::BodyLockRead lock(world.physics_system.GetBodyLockInterface(), hit.mBodyID);
-        JPH::Vec3 jolt_normal = JPH::Vec3::sAxisY();
-        if (lock.Succeeded())
-        {
-            const JPH::Body& body = lock.GetBody();
-            jolt_normal = body.GetShape()->GetSurfaceNormal(
-                hit.mSubShapeID2,
-                ray.GetPointOnRay(hit.mFraction)
-            );
-            jolt_normal = body.GetWorldTransform().Multiply3x3(jolt_normal);
-            body_id = body.GetID();
-        }
-
-        return std::optional<Hit>(Hit {
-            .position = glm::vec3(
-                position.GetX(),
-                position.GetY(),
-                position.GetZ()
-            ),
-            .normal = glm::vec3(
-                jolt_normal.GetX(),
-                jolt_normal.GetY(),
-                jolt_normal.GetZ()
-            ),
-            .body_id = body_id
-        });
-    }
-
-    return std::nullopt;
-}

@@ -1,11 +1,17 @@
 #include "enemy.h"
 #include "player.h"
 #include "world.h"
+#include "render/debug_renderer.h"
 
 constexpr static inline float SPEED = 4.0f;
+
 constexpr static inline float WAYPOINT_THRESHOLD = 0.05f;
-constexpr static inline float REPATH_INTERVAL = 0.5f;
-constexpr static inline float DETECT_RADIUS = 10.0f;
+
+constexpr static inline float VIEW_DISTANCE     = 100.0f;
+constexpr static inline float COVER_MIN_RADIUS  = 2.0f;
+constexpr static inline float COVER_MAX_RADIUS  = 15.0f;
+constexpr static inline u32   COVER_POINTS      = 10;
+constexpr static inline float REPATH_TIME       = 3.0f;
 
 Enemy::Enemy(World& world, const glm::vec3 position) : sprite(
     position,
@@ -41,54 +47,71 @@ Enemy::Enemy(World& world, const glm::vec3 position) : sprite(
 
 void Enemy::update(World& world, const float delta, const glm::vec3 direction)
 {
+    // Update sprite
     sprite.face(direction * glm::vec3(1.0f, 0.0f, 1.0f));
 
-    if (!can_see_player(world))
+    if (state == State::Inactive)
     {
-        path.clear();
-        repath_timer = 0.0f;
-        return;
+        if (can_see_player_from(world, sprite.transform.position))
+            state = State::Activated;
     }
 
-    // Continuously replan toward the player's current position
-    repath_timer -= delta;
-    if (repath_timer <= 0.0f)
+    else if (state == State::Activated)
     {
+        const glm::vec3 destination = get_cover_pos(world);
+
         path = world.find_path(
             sprite.transform.position - glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f),
-            world.player->position
+            destination
         );
 
-        for (auto& point : path)
-            point.y += ENEMY_HEIGHT / 2.0f;
-
         path_index = 0;
-        repath_timer = REPATH_INTERVAL;
+        repath_timer = REPATH_TIME * ((rand() / (float)RAND_MAX) + 0.5f);
+
+        state = State::Moving;
     }
 
-    if (path.empty() || path_index >= path.size())
-        return;
-
-    // Get true length as likely to normalise anyway later
-    glm::vec3 to_target = path[path_index] - sprite.transform.position;
-    float distance = glm::length(to_target);
-
-    // Go to next node when within reach of current
-    if (distance < WAYPOINT_THRESHOLD)
+    else if (state == State::Moving)
     {
-        path_index++;
-        if (path_index >= path.size())
+        if (repath_timer <= 0.0f)
+        {
+            state = State::Activated;
+            return;
+        }
+
+        repath_timer -= delta;
+
+        if (path.empty() || path_index >= path.size())
             return;
 
-        to_target = path[path_index] - sprite.transform.position;
-        distance = glm::length(to_target);
-    }
+        // Get true length as likely to normalise anyway later
+        glm::vec3 to_target = path[path_index] + glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f) - sprite.transform.position;
+        float distance = glm::length(to_target);
 
-    if (distance > 0.01f)
-    {
-        const glm::vec3 move_direction = to_target / distance;
-        const float step = glm::min(SPEED * delta, distance);
-        sprite.transform.position += move_direction * step;
+        // Go to next node when within reach of current
+        if (distance < WAYPOINT_THRESHOLD)
+        {
+            path_index++;
+            if (path_index >= path.size())
+                return;
+
+            to_target = path[path_index] - sprite.transform.position;
+            distance = glm::length(to_target);
+        }
+
+        if (distance > 0.01f)
+        {
+            const glm::vec3 move_direction = to_target / distance;
+            const float step = glm::min(SPEED * delta, distance);
+            sprite.transform.position += move_direction * step;
+        }
+
+        glm::vec3 x = path[path.size() - 1];
+        DebugRenderer::debug_renderer->DrawMarker(
+            { x.x, x.y, x.z },
+            {},
+            1.0f
+        );
     }
 
     // Update physics
@@ -109,8 +132,56 @@ void Enemy::damage(const float damage)
     health -= damage;
 }
 
-bool Enemy::can_see_player(const World& world) const
+glm::vec3 Enemy::get_player_detect_pos(const World& world) const
 {
-    return glm::length2(world.player->position - sprite.transform.position) <
-        DETECT_RADIUS * DETECT_RADIUS;
+    return world.player->position + glm::vec3 {
+        0.0f,
+        Player::PLAYER_EYE_HEIGHT / 2.0f,
+        0.0f
+    };
+}
+
+glm::vec3 Enemy::get_cover_pos(const World& world) const
+{
+    std::array<glm::vec3, COVER_POINTS> points;
+    srand((u32)SDL_GetTicksNS());
+
+    for (u32 i = 0; i < COVER_POINTS; i++)
+    {
+        bool found = false;
+
+        while (!found)
+        {
+            const float angle = rand() / (float)RAND_MAX * glm::two_pi<float>();
+            const float distance = rand() / (float)RAND_MAX * (COVER_MAX_RADIUS - COVER_MIN_RADIUS) + COVER_MIN_RADIUS;
+
+            points[i] = world.player->position + glm::vec3 {
+                std::cos(angle) * distance,
+                0.0f,
+                std::sin(angle) * distance
+            };
+
+            found = can_see_player_from(world, points[i]);
+        }
+    }
+
+    return points[rand() % points.size()] - glm::vec3(0.0f, Player::PLAYER_HEIGHT / 2.0f, 0.0f);
+}
+
+bool Enemy::can_see_player_from(const World& world, const glm::vec3 position) const
+{
+    // Find player's head, etc.
+    const glm::vec3 detect_pos = get_player_detect_pos(world);
+    const glm::vec3 to_player = glm::normalize(detect_pos - position);
+    const auto hit = world.get_hit(
+        position,
+        to_player,
+        VIEW_DISTANCE,
+        body_id
+    );
+
+    return
+        hit.has_value() &&
+        hit->body_id.has_value() &&
+        hit->body_id.value() == world.player->character->GetInnerBodyID();
 }

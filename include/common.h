@@ -84,7 +84,7 @@ struct QualitySettings
     u32 inverse_render_scale = 1;
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
-    u32 bloom_downsamples = 5;
+    u32 bloom_downsamples = 3;
     u32 max_spotlights = 12;
     u32 max_decals = 100;
 };

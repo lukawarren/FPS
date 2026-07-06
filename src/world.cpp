@@ -104,24 +104,24 @@ void World::update(const float delta)
 
         if (error != JPH::EPhysicsUpdateError::None)
             dbg("Warning: physics update error", (int)error);
-
-        // Enemies
-        for (auto& e : enemies)
-            e->update(*this, delta, direction);
-
-        // Remove dead enemies
-        for (const auto& e : enemies)
-            if (e->is_dead())
-                body_interface.RemoveBody(e->body_id);
-
-        enemies.erase(std::remove_if(
-            enemies.begin(), enemies.end(),
-            [](const auto& e) {
-                return e->is_dead();
-            }),
-            enemies.end()
-        );
     }
+
+    // Enemies
+    for (auto& e : enemies)
+        e->update(*this, debug_mode ? delta : delta, direction);
+
+    // Remove dead enemies
+    for (const auto& e : enemies)
+        if (e->is_dead())
+            body_interface.RemoveBody(e->body_id);
+
+    enemies.erase(std::remove_if(
+        enemies.begin(), enemies.end(),
+        [](const auto& e) {
+            return e->is_dead();
+        }),
+        enemies.end()
+    );
 
     // Sprites
     for (auto& s : animated_sprites)
@@ -183,6 +183,81 @@ void World::spawn_decal(const glm::vec3 position, const glm::vec3 direction)
 std::vector<glm::vec3> World::find_path(const glm::vec3& start, const glm::vec3& end) const
 {
     return map->find_path(start, end);
+}
+
+std::optional<World::Hit> World::get_hit(
+    const glm::vec3& origin,
+    const glm::vec3& forward,
+    const float max_distance,
+    const std::optional<JPH::BodyID> ignore
+) const
+{
+    JPH::RVec3 start = {
+        origin.x,
+        origin.y,
+        origin.z
+    };
+
+    JPH::RVec3 direction = JPH::RVec3 { forward.x, forward.y, forward.z } * max_distance;
+    JPH::RRayCast ray { start, direction };
+
+    JPH::RayCastSettings settings;
+    settings.SetBackFaceMode(JPH::EBackFaceMode::CollideWithBackFaces);
+
+    JPH::ClosestHitPerBodyCollisionCollector<JPH::CastRayCollector> collector;
+
+    if (ignore.has_value())
+    {
+        const JPH::IgnoreSingleBodyFilter body_filter(ignore.value());
+        physics_system.GetNarrowPhaseQuery().CastRay(
+            ray,
+            settings,
+            collector,
+            {},
+            {},
+            body_filter
+        );
+    }
+    else
+        physics_system.GetNarrowPhaseQuery().CastRay(ray, settings, collector);
+
+    if (collector.HadHit())
+    {
+        collector.Sort();
+        const JPH::RayCastResult& hit = collector.mHits[0];
+        JPH::Vec3 position = start + direction * hit.mFraction;
+        std::optional<JPH::BodyID> body_id = std::nullopt;
+
+        // Get surface normal
+        JPH::BodyLockRead lock(physics_system.GetBodyLockInterface(), hit.mBodyID);
+        JPH::Vec3 jolt_normal = JPH::Vec3::sAxisY();
+        if (lock.Succeeded())
+        {
+            const JPH::Body& body = lock.GetBody();
+            jolt_normal = body.GetShape()->GetSurfaceNormal(
+                hit.mSubShapeID2,
+                ray.GetPointOnRay(hit.mFraction)
+            );
+            jolt_normal = body.GetWorldTransform().Multiply3x3(jolt_normal);
+            body_id = body.GetID();
+        }
+
+        return std::optional<Hit>(Hit {
+            .position = glm::vec3(
+                position.GetX(),
+                position.GetY(),
+                position.GetZ()
+            ),
+            .normal = glm::vec3(
+                jolt_normal.GetX(),
+                jolt_normal.GetY(),
+                jolt_normal.GetZ()
+            ),
+            .body_id = body_id
+        });
+    }
+
+    return std::nullopt;
 }
 
 void World::setup_physics()
@@ -250,7 +325,7 @@ void World::update_debug_mode(const float delta)
 
 void World::update_freecam(const float delta)
 {
-    const float freecam_speed = 10.0f;
+    const float freecam_speed = 20.0f;
 
     glm::vec2 movement = {};
     if (window.get_key(SDL_SCANCODE_W)) movement.y += 1.0f;
