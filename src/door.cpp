@@ -8,7 +8,7 @@ constexpr static inline float DEPTH = 16.0f * Map::METRES_PER_UNIT;
 constexpr static inline float OFFSET = -8.0f * Map::METRES_PER_UNIT;
 
 constexpr static inline float SLIDE_AMOUNT = (WIDTH / Map::METRES_PER_UNIT - 8.0f) * Map::METRES_PER_UNIT;
-constexpr static inline float SLIDE_SPEED = 3.0f;
+constexpr static inline float SLIDE_SPEED = 5.0f;
 constexpr static inline float MIN_DISTANCE = 5.0f;
 
 Door::Door(World& world, const glm::vec3 position, const glm::vec3 rotation) : Entity(position)

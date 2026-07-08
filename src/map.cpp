@@ -493,7 +493,7 @@ glm::vec3 Map::Entity::parse_angle(
 
     return {
         0.0f,
-        90.0f + x,
+        270.0f + x,
         0.0f
     };
 }

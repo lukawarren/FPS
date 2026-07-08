@@ -8,9 +8,9 @@ struct Spotlight
 };
 
 #define GAMMA 2.2f
-#define AMBIENT 0.1f
+#define AMBIENT 0.0f
 #define MAX_SPOTLIGHTS 8
-#define POINT_INTENSITY 0.5f
+#define POINT_INTENSITY 0.1f
 #define BIAS (0.5f / 10000.0f)
 
 cbuffer UniformBlock : register(b0, space3)
@@ -52,11 +52,8 @@ float sample_shadow(
 
 float3 calculate_pointlight(Spotlight s, float3 fragment_to_light, float distance)
 {
-    // Limit distance so brightness doesn't blow up
-    distance = max(distance, 1.0f);
-
-    // Scale up fall-off too
-    return s.colour * POINT_INTENSITY / pow(distance, 4.0f);
+    float atten = max(pow(distance, 2.0f), 1.0f);
+    return s.colour * POINT_INTENSITY / atten;
 }
 
 float3 calculate_spotlight(Spotlight s, float3 normal, float3 fragment_to_light, float distance)
