@@ -49,8 +49,11 @@ World::World(
             );
 
             audio.play_3d(
-                Audio::ID::FIRE,
-                { position.x, position.y, position.z }
+                Audio::ID::LIGHT,
+                { position.x, position.y, position.z },
+                1.0f,
+                0.01f,
+                5.0f
             );
         }
 
@@ -79,7 +82,7 @@ World::World(
 
     player = new Player(player_position, player_yaw, window, *this, audio);
 
-    audio.play(Audio::ID::AMBIENCE);
+    // audio.play(Audio::ID::AMBIENCE);
 }
 
 void World::update(const float delta)

@@ -13,7 +13,7 @@ public:
         STEPS_BEGIN = 1,
         STEPS_FINAL = 24,
         SHOOT,
-        FIRE
+        LIGHT
     };
 
     // (path, loops) pairs
@@ -45,7 +45,7 @@ public:
         { "metal_steps_23.wav", false },
         { "metal_steps_24.wav", false },
         { "shot_01.mp3", false },
-        { "fire.mp3", true }
+        { "Sci-Fi Drone.wav", true }
     }};
 
     void play(const ID id, const float pitch = 1.0f);
