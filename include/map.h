@@ -25,6 +25,16 @@ public:
             const bool scale = true
         ) const;
 
+        glm::vec3 parse_angles(
+            const std::string& key,
+            const glm::vec3 default_value = {}
+        ) const;
+
+        glm::vec3 parse_angle(
+            const std::string& key,
+            const float default_value = 0.0f
+        ) const;
+
         float parse_float(
             const std::string& key,
             const float default_value = 0.0f

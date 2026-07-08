@@ -13,13 +13,15 @@ constexpr static inline float COVER_MAX_RADIUS  = 15.0f;
 constexpr static inline u32   COVER_POINTS      = 10;
 constexpr static inline float REPATH_TIME       = 3.0f;
 
-Enemy::Enemy(World& world, const glm::vec3 position) : sprite(
-    position,
-    { 1.0f, 0.0f, 0.0f },
-    Sprite::ID::ENEMY
-)
+Enemy::Enemy(World& world, const glm::vec3 position) : Entity(position)
 {
-    sprite.transform.scale = {
+    sprite.emplace(Sprite(
+        {},
+        { 1.0f, 0.0f, 0.0f },
+        Sprite::ID::ENEMY
+    ));
+
+    sprite->transform.scale = {
         ENEMY_RADIUS,
         ENEMY_HEIGHT / 2.0f,
         ENEMY_RADIUS
@@ -41,18 +43,20 @@ Enemy::Enemy(World& world, const glm::vec3 position) : sprite(
     );
 	JPH::Body* body = body_interface.CreateBody(settings);
     body->SetUserData((u64)this);
-    body_id = body->GetID();
-	body_interface.AddBody(body_id, JPH::EActivation::DontActivate);
+    this->body.emplace(body->GetID());
+	body_interface.AddBody(body->GetID(), JPH::EActivation::DontActivate);
 }
 
-void Enemy::update(World& world, const float delta, const glm::vec3 direction)
+Enemy::~Enemy() {}
+
+void Enemy::update(World& world, const float delta, const glm::vec3 view_direction)
 {
     // Update sprite
-    sprite.face(direction * glm::vec3(1.0f, 0.0f, 1.0f));
+    sprite->face(view_direction * glm::vec3(1.0f, 0.0f, 1.0f));
 
     if (state == State::Inactive)
     {
-        if (can_see_player_from(world, sprite.transform.position))
+        if (can_see_player_from(world, transform.position))
             state = State::Activated;
     }
 
@@ -61,7 +65,7 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
         const glm::vec3 destination = get_cover_pos(world);
 
         path = world.find_path(
-            sprite.transform.position - glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f),
+            transform.position - glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f),
             destination
         );
 
@@ -85,7 +89,7 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
             return;
 
         // Get true length as likely to normalise anyway later
-        glm::vec3 to_target = path[path_index] + glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f) - sprite.transform.position;
+        glm::vec3 to_target = path[path_index] + glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f) - transform.position;
         float distance = glm::length(to_target);
 
         // Go to next node when within reach of current
@@ -95,7 +99,7 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
             if (path_index >= path.size())
                 return;
 
-            to_target = path[path_index] - sprite.transform.position;
+            to_target = path[path_index] - transform.position;
             distance = glm::length(to_target);
         }
 
@@ -103,7 +107,7 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
         {
             const glm::vec3 move_direction = to_target / distance;
             const float step = glm::min(SPEED * delta, distance);
-            sprite.transform.position += move_direction * step;
+            transform.position += move_direction * step;
         }
 
         glm::vec3 x = path[path.size() - 1];
@@ -117,14 +121,19 @@ void Enemy::update(World& world, const float delta, const glm::vec3 direction)
     // Update physics
     JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
     body_interface.SetPosition(
-        body_id,
+        body.value(),
         JPH::RVec3(
-            sprite.transform.position.x,
-            sprite.transform.position.y,
-            sprite.transform.position.z
+            transform.position.x,
+            transform.position.y,
+            transform.position.z
         ),
         JPH::EActivation::DontActivate
     );
+}
+
+bool Enemy::is_dead() const
+{
+    return health <= 0.0f;
 }
 
 void Enemy::damage(const float damage)
@@ -177,7 +186,7 @@ bool Enemy::can_see_player_from(const World& world, const glm::vec3 position) co
         position,
         to_player,
         VIEW_DISTANCE,
-        body_id
+        body.value()
     );
 
     return

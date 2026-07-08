@@ -95,17 +95,23 @@ void SpritePass::execute(
 
     // TODO: sort by ID's
     sprites.at(Sprite::ID::ENEMY)->bind(render_pass, texture_manager.sampler);
-    for (const auto& e : world.enemies)
+    for (const auto& e : world.entities)
     {
-        uniforms.model = e->sprite.transform.matrix();
-        uniforms.spritesheet_info = e->sprite.get_spritesheet_info();
-        SDL_PushGPUVertexUniformData(
-            command_buffer,
-            1,
-            &uniforms,
-            sizeof(uniforms)
-        );
+        uniforms.model = e->transform.matrix();
 
-        quad.draw(render_pass);
+        if (e->sprite.has_value())
+        {
+            uniforms.model *= e->sprite->transform.matrix();
+
+            uniforms.spritesheet_info = e->sprite->get_spritesheet_info();
+            SDL_PushGPUVertexUniformData(
+                command_buffer,
+                1,
+                &uniforms,
+                sizeof(uniforms)
+            );
+
+            quad.draw(render_pass);
+        }
     }
 }

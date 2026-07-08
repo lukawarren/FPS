@@ -3,9 +3,20 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-Model::Model(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
+std::pair<Mesh*, Texture*> Model::load(
+    ID id,
+    SDL_GPUDevice* device,
+    SDL_GPUCopyPass* copy_pass
+)
 {
-    texture = new Texture(filename + ".png", device, copy_pass, MODEL_ROOT);
+    const std::string filename = std::string(MODEL_NAMES[(size_t)id]);
+
+    Texture* texture = new Texture(
+        filename + ".png",
+        device,
+        copy_pass,
+        MODEL_ROOT
+    );
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -33,9 +44,9 @@ Model::Model(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass
                 },
                 .normal =
                 {
-                    attrib.normals[3 * index.vertex_index + 0],
-                    attrib.normals[3 * index.vertex_index + 1],
-                    attrib.normals[3 * index.vertex_index + 2]
+                    attrib.normals[3 * index.normal_index + 0],
+                    attrib.normals[3 * index.normal_index + 1],
+                    attrib.normals[3 * index.normal_index + 2]
                 },
                 .uv =
                 {
@@ -49,11 +60,5 @@ Model::Model(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass
         }
     }
 
-    mesh = new Mesh(vertices, indices, device, copy_pass);
-}
-
-Model::~Model()
-{
-    delete mesh;
-    delete texture;
+    return { new Mesh(vertices, indices, device, copy_pass), texture };
 }

@@ -1,5 +1,7 @@
 #include "world.h"
 #include "render/debug_renderer.h"
+#include "enemy.h"
+#include "door.h"
 
 World::World(
     const std::string& filename,
@@ -26,22 +28,14 @@ World::World(
             const glm::vec3 position = entity.parse_vec3("origin");
             const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(181.0f, 205.0f, 255.0f), false);
             const float intensity = entity.parse_float("intensity", 10.0f);
-            const glm::vec3 angles = entity.parse_vec3("angles", { 0.0f, 0.0f, 0.0f }, false);
+            const glm::vec3 angles = entity.parse_angles("angles");
             const float near = entity.parse_float("near", 0.01f);
             const float far = entity.parse_float("far", 30.0f);
             const float angle = entity.parse_float("angle", 80.0f);
 
-            const float pitch_rad = glm::radians(-angles.x);
-            const float yaw_rad = glm::radians(-angles.y);
-            const glm::vec3 direction = {
-                std::cos(pitch_rad) * std::cos(yaw_rad),
-                std::sin(pitch_rad),
-                std::cos(pitch_rad) * std::sin(yaw_rad)
-            };
-
             spotlights.emplace_back(
-                position - direction * 8.0f * Map::METRES_PER_UNIT,
-                direction,
+                position - angles * 8.0f * Map::METRES_PER_UNIT,
+                angles,
                 glm::normalize(colour / 255.0f) * intensity,
                 near,
                 far,
@@ -74,15 +68,22 @@ World::World(
                 0.0f
             };
 
-            enemies.emplace_back(std::make_unique<Enemy>(
+            entities.emplace_back(std::make_unique<Enemy>(
                 *this, position
+            ));
+        }
+
+        else if (class_name == "func_door")
+        {
+            const glm::vec3 position = entity.parse_vec3("origin");
+            const glm::vec3 rotation = entity.parse_angle("angle");
+            entities.emplace_back(std::make_unique<Door>(
+                *this, position, rotation
             ));
         }
     }
 
     player = new Player(player_position, player_yaw, window, *this, audio);
-
-    // audio.play(Audio::ID::AMBIENCE);
 }
 
 void World::update(const float delta)
@@ -102,21 +103,21 @@ void World::update(const float delta)
             dbg("Warning: physics update error", (int)error);
     }
 
-    // Enemies
-    for (auto& e : enemies)
+    // Entities
+    for (auto& e : entities)
         e->update(*this, debug_mode ? delta : delta, direction);
 
-    // Remove dead enemies
-    for (const auto& e : enemies)
-        if (e->is_dead())
-            body_interface.RemoveBody(e->body_id);
+    // Remove dead entities
+    for (const auto& e : entities)
+        if (e->is_dead() && e->body.has_value())
+            body_interface.RemoveBody(e->body.value());
 
-    enemies.erase(std::remove_if(
-        enemies.begin(), enemies.end(),
+    entities.erase(std::remove_if(
+        entities.begin(), entities.end(),
         [](const auto& e) {
             return e->is_dead();
         }),
-        enemies.end()
+        entities.end()
     );
 
     // Debug toggle
@@ -191,6 +192,8 @@ std::optional<World::Hit> World::get_hit(
 
     JPH::ClosestHitPerBodyCollisionCollector<JPH::CastRayCollector> collector;
 
+    IgnoreLayerFilter layer_filter(Layers::NO_COLLISION);
+
     if (ignore.has_value())
     {
         const JPH::IgnoreSingleBodyFilter body_filter(ignore.value());
@@ -199,12 +202,12 @@ std::optional<World::Hit> World::get_hit(
             settings,
             collector,
             {},
-            {},
+            layer_filter,
             body_filter
         );
     }
     else
-        physics_system.GetNarrowPhaseQuery().CastRay(ray, settings, collector);
+        physics_system.GetNarrowPhaseQuery().CastRay(ray, settings, collector, {}, layer_filter);
 
     if (collector.HadHit())
     {
@@ -294,19 +297,22 @@ void World::update_debug_mode(const float delta)
         true
     );
 
-    // Draw enemies
+    // Draw entities
     JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
-    for (const auto& enemy : enemies)
+    for (const auto& e : entities)
     {
-        JPH::RefConst<JPH::Shape> shape = body_interface.GetShape(enemy->body_id);
-        shape->Draw(
-            DebugRenderer::debug_renderer,
-            body_interface.GetWorldTransform(enemy->body_id),
-            { 1.0f, 1.0f, 1.0f },
-            {},
-            false,
-            true
-        );
+        if (e->body.has_value())
+        {
+            JPH::RefConst<JPH::Shape> shape = body_interface.GetShape(e->body.value());
+            shape->Draw(
+                DebugRenderer::debug_renderer,
+                body_interface.GetWorldTransform(e->body.value()),
+                { 1.0f, 1.0f, 1.0f },
+                {},
+                false,
+                true
+            );
+        }
     }
 
     // Draw lights

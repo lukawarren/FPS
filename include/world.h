@@ -5,9 +5,9 @@
 #include "map.h"
 #include "physics.h"
 #include "decal.h"
-#include "enemy.h"
 #include "animated_sprite.h"
 #include "audio.h"
+#include "entity.h"
 
 class World
 {
@@ -45,9 +45,9 @@ public:
     // Lighting
     std::vector<Spotlight> spotlights;
 
-    // Sprites; enemies need constant addresses for physics user pointer
+    // Objects; enemies (entities) need constant addresses for physics user pointer
     std::deque<Decal> decals;
-    std::vector<std::unique_ptr<Enemy>> enemies;
+    std::vector<std::unique_ptr<Entity>> entities;
 
     // Physics
     JPH::PhysicsSystem physics_system;

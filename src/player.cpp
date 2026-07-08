@@ -3,6 +3,7 @@
 #include "physics.h"
 #include "map.h"
 #include "world.h"
+#include "enemy.h"
 
 static constexpr float MOVE_SPEED       = 7.2f;
 static constexpr float JUMP_SPEED       = 10.4f;

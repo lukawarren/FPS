@@ -1,21 +1,20 @@
 #pragma once
 #include "common.h"
-#include "sprite.h"
+#include "entity.h"
 #include "map.h"
 
 class World;
 
-class Enemy
+class Enemy : public Entity
 {
 public:
     Enemy(World& world, const glm::vec3 position);
-    void update(World& world, const float delta, const glm::vec3 direction);
+    ~Enemy();
+
+    void update(World& world, const float delta, const glm::vec3 direction) override;
+    bool is_dead() const override;
+
     void damage(const float damage);
-
-    inline bool is_dead() const { return health <= 0.0f; }
-
-    Sprite sprite;
-    JPH::BodyID body_id;
 
     constexpr static inline float ENEMY_RADIUS = 32 * Map::METRES_PER_UNIT;
     constexpr static inline float ENEMY_HEIGHT = 120 * Map::METRES_PER_UNIT;

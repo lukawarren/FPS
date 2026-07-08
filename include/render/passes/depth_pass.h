@@ -18,7 +18,7 @@ public:
     void execute(
         SDL_GPUCommandBuffer* command_buffer,
         const World& world,
-        const std::unordered_map<Model::ID, Model*>& models,
+        const std::unordered_map<Model::ID, std::pair<Mesh*, Texture*>>& models,
         const glm::mat4& view,
         const glm::mat4& projection,
         const glm::mat4& weapon_model

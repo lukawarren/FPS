@@ -18,3 +18,8 @@
 @PointClass size(-32 -32 0, 32 32 120) color(255 0 0) = enemy : "Enemy"
 [
 ]
+
+@PointClass model("models/door.obj") = func_door : "A sliding door"
+[
+
+]

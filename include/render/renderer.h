@@ -42,7 +42,7 @@ private:
 
     static Quad* create_quad(Device& device);
 
-    std::unordered_map<Model::ID, Model*> models;
+    std::unordered_map<Model::ID, std::pair<Mesh*, Texture*>> models;
     std::unordered_map<Decal::ID, Texture*> sprites;
 
     Device device;

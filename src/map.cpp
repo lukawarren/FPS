@@ -455,6 +455,49 @@ glm::vec3 Map::Entity::parse_vec3(
     return { x, y, z };
 }
 
+glm::vec3 Map::Entity::parse_angles(
+    const std::string& key,
+    const glm::vec3 default_value
+) const
+{
+    if (properties.count(key) == 0)
+        return default_value;
+
+    std::istringstream iss(properties.at(key));
+    float x, y, z;
+    iss >> x >> y >> z;
+
+    const float pitch_rad = glm::radians(-x);
+    const float yaw_rad = glm::radians(-y);
+    return {
+        std::cos(pitch_rad) * std::cos(yaw_rad),
+        std::sin(pitch_rad),
+        std::cos(pitch_rad) * std::sin(yaw_rad)
+    };
+}
+
+glm::vec3 Map::Entity::parse_angle(
+    const std::string& key,
+    const float default_value
+) const
+{
+    const float x = parse_float(key, default_value);
+
+    // -1 means up
+    if (x == -1.0f)
+        return glm::vec3(0.0f, 1.0f, 0.0f);
+
+    // -2 means down
+    if (x == -2.0f)
+        return glm::vec3(0.0f, -1.0f, 0.0f);
+
+    return {
+        0.0f,
+        90.0f + x,
+        0.0f
+    };
+}
+
 float Map::Entity::parse_float(
     const std::string& key,
     const float default_value

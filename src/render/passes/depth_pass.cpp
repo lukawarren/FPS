@@ -14,7 +14,7 @@ DepthPass::DepthPass(
 void DepthPass::execute(
     SDL_GPUCommandBuffer* command_buffer,
     const World& world,
-    const std::unordered_map<Model::ID, Model*>& models,
+    const std::unordered_map<Model::ID, std::pair<Mesh*, Texture*>>& models,
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::mat4& weapon_model
@@ -54,6 +54,21 @@ void DepthPass::execute(
 
     // Draw weapon
     render_pass.push_model_matrix(weapon_model);
-    models.at(world.player->weapon.model)->mesh->bind(render_pass);
-    models.at(world.player->weapon.model)->mesh->draw(render_pass);
+    models.at(world.player->weapon.model).first->bind(render_pass);
+    models.at(world.player->weapon.model).first->draw(render_pass);
+
+    // Draw entities - TODO: sort
+    models.at(Model::ID::DOOR).second->bind(render_pass, texture_manager.sampler);
+    for (const auto& e : world.entities)
+    {
+        glm::mat4 model = e->transform.matrix();
+
+        if (e->model.has_value())
+        {
+            model *= e->model->transform.matrix();
+            render_pass.push_model_matrix(model);
+            models.at(e->model->id).first->bind(render_pass);
+            models.at(e->model->id).first->draw(render_pass);
+        }
+    }
 }

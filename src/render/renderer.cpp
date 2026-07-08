@@ -23,8 +23,8 @@ Renderer::Renderer(
     // Load models
     for (size_t i = 0; i < Model::MODEL_NAMES.size(); i++)
     {
-        models[(Model::ID)i] = new Model(
-            Model::MODEL_NAMES[i],
+        models[(Model::ID)i] = Model::load(
+            (Model::ID)i,
             device.device,
             copy_pass
         );
@@ -50,7 +50,7 @@ Renderer::Renderer(
         draw_call.texture->generate_mipmaps(command_buffer);
 
     for (const auto& m : models)
-        m.second->texture->generate_mipmaps(command_buffer);
+        m.second.second->generate_mipmaps(command_buffer);
 
     for (const auto& s : sprites)
         s.second->generate_mipmaps(command_buffer);
@@ -82,7 +82,10 @@ Renderer::~Renderer()
     ImGui::DestroyContext();
 
     for (size_t i = 0; i < Model::MODEL_NAMES.size(); i++)
-        delete models[(Model::ID)i];
+    {
+        delete models[(Model::ID)i].first;
+        delete models[(Model::ID)i].second;
+    }
 
     for (size_t i = 0; i < Decal::SPRITE_NAMES.size(); i++)
         delete sprites[(Decal::ID)i];
@@ -141,7 +144,6 @@ void Renderer::render()
             command_buffer,
             *world,
             models,
-            sprites,
             lighting.matrices[i],
             weapon_model,
             *quad,
