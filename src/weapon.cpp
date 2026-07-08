@@ -1,7 +1,7 @@
 #include "weapon.h"
 #include "transform.h"
 
-constexpr static inline float SCALE = 0.04f;
+constexpr static inline float SCALE = 0.03f;
 constexpr static inline float FIRE_RATE = 15.0f;
 constexpr static inline float RECOIL_AMOUNT = 0.01f;
 
@@ -14,9 +14,9 @@ glm::mat4 Weapon::get_model_matrix(const glm::mat4& view_matrix, const float bob
 {
     Transform t;
     t.scale = glm::vec3(SCALE);
-    t.position.x = 0.10f + bob_amount * 0.05f;
+    t.position.x = 0.08f + bob_amount * 0.05f;
     t.position.y = -0.07f + bob_amount * 0.05f;
-    t.position.z = -0.12f + time * FIRE_RATE * RECOIL_AMOUNT;
+    t.position.z = -0.10f + time * FIRE_RATE * RECOIL_AMOUNT;
     t.rotation.y = 180.0f;
 
     return glm::inverse(view_matrix) * t.matrix();

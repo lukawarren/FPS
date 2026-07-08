@@ -19,6 +19,6 @@ public:
 
     static inline constexpr std::array<const char*, 1> MODEL_NAMES =
     {
-        "weapon5"
+        "weapon9"
     };
 };
