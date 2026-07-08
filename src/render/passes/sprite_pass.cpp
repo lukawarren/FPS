@@ -108,20 +108,4 @@ void SpritePass::execute(
 
         quad.draw(render_pass);
     }
-
-    // TODO: sort by ID's
-    sprites.at(Sprite::ID::FIRE)->bind(render_pass, texture_manager.sampler);
-    for (const auto& e : world.animated_sprites)
-    {
-        uniforms.model = e.transform.matrix();
-        uniforms.spritesheet_info = e.get_spritesheet_info();
-        SDL_PushGPUVertexUniformData(
-            command_buffer,
-            1,
-            &uniforms,
-            sizeof(uniforms)
-        );
-
-        quad.draw(render_pass);
-    }
 }

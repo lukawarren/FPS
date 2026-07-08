@@ -24,12 +24,12 @@ World::World(
         if (class_name == "light_spotlight")
         {
             const glm::vec3 position = entity.parse_vec3("origin");
-            const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(255.0f, 170.0f, 95.0f), false);
-            const float intensity = entity.parse_float("intensity", 20.0f);
+            const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(181.0f, 205.0f, 255.0f), false);
+            const float intensity = entity.parse_float("intensity", 10.0f);
             const glm::vec3 angles = entity.parse_vec3("angles", { 0.0f, 0.0f, 0.0f }, false);
             const float near = entity.parse_float("near", 0.01f);
             const float far = entity.parse_float("far", 30.0f);
-            const float angle = entity.parse_float("angle", 60.0f);
+            const float angle = entity.parse_float("angle", 80.0f);
 
             const float pitch_rad = glm::radians(-angles.x);
             const float yaw_rad = glm::radians(-angles.y);
@@ -39,7 +39,7 @@ World::World(
                 std::cos(pitch_rad) * std::sin(yaw_rad)
             };
 
-            torchlights.emplace_back(
+            spotlights.emplace_back(
                 position - direction * 8.0f * Map::METRES_PER_UNIT,
                 direction,
                 glm::normalize(colour / 255.0f) * intensity,
@@ -47,13 +47,6 @@ World::World(
                 far,
                 glm::radians(angle)
             );
-
-            animated_sprites.emplace_back(AnimatedSprite(
-                position + direction * 0.42f + glm::vec3(0.0f, 0.3f, 0.0f),
-                { 1.0f, 0.0f, 0.0f },
-                Sprite::ID::FIRE,
-                glm::vec3(0.4f)
-            ));
 
             audio.play_3d(
                 Audio::ID::FIRE,
@@ -123,13 +116,6 @@ void World::update(const float delta)
         enemies.end()
     );
 
-    // Sprites
-    for (auto& s : animated_sprites)
-    {
-        s.face(direction);
-        s.advance();
-    }
-
     // Debug toggle
     if (window.get_key_pressed(SDL_SCANCODE_ESCAPE))
     {
@@ -159,10 +145,6 @@ void World::update(const float delta)
         { camera.position.x, camera.position.y, camera.position.z },
         { -direction.x, -direction.y, -direction.z }
     );
-
-    // Lights
-    for (auto& e : torchlights)
-        e.update(time);
 
     time += delta;
 }
@@ -299,6 +281,7 @@ void World::update_debug_mode(const float delta)
 {
     update_freecam(delta);
 
+    // Draw player
     player->character->GetShape()->Draw(
         DebugRenderer::debug_renderer,
         player->character->GetWorldTransform(),
@@ -308,6 +291,7 @@ void World::update_debug_mode(const float delta)
         true
     );
 
+    // Draw enemies
     JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
     for (const auto& enemy : enemies)
     {
@@ -319,6 +303,23 @@ void World::update_debug_mode(const float delta)
             {},
             false,
             true
+        );
+    }
+
+    // Draw lights
+    for (const auto& spotlight : spotlights)
+    {
+        const JPH::Vec3 pos(
+            spotlight.position.x,
+            spotlight.position.y,
+            spotlight.position.z
+        );
+
+        DebugRenderer::debug_renderer->DrawArrow(
+            pos,
+            pos + JPH::Vec3(spotlight.direction.x, spotlight.direction.y, spotlight.direction.z) * 2.0f,
+            {},
+            0.5f
         );
     }
 }

@@ -2,7 +2,6 @@
 #include "common.h"
 #include "camera.h"
 #include "player.h"
-#include "torchlight.h"
 #include "map.h"
 #include "physics.h"
 #include "decal.h"
@@ -44,12 +43,11 @@ public:
     Map* map = nullptr;
 
     // Lighting
-    std::vector<Torchlight> torchlights;
+    std::vector<Spotlight> spotlights;
 
     // Sprites; enemies need constant addresses for physics user pointer
     std::deque<Decal> decals;
     std::vector<std::unique_ptr<Enemy>> enemies;
-    std::vector<AnimatedSprite> animated_sprites;
 
     // Physics
     JPH::PhysicsSystem physics_system;

@@ -42,7 +42,7 @@ Renderer::Renderer(
     }
 
     // Load world
-    world = new World("map4.map", device.device, copy_pass, *device.window, audio);
+    world = new World("map5.map", device.device, copy_pass, *device.window, audio);
 
     SDL_EndGPUCopyPass(copy_pass);
 
@@ -241,10 +241,10 @@ Renderer::LightingState Renderer::collect_lights() const
 
     // Gather candidate world lights with their distance to the player
     std::vector<std::pair<float, Spotlight*>> candidates;
-    candidates.reserve(world->torchlights.size());
+    candidates.reserve(world->spotlights.size());
     const glm::vec3 player_pos = world->camera.position;
 
-    for (auto& light : world->torchlights)
+    for (auto& light : world->spotlights)
     {
         const float dist2 = glm::length(light.position - world->camera.position);
         candidates.emplace_back(dist2, &light);

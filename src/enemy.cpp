@@ -3,7 +3,7 @@
 #include "world.h"
 #include "render/debug_renderer.h"
 
-constexpr static inline float SPEED = 4.0f;
+constexpr static inline float SPEED = 0.0f;
 
 constexpr static inline float WAYPOINT_THRESHOLD = 0.05f;
 

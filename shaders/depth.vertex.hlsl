@@ -8,6 +8,7 @@ struct VertexInput
 struct VertexOutput
 {
     float4 position : SV_POSITION;
+    float2 uv       : TEXCOORD;
 };
 
 cbuffer PushBlock : register(b0, space1)
@@ -27,5 +28,6 @@ VertexOutput main(VertexInput input)
     // when we use the output as a depth-prepass
     VertexOutput output;
     output.position = mul(projection, mul(view, mul(model, float4(input.position, 1.0))));
+    output.uv = input.uv;
     return output;
 }

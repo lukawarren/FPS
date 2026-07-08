@@ -47,16 +47,9 @@ void DepthPass::execute(
     render_pass.push_model_matrix(glm::mat4(1.0f));
     for (const auto& draw_call : world.map->draw_calls)
     {
+        draw_call.texture->bind(render_pass, texture_manager.sampler);
         draw_call.mesh->bind(render_pass);
         draw_call.mesh->draw(render_pass);
-    }
-
-    // Draw torches
-    models.at(Model::ID::TORCH)->mesh->bind(render_pass);
-    for (const auto& light : world.torchlights)
-    {
-        render_pass.push_model_matrix(light.get_model_matrix());
-        models.at(Model::ID::TORCH)->mesh->draw(render_pass);
     }
 
     // Draw weapon

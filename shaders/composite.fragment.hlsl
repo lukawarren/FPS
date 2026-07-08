@@ -10,8 +10,8 @@ struct VertexOutput
     float2 uv       : TEXCOORD;
 };
 
-#define BLOOM_STRENGTH  0.1f
-#define EXPOSURE        32.0f
+#define BLOOM_STRENGTH  0.02f
+#define EXPOSURE        200.0f
 #define GAMMA           2.2f
 
 #define A 0.15f

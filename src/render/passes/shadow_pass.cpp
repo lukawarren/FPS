@@ -44,6 +44,7 @@ void ShadowPass::execute(
     render_pass.push_model_matrix(glm::mat4(1.0f));
     for (const auto& draw_call : world.map->draw_calls)
     {
+        draw_call.texture->bind(render_pass, texture_manager.sampler);
         draw_call.mesh->bind(render_pass);
         draw_call.mesh->draw(render_pass);
     }
