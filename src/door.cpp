@@ -47,11 +47,23 @@ void Door::update(World& world, const float delta, const glm::vec3 view_directio
 
     if (!is_open && !opening && player_is_near)
     {
-        opening = true; // Start opening process
+        // Start opening process
+        opening = true;
+        world.audio.play_3d(
+            Audio::ID::DOOR_OPEN,
+            { transform.position.x, transform.position.y, transform.position.z },
+            2.0f
+        );
     }
     else if (is_open && opening && !player_is_near)
     {
-        opening = false; // Start closing process
+        // Start closing process
+        opening = false;
+        world.audio.play_3d(
+            Audio::ID::DOOR_CLOSE,
+            { transform.position.x, transform.position.y, transform.position.z },
+            2.0f
+        );
     }
 
     if (opening && !is_open)

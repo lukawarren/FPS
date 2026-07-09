@@ -13,13 +13,15 @@ public:
         STEPS_BEGIN = 1,
         STEPS_FINAL = 24,
         SHOOT,
-        LIGHT
+        LIGHT,
+        DOOR_OPEN,
+        DOOR_CLOSE
     };
 
     // (path, loops) pairs
-    static inline constexpr std::array<std::pair<const char*, bool>, 27> AUDIO_NAMES =
+    static inline constexpr std::array<std::pair<const char*, bool>, 29> AUDIO_NAMES =
     {{
-        { "wind woosh loop.mp3", true },
+        { "Loop_SciFi Pack Vol 1_Ship Interior Muffled_v2.wav", true },
         { "metal_steps_01.wav", false },
         { "metal_steps_02.wav", false },
         { "metal_steps_03.wav", false },
@@ -44,8 +46,10 @@ public:
         { "metal_steps_22.wav", false },
         { "metal_steps_23.wav", false },
         { "metal_steps_24.wav", false },
-        { "shot_01.mp3", false },
-        { "Sci-Fi Drone.wav", true }
+        { "Single_SciFi Pack Vol 1_Energy Shot_v2_04.wav", false },
+        { "Sci-Fi Drone.wav", true },
+        { "Sequence_SciFi Pack Vol 1_Mechanical Door LOOP to Open_Finish.wav", false },
+        { "Sequence_SciFi Pack Vol 1_Mechanical Door LOOP to Closed_Finish.wav", false }
     }};
 
     void play(const ID id, const float pitch = 1.0f);

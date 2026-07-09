@@ -84,6 +84,7 @@ World::World(
     }
 
     player = new Player(player_position, player_yaw, window, *this, audio);
+    audio.play(Audio::ID::AMBIENCE);
 }
 
 void World::update(const float delta)

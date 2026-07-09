@@ -76,7 +76,7 @@ Audio::Audio()
         }
     }
 
-    ma_sound_set_volume(looping_sounds[ID::AMBIENCE], 0.2f);
+    ma_sound_set_volume(looping_sounds[ID::AMBIENCE], 0.05f);
 }
 
 void Audio::create_instance(

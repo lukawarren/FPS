@@ -41,6 +41,7 @@ public:
     Camera camera;
     Player* player = nullptr;
     Map* map = nullptr;
+    Audio& audio;
 
     // Lighting
     std::vector<Spotlight> spotlights;
@@ -59,7 +60,6 @@ private:
     void update_freecam(const float delta);
 
     Window& window;
-    Audio& audio;
     float time = 0.0f;
     bool debug_mode = false;
     bool mouse_captured = true;

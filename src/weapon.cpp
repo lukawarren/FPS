@@ -2,7 +2,7 @@
 #include "transform.h"
 
 constexpr static inline float SCALE = 0.03f;
-constexpr static inline float FIRE_RATE = 15.0f;
+constexpr static inline float FIRE_RATE = 2.0f;
 constexpr static inline float RECOIL_AMOUNT = 0.01f;
 
 Weapon::Weapon(
