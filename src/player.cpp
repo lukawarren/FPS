@@ -310,10 +310,12 @@ void Player::on_fire()
         0.9f + (rand() % 200) / 1000.0f
     );
 
-    world.entities.emplace_back(std::make_unique<Trace>(
+    world.pending_entities.emplace_back(std::make_unique<Trace>(
         world,
         weapon.get_projectile_position(world.camera.view_matrix(), head_bob_offset),
-        hit->position
+        hit->position,
+        Sprite::ID::TRACE_GREEN,
+        false
     ));
 
     if (data == 0)

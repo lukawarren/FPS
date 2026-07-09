@@ -128,6 +128,16 @@ void World::update(const float delta)
         }),
         entities.end()
     );
+player->health = 9999999.0f;
+    if (!pending_entities.empty())
+    {
+        entities.insert(
+            entities.end(),
+            std::make_move_iterator(pending_entities.begin()),
+            std::make_move_iterator(pending_entities.end())
+        );
+        pending_entities.clear();
+    }
 
     // Debug toggle
     if (window.get_key_pressed(SDL_SCANCODE_ESCAPE))
@@ -193,7 +203,7 @@ std::vector<glm::vec3> World::find_path(const glm::vec3& start, const glm::vec3&
     return map->find_path(start, end);
 }
 
-std::optional<World::Hit> World::get_hit(
+std::optional<Hit> World::get_hit(
     const glm::vec3& origin,
     const glm::vec3& forward,
     const float max_distance,

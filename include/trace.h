@@ -11,7 +11,9 @@ public:
     Trace(
         World& world,
         const glm::vec3 position,
-        const glm::vec3 destination
+        const glm::vec3 destination,
+        const Sprite::ID id,
+        const bool is_enemy
     );
     void update(World& world, const float delta) override;
     bool is_dead() const override;

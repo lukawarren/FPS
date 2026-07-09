@@ -8,6 +8,7 @@
 #include "animated_sprite.h"
 #include "audio.h"
 #include "entity.h"
+#include "hit.h"
 
 class World
 {
@@ -20,13 +21,6 @@ public:
         Audio& audio
     );
     ~World();
-
-    struct Hit
-    {
-        glm::vec3 position;
-        glm::vec3 normal;
-        std::optional<JPH::BodyID> body_id;
-    };
 
     void update(const float delta);
     void spawn_decal(const glm::vec3 position, const glm::vec3 direction);
@@ -46,9 +40,10 @@ public:
     // Lighting
     std::vector<Spotlight> spotlights;
 
-    // Objects; enemies (entities) need constant addresses for physics user pointer
+    // Objects; entities need constant addresses for physics user pointer
     std::deque<Decal> decals;
     std::vector<std::unique_ptr<Entity>> entities;
+    std::vector<std::unique_ptr<Entity>> pending_entities;
 
     // Physics
     JPH::PhysicsSystem physics_system;

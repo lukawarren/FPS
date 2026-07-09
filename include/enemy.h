@@ -2,6 +2,7 @@
 #include "common.h"
 #include "entity.h"
 #include "map.h"
+#include "hit.h"
 
 class World;
 
@@ -27,7 +28,7 @@ private:
         Moving,
         Shooting
     } state = State::Inactive;
-
+#
     std::vector<glm::vec3> path;
     size_t path_index = 0;
     float repath_timer = 0.0f;
@@ -41,5 +42,10 @@ private:
     void animate(World& world, const float delta);
     void shoot(World& world);
     glm::vec3 get_cover_pos(const World& world) const;
-    bool can_see_player_from(const World& world, const glm::vec3 position) const;
+    std::optional<Hit> get_hit_from(
+        const World& world,
+        const glm::vec3 position,
+        const bool aim_for_head
+    ) const;
+    bool did_hit_player(const World& world, const Hit& hit) const;
 };

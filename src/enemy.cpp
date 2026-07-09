@@ -2,6 +2,7 @@
 #include "player.h"
 #include "world.h"
 #include "render/debug_renderer.h"
+#include "trace.h"
 
 constexpr static inline float SPEED = 8.0f;
 
@@ -102,7 +103,8 @@ void Enemy::think(World& world, const float delta)
 {
     if (state == State::Inactive)
     {
-        if (can_see_player_from(world, transform.position))
+        const auto hit = get_hit_from(world, transform.position, true);
+        if (hit.has_value() && did_hit_player(world, *hit))
             state = State::Activated;
     }
 
@@ -205,18 +207,25 @@ void Enemy::animate(World& world, const float delta)
 
 void Enemy::shoot(World& world)
 {
+    const auto hit = get_hit_from(world, transform.position, false);
+    if (!hit.has_value()) return;
+
     world.audio.play_3d(
         Audio::ID::SHOT_LIGHT,
         { transform.position.x, transform.position.y, transform.position.z }
     );
 
-    float chance = (float)rand() / (float)RAND_MAX;
-    if (chance > SHOOT_CHANCE) return;
+    world.pending_entities.emplace_back(std::make_unique<Trace>(
+        world,
+        transform.position + glm::vec3(0.0f, 1.0f, 0.0f),
+        hit->position,
+        Sprite::ID::TRACE_RED,
+        true
+    ));
 
-    if (can_see_player_from(world, transform.position))
-    {
+    float chance = (float)rand() / (float)RAND_MAX;
+    if (chance > SHOOT_CHANCE && did_hit_player(world, *hit))
         world.player->damage(SHOOT_DAMAGE);
-    }
 }
 
 glm::vec3 Enemy::get_cover_pos(const World& world) const
@@ -240,7 +249,8 @@ glm::vec3 Enemy::get_cover_pos(const World& world) const
                 std::sin(angle) * distance
             };
 
-            found = can_see_player_from(world, points[i]);
+            const auto hit = get_hit_from(world, points[i], true);
+            found = hit.has_value() && did_hit_player(world, *hit);
 
             if (limit++ > 10)
             {
@@ -253,25 +263,31 @@ glm::vec3 Enemy::get_cover_pos(const World& world) const
     return points[rand() % points.size()] - glm::vec3(0.0f, Player::PLAYER_HEIGHT / 2.0f, 0.0f);
 }
 
-bool Enemy::can_see_player_from(const World& world, const glm::vec3 position) const
+std::optional<Hit> Enemy::get_hit_from(
+    const World& world,
+    const glm::vec3 position,
+    const bool aim_for_head
+) const
 {
     // Find player's head, etc.
     const glm::vec3 pos = transform.position + glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f);
     const glm::vec3 detect_pos = world.player->position + glm::vec3 {
         0.0f,
-        Player::PLAYER_EYE_HEIGHT / 2.0f,
+        aim_for_head ? Player::PLAYER_EYE_HEIGHT / 2.0f : 0.0f,
         0.0f
     };
     const glm::vec3 to_player = glm::normalize(detect_pos - pos);
-    const auto hit = world.get_hit(
+    return world.get_hit(
         pos,
         to_player,
         VIEW_DISTANCE,
         body.value()
     );
+}
 
+bool Enemy::did_hit_player(const World& world, const Hit& hit) const
+{
     return
-        hit.has_value() &&
-        hit->body_id.has_value() &&
-        hit->body_id.value() == world.player->character->GetInnerBodyID();
+        hit.body_id.has_value() &&
+        hit.body_id.value() == world.player->character->GetInnerBodyID();
 }

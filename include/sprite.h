@@ -10,7 +10,8 @@ public:
         BULLET = 0,
         ENEMY,
         FIRE,
-        TRACE
+        TRACE_GREEN,
+        TRACE_RED
     };
 
     Sprite(
@@ -37,12 +38,13 @@ public:
         return { 1.0f, 1.0f, 0.0f, 0.0f };
     }
 
-    static inline constexpr std::array<std::pair<const char*, std::pair<u32, u32>>, 4> SPRITE_NAMES =
+    static inline constexpr std::array<std::pair<const char*, std::pair<u32, u32>>, 5> SPRITE_NAMES =
     {{
         { "bullet", std::pair<u32, u32>{ 1,     1   } },
         { "enemy",  std::pair<u32, u32>{ 15,    15  } },
         { "fire",   std::pair<u32, u32>{ 1,     1   } },
-        { "laser",  std::pair<u32, u32>{ 1,     1   } }
+        { "laser",  std::pair<u32, u32>{ 1,     1   } },
+        { "laser2", std::pair<u32, u32>{ 1,     1   } }
     }};
 
     Transform transform;
