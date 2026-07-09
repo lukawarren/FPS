@@ -23,10 +23,13 @@ Door::Door(World& world, const glm::vec3 position, const glm::vec3 rotation) : E
     JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
 
     // Add physics
+    const float pitch = glm::radians(rotation.x);
+    const float yaw = glm::radians(rotation.y + 90.0f);
+    const float roll = glm::radians(rotation.z);
     JPH::BodyCreationSettings settings(
         shape,
         JPH::RVec3(position.x, position.y + HEIGHT / 2.0f + OFFSET, position.z),
-        JPH::Quat::sIdentity(),
+        JPH::Quat::sEulerAngles(JPH::Vec3(pitch, yaw, roll)),
         JPH::EMotionType::Static,
         Layers::NON_MOVING
     );
