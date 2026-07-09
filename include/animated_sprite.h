@@ -14,19 +14,12 @@ public:
 
     virtual glm::vec4 get_spritesheet_info() const override
     {
-        const float unit = 1.0f / (float)SPRITE_NAMES[(size_t)id].second;
-
         return {
-            unit,
-            1.0f,
-            unit * (float)frame,
-            0.0f
+            1.0f / (float)SPRITE_NAMES[(size_t)id].second.first,
+            1.0f / (float)SPRITE_NAMES[(size_t)id].second.second,
+            1.0f / (float)SPRITE_NAMES[(size_t)id].second.first * (float)(frame % SPRITE_NAMES[(size_t)id].second.first),
+            1.0f / (float)SPRITE_NAMES[(size_t)id].second.second * (float)(frame / SPRITE_NAMES[(size_t)id].second.first)
         };
-    }
-
-    void advance()
-    {
-        frame = (frame + 1) % SPRITE_NAMES[(size_t)id].second;
     }
 
     u32 frame = 0;

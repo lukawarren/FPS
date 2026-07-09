@@ -36,11 +36,11 @@ public:
         return { 1.0f, 1.0f, 0.0f, 0.0f };
     }
 
-    static inline constexpr std::array<std::pair<const char*, u32>, 3> SPRITE_NAMES =
+    static inline constexpr std::array<std::pair<const char*, std::pair<u32, u32>>, 3> SPRITE_NAMES =
     {{
-        { "bullet", 1 },
-        { "enemy", 210 },
-        { "fire", 25 }
+        { "bullet", std::pair<u32, u32>{ 0,     0   } },
+        { "enemy",  std::pair<u32, u32>{ 15,    14  } },
+        { "fire",   std::pair<u32, u32>{ 0,     0   } }
     }};
 
     Transform transform;
