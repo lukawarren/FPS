@@ -22,6 +22,18 @@ glm::mat4 Weapon::get_model_matrix(const glm::mat4& view_matrix, const float bob
     return glm::inverse(view_matrix) * t.matrix();
 }
 
+glm::vec3 Weapon::get_projectile_position(const glm::mat4& view_matrix, const float bob_amount) const
+{
+    Transform t;
+    t.scale = glm::vec3(SCALE);
+    t.position.x = 0.08f + bob_amount * 0.05f;
+    t.position.y = -0.07f + bob_amount * 0.05f;
+    t.position.z = -1.0f - 0.3f + time * FIRE_RATE * RECOIL_AMOUNT;
+
+    glm::mat4 world_matrix = glm::inverse(view_matrix) * t.matrix();
+    return glm::vec3(world_matrix[3]);
+}
+
 void Weapon::update(const bool fired, const bool fired_this_frame, const float delta)
 {
     if (time > 0.0f)

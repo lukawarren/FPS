@@ -26,6 +26,7 @@
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/norm.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #define module_private public
 #include <csg.hpp>

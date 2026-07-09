@@ -59,11 +59,8 @@ Enemy::Enemy(World& world, const glm::vec3 position) : Entity(position)
 
 Enemy::~Enemy() {}
 
-void Enemy::update(World& world, const float delta, const glm::vec3 view_direction)
+void Enemy::update(World& world, const float delta)
 {
-    // Update sprite
-    sprite->face(view_direction * glm::vec3(1.0f, 0.0f, 1.0f));
-
     if (!world.player->is_dead())
     {
         // AI

@@ -47,6 +47,34 @@ public:
         return glm::normalize(direction);
     }
 
+    glm::vec3 right_vector() const
+    {
+        glm::vec3 direction;
+
+        const float p = glm::radians(pitch);
+        const float y = glm::radians(yaw + 90.0f);
+
+        direction.x = std::cos(p) * std::sin(y);
+        direction.y = -std::sin(p);
+        direction.z = -std::cos(p) * std::cos(y);
+
+        return glm::normalize(direction);
+    }
+
+    glm::vec3 up_vector() const
+    {
+        glm::vec3 direction;
+
+        const float p = glm::radians(pitch - 90.0f);
+        const float y = glm::radians(yaw);
+
+        direction.x = std::cos(p) * std::sin(y);
+        direction.y = -std::sin(p);
+        direction.z = -std::cos(p) * std::cos(y);
+
+        return glm::normalize(direction);
+    }
+
     glm::vec3 position = {};
     glm::vec3 velocity = {};
     float pitch = 0.0f;

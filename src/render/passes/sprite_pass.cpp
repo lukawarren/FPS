@@ -77,7 +77,6 @@ void SpritePass::execute(
     VertexUniforms uniforms;
     quad.bind(render_pass);
 
-    // TODO: sort by ID's
     sprites.at(Sprite::ID::BULLET)->bind(render_pass, texture_manager.sampler);
     for (const auto& d : world.decals)
     {
@@ -94,7 +93,6 @@ void SpritePass::execute(
     }
 
     // TODO: sort by ID's
-    sprites.at(Sprite::ID::ENEMY)->bind(render_pass, texture_manager.sampler);
     for (const auto& e : world.entities)
     {
         uniforms.model = e->transform.matrix();
@@ -111,6 +109,7 @@ void SpritePass::execute(
                 sizeof(uniforms)
             );
 
+            sprites.at(e->sprite->id)->bind(render_pass, texture_manager.sampler);
             quad.draw(render_pass);
         }
     }

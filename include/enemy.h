@@ -11,7 +11,7 @@ public:
     Enemy(World& world, const glm::vec3 position);
     ~Enemy();
 
-    void update(World& world, const float delta, const glm::vec3 direction) override;
+    void update(World& world, const float delta) override;
     bool is_dead() const override;
 
     void damage(const float damage);

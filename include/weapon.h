@@ -14,6 +14,11 @@ public:
         const float bob_amount
     ) const;
 
+    glm::vec3 get_projectile_position(
+        const glm::mat4& view_matrix,
+        const float bob_amount
+    ) const;
+
     void update(const bool fired, const bool fired_this_frame, const float delta);
 
     Model::ID model;

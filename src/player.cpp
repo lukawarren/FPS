@@ -4,6 +4,7 @@
 #include "map.h"
 #include "world.h"
 #include "enemy.h"
+#include "trace.h"
 
 static constexpr float MOVE_SPEED       = 7.2f;
 static constexpr float JUMP_SPEED       = 10.4f;
@@ -308,6 +309,12 @@ void Player::on_fire()
         Audio::ID::SHOT_HEAVY,
         0.9f + (rand() % 200) / 1000.0f
     );
+
+    world.entities.emplace_back(std::make_unique<Trace>(
+        world,
+        weapon.get_projectile_position(world.camera.view_matrix(), head_bob_offset),
+        hit->position
+    ));
 
     if (data == 0)
     {

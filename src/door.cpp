@@ -39,7 +39,7 @@ Door::Door(World& world, const glm::vec3 position, const glm::vec3 rotation) : E
 	body_interface.AddBody(body->GetID(), JPH::EActivation::DontActivate);
 }
 
-void Door::update(World& world, const float delta, const glm::vec3 view_direction)
+void Door::update(World& world, const float delta)
 {
     JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
     const glm::vec3 to_player = world.player->position - transform.position;
@@ -99,6 +99,4 @@ void Door::update(World& world, const float delta, const glm::vec3 view_directio
         ),
         JPH::EActivation::DontActivate
     );
-
-    (void)view_direction;
 }

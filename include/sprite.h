@@ -8,8 +8,9 @@ public:
     enum class ID
     {
         BULLET = 0,
-        ENEMY = 1,
-        FIRE = 2
+        ENEMY,
+        FIRE,
+        TRACE
     };
 
     Sprite(
@@ -36,13 +37,15 @@ public:
         return { 1.0f, 1.0f, 0.0f, 0.0f };
     }
 
-    static inline constexpr std::array<std::pair<const char*, std::pair<u32, u32>>, 3> SPRITE_NAMES =
+    static inline constexpr std::array<std::pair<const char*, std::pair<u32, u32>>, 4> SPRITE_NAMES =
     {{
-        { "bullet", std::pair<u32, u32>{ 0,     0   } },
+        { "bullet", std::pair<u32, u32>{ 1,     1   } },
         { "enemy",  std::pair<u32, u32>{ 15,    15  } },
-        { "fire",   std::pair<u32, u32>{ 0,     0   } }
+        { "fire",   std::pair<u32, u32>{ 1,     1   } },
+        { "laser",  std::pair<u32, u32>{ 1,     1   } }
     }};
 
     Transform transform;
     ID id;
+    bool face_camera = true;
 };

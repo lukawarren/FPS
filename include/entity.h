@@ -14,7 +14,7 @@ public:
         transform.position = position;
     }
 
-    virtual void update(World& world, const float delta, const glm::vec3 view_direction) = 0;
+    virtual void update(World& world, const float delta) = 0;
     virtual bool is_dead() const { return false; }
 
     Transform transform;

@@ -3,6 +3,8 @@
 #include "enemy.h"
 #include "door.h"
 
+static bool enable_ai = false;
+
 World::World(
     const std::string& filename,
     SDL_GPUDevice* device,
@@ -85,7 +87,6 @@ World::World(
 
     player = new Player(player_position, player_yaw, window, *this, audio);
     audio.play(Audio::ID::AMBIENCE);
-    dbg("TODO: remove heal shortcut");
 }
 
 void World::update(const float delta)
@@ -93,12 +94,6 @@ void World::update(const float delta)
     JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
 
     const glm::vec3 direction = -camera.direction_vector();
-
-    if (window.get_key_pressed(SDL_SCANCODE_H))
-    {
-        camera.roll = 0.0f;
-        player->heal(1000.0f);
-    }
 
     if (!debug_mode)
     {
@@ -113,7 +108,13 @@ void World::update(const float delta)
 
     // Entities
     for (auto& e : entities)
-        e->update(*this, debug_mode ? delta : delta, direction);
+    {
+        if (e->sprite.has_value() && e->sprite->face_camera)
+            e->sprite->face(direction * glm::vec3(1.0f, 0.0f, 1.0f));
+
+        if (dynamic_cast<const Enemy*>(e.get()) == nullptr || enable_ai)
+            e->update(*this, delta);
+    }
 
     // Remove dead entities
     for (const auto& e : entities)
@@ -352,6 +353,18 @@ void World::update_debug_mode(const float delta)
             0.5f
         );
     }
+
+    ImGui::Begin("World", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+
+    ImGui::Checkbox("Enemy AI", &enable_ai);
+
+    if (ImGui::Button("Heal"))
+    {
+        camera.roll = 0.0f;
+        player->health = 100.0f;
+    }
+
+    ImGui::End();
 }
 
 void World::update_freecam(const float delta)

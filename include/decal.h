@@ -10,5 +10,6 @@ public:
         Sprite(position, direction, id)
     {
         transform.scale = glm::vec3(0.1f);
+        this->face_camera = false;
     }
 };
