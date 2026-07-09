@@ -63,6 +63,14 @@ private:
         glm::vec2 scale;
     };
 
+    struct TexturedMesh
+    {
+        std::vector<float> vertices;
+        std::vector<float> normals;
+        std::vector<float> texture_coordinates;
+        std::vector<unsigned int> indices;
+    };
+
     void parse_entity(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass);
     void parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass);
     void build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass);
@@ -71,11 +79,16 @@ private:
         const std::vector<csg::vertex_t>& vertices,
         const TextureInfo& info
     );
+    void extract_meshes_from_world(
+        csg::world_t* src_world,
+        std::unordered_map<std::string, TexturedMesh>& meshes
+    );
 
     // Temporary variables
     std::set<std::string> textures;
     std::vector<TextureInfo> texture_infos;
-    csg::world_t* world;
+    csg::world_t* solid_world = nullptr;
+    csg::world_t* transparent_world = nullptr;
 
     // Navigation
     dtNavMesh* nav_mesh = nullptr;

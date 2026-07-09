@@ -25,5 +25,5 @@ public:
     float time = 0.0f;
     std::function<void()> on_fire;
 
-    constexpr static inline float DAMAGE = 20.0f;
+    constexpr static inline float DAMAGE = 75.0f;
 };

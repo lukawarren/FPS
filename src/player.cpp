@@ -14,7 +14,7 @@ static constexpr float AIR_ACCEL_RATE   = 300.0f;
 static constexpr float FRICTION         = 6.0f;
 static constexpr float STOP_SPEED       = 0.3f * MOVE_SPEED;
 static constexpr float AIR_CAP          = 0.3f * MOVE_SPEED;
-static constexpr float MAX_SPEED        = 1.5f * MOVE_SPEED;
+static constexpr float MAX_SPEED        = 2.0f * MOVE_SPEED;
 static constexpr float BOB_FREQUENCY    = 15.0f;
 static constexpr float BOB_AMOUNT       = 0.10f;
 

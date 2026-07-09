@@ -8,7 +8,7 @@ constexpr static inline float SPEED = 8.0f;
 
 constexpr static inline float WAYPOINT_THRESHOLD    = 0.05f;
 
-constexpr static inline float VIEW_DISTANCE         = 100.0f;
+constexpr static inline float VIEW_DISTANCE         = 25.0f;
 constexpr static inline float COVER_MIN_RADIUS      = 2.0f;
 constexpr static inline float COVER_MAX_RADIUS      = 5.0f;
 constexpr static inline u32   COVER_POINTS          = 10;
@@ -19,6 +19,7 @@ constexpr static inline u32   RUNNING_FRAMES        = 41;
 constexpr static inline u32   SHOOTING_FRAMES       = 35;
 constexpr static inline float ANIMATION_FRAME_TIME  = 1.0f / 60.0f;
 
+constexpr static inline float DETECT_DELAY          = 0.5f;
 constexpr static inline float SHOOT_CHANCE          = 0.5f;
 constexpr static inline float SHOOT_DAMAGE          = 5.0f;
 
@@ -105,6 +106,16 @@ void Enemy::think(World& world, const float delta)
     {
         const auto hit = get_hit_from(world, transform.position, true);
         if (hit.has_value() && did_hit_player(world, *hit))
+        {
+            state = State::Delayed;
+            delayed_timer = DETECT_DELAY;
+        }
+    }
+
+    else if (state == State::Delayed)
+    {
+        delayed_timer -= delta;
+        if (delayed_timer < 0.0f)
             state = State::Activated;
     }
 

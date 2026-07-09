@@ -24,6 +24,7 @@ private:
     enum class State
     {
         Inactive,
+        Delayed,
         Activated,
         Moving,
         Shooting
@@ -37,6 +38,7 @@ private:
 
     float animation_time = 0.0f;
     u32 animation_frame = 0;
+    float delayed_timer = 0.0f;
 
     void think(World& world, const float delta);
     void animate(World& world, const float delta);

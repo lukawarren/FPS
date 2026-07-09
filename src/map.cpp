@@ -4,11 +4,19 @@
 constexpr static inline csg::volume_t VOLUME_AIR = 0;
 constexpr static inline csg::volume_t VOLUME_SOLID = 1;
 
+static bool is_transparent_texture(const std::string& name)
+{
+    return name == "zortchskin/rustwallmask";
+}
+
 Map::Map(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 {
-    // Setup CSG "world"
-    world = new csg::world_t();
-    world->set_void_volume(VOLUME_AIR);
+    // Setup CSG "worlds" — solid geometry and transparent geometry are kept
+    // separate so transparent brushes can never carve/clip solid brushes
+    solid_world = new csg::world_t();
+    solid_world->set_void_volume(VOLUME_AIR);
+    transparent_world = new csg::world_t();
+    transparent_world->set_void_volume(VOLUME_AIR);
 
     // Load text file
     std::ifstream file(MAP_ROOT + filename);
@@ -26,8 +34,8 @@ Map::Map(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* co
     textures.clear();
     texture_infos.clear();
 
-    // World no longer needed
-    delete world;
+    delete solid_world;
+    delete transparent_world;
 }
 
 Map::~Map()
@@ -143,12 +151,8 @@ void Map::parse_entity(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopy
 void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 {
     std::string line;
-    csg::brush_t* brush = world->add();
     std::vector<csg::plane_t> planes;
     std::vector<size_t> texture_info_indices;
-
-    // Brush setup
-    brush->set_volume_operation(csg::make_fill_operation(VOLUME_SOLID));
 
     const auto parse_texture_name = [](std::istream& is)
     {
@@ -172,6 +176,19 @@ void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyP
         // End of brush
         if (line == "}")
         {
+            // Decide which world this brush belongs to based on its textures.
+            bool is_transparent = false;
+            for (size_t idx : texture_info_indices)
+            {
+                if (is_transparent_texture(texture_infos[idx].name))
+                {
+                    is_transparent = true;
+                    break;
+                }
+            }
+
+            csg::brush_t* brush = is_transparent ? transparent_world->add() : solid_world->add();
+            brush->set_volume_operation(csg::make_fill_operation(VOLUME_SOLID));
             brush->userdata = texture_info_indices;
             brush->set_planes(planes);
             return;
@@ -240,84 +257,9 @@ void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyP
 
 void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 {
-    world->rebuild();
-    csg::brush_t* brush = world->first();
-
-    // Build separates mesh per texture
-    struct TexturedMesh
-    {
-        std::vector<float> vertices;
-        std::vector<float> normals;
-        std::vector<float> texture_coordinates;
-        std::vector<unsigned int> indices;
-    };
     std::unordered_map<std::string, TexturedMesh> meshes;
-
-    while (brush != nullptr)
-    {
-        // Retrieve texture info (per face)
-        std::vector<size_t> texture_info_indices = std::any_cast<std::vector<size_t>>(brush->userdata);
-
-        auto faces = brush->get_faces();
-        for (size_t local_index = 0; local_index < faces.size(); ++local_index)
-        {
-            const csg::face_t& face = faces[local_index];
-
-            // "No-draw" faces
-            const TextureInfo& info = texture_infos[texture_info_indices[local_index]];
-            if (info.name == "__TB_empty")
-                continue;
-
-            // Identify (or create) correct mesh
-            if (meshes.count(info.name) == 0)
-                meshes[info.name] = TexturedMesh {};
-            TexturedMesh& mesh = meshes[info.name];
-
-            for (const csg::fragment_t& fragment : face.fragments)
-            {
-                csg::volume_t front = fragment.front_volume;
-                csg::volume_t back = fragment.back_volume;
-
-                // Discard polygons who are "air-air" or "solid-solid"
-                if (front == back)
-                    continue;
-
-                // Discard non-frontface polygons
-                if (front != VOLUME_AIR)
-                    continue;
-
-                // Record vertices
-                const size_t offset = mesh.vertices.size() / 3;
-                for (const auto& vertex : fragment.vertices)
-                {
-                    mesh.vertices.push_back(vertex.position.x * METRES_PER_UNIT);
-                    mesh.vertices.push_back(vertex.position.z * METRES_PER_UNIT);
-                    mesh.vertices.push_back(vertex.position.y * METRES_PER_UNIT * -1.0f);
-                }
-
-                // Record normals
-                for (size_t i = 0; i < fragment.vertices.size(); ++i)
-                {
-                    mesh.normals.push_back(face.plane->normal.x);
-                    mesh.normals.push_back(face.plane->normal.z);
-                    mesh.normals.push_back(face.plane->normal.y * -1.0f);
-                }
-
-                // Record indices
-                std::vector<csg::triangle_t> triangles = csg::triangulate(fragment);
-                for (const auto& triangle : triangles)
-                {
-                    mesh.indices.push_back(triangle.i + offset);
-                    mesh.indices.push_back(triangle.j + offset);
-                    mesh.indices.push_back(triangle.k + offset);
-                }
-
-                calculate_uvs(mesh.texture_coordinates, fragment.vertices, info);
-            }
-        }
-
-        brush = world->next(brush);
-    }
+    extract_meshes_from_world(solid_world, meshes);
+    extract_meshes_from_world(transparent_world, meshes);
 
     // Add for rendering
     for (const auto &[key, value] : meshes)
@@ -420,6 +362,81 @@ void Map::calculate_uvs(
 
         texture_coordinates.emplace_back(u);
         texture_coordinates.emplace_back(v);
+    }
+}
+
+void Map::extract_meshes_from_world(
+    csg::world_t* src_world,
+    std::unordered_map<std::string, TexturedMesh>& meshes
+)
+{
+    src_world->rebuild();
+    csg::brush_t* brush = src_world->first();
+
+    while (brush != nullptr)
+    {
+        // Retrieve texture info (per face)
+        std::vector<size_t> texture_info_indices = std::any_cast<std::vector<size_t>>(brush->userdata);
+
+        auto faces = brush->get_faces();
+        for (size_t local_index = 0; local_index < faces.size(); ++local_index)
+        {
+            const csg::face_t& face = faces[local_index];
+
+            // "No-draw" faces
+            const TextureInfo& info = texture_infos[texture_info_indices[local_index]];
+            if (info.name == "__TB_empty")
+                continue;
+
+            // Identify (or create) correct mesh
+            if (meshes.count(info.name) == 0)
+                meshes[info.name] = TexturedMesh {};
+            TexturedMesh& mesh = meshes[info.name];
+
+            for (const csg::fragment_t& fragment : face.fragments)
+            {
+                csg::volume_t front = fragment.front_volume;
+                csg::volume_t back = fragment.back_volume;
+
+                // Discard polygons who are "air-air" or "solid-solid"
+                if (front == back)
+                    continue;
+
+                // Discard non-frontface polygons
+                if (front != VOLUME_AIR)
+                    continue;
+
+                // Record vertices
+                const size_t offset = mesh.vertices.size() / 3;
+                for (const auto& vertex : fragment.vertices)
+                {
+                    mesh.vertices.push_back(vertex.position.x * METRES_PER_UNIT);
+                    mesh.vertices.push_back(vertex.position.z * METRES_PER_UNIT);
+                    mesh.vertices.push_back(vertex.position.y * METRES_PER_UNIT * -1.0f);
+                }
+
+                // Record normals
+                for (size_t i = 0; i < fragment.vertices.size(); ++i)
+                {
+                    mesh.normals.push_back(face.plane->normal.x);
+                    mesh.normals.push_back(face.plane->normal.z);
+                    mesh.normals.push_back(face.plane->normal.y * -1.0f);
+                }
+
+                // Record indices
+                std::vector<csg::triangle_t> triangles = csg::triangulate(fragment);
+                for (const auto& triangle : triangles)
+                {
+                    mesh.indices.push_back(triangle.i + offset);
+                    mesh.indices.push_back(triangle.j + offset);
+                    mesh.indices.push_back(triangle.k + offset);
+                }
+
+                calculate_uvs(mesh.texture_coordinates, fragment.vertices, info);
+            }
+        }
+
+        brush = src_world->next(brush);
     }
 }
 

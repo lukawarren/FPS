@@ -128,7 +128,7 @@ void World::update(const float delta)
         }),
         entities.end()
     );
-player->health = 9999999.0f;
+
     if (!pending_entities.empty())
     {
         entities.insert(
