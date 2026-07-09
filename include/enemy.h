@@ -16,15 +16,16 @@ public:
 
     void damage(const float damage);
 
-    constexpr static inline float ENEMY_RADIUS = 32 * Map::METRES_PER_UNIT;
-    constexpr static inline float ENEMY_HEIGHT = 120 * Map::METRES_PER_UNIT;
+    constexpr static inline float ENEMY_RADIUS = 16 * Map::METRES_PER_UNIT;
+    constexpr static inline float ENEMY_HEIGHT = 72 * Map::METRES_PER_UNIT;
 
 private:
     enum class State
     {
         Inactive,
         Activated,
-        Moving
+        Moving,
+        Shooting
     } state = State::Inactive;
 
     std::vector<glm::vec3> path;
@@ -33,7 +34,11 @@ private:
 
     float health = 100.0f;
 
-    glm::vec3 get_player_detect_pos(const World& world) const;
+    float animation_time = 0.0f;
+    u32 animation_frame = 0;
+
+    void think(World& world, const float delta);
+    void animate(const float delta);
     glm::vec3 get_cover_pos(const World& world) const;
     bool can_see_player_from(const World& world, const glm::vec3 position) const;
 };

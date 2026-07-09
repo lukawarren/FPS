@@ -3,29 +3,36 @@
 #include "world.h"
 #include "render/debug_renderer.h"
 
-constexpr static inline float SPEED = 0.0f;
+constexpr static inline float SPEED = 4.0f;
 
-constexpr static inline float WAYPOINT_THRESHOLD = 0.05f;
+constexpr static inline float WAYPOINT_THRESHOLD    = 0.05f;
 
-constexpr static inline float VIEW_DISTANCE     = 100.0f;
-constexpr static inline float COVER_MIN_RADIUS  = 2.0f;
-constexpr static inline float COVER_MAX_RADIUS  = 15.0f;
-constexpr static inline u32   COVER_POINTS      = 10;
-constexpr static inline float REPATH_TIME       = 3.0f;
+constexpr static inline float VIEW_DISTANCE         = 100.0f;
+constexpr static inline float COVER_MIN_RADIUS      = 2.0f;
+constexpr static inline float COVER_MAX_RADIUS      = 5.0f;
+constexpr static inline u32   COVER_POINTS          = 10;
+constexpr static inline float REPATH_TIME           = 5.0f;
+
+constexpr static inline u32   IDLE_FRAMES           = 134;
+constexpr static inline u32   RUNNING_FRAMES        = 41;
+constexpr static inline u32   SHOOTING_FRAMES       = 35;
+constexpr static inline float ANIMATION_FRAME_TIME  = 1.0f / 60.0f;
 
 Enemy::Enemy(World& world, const glm::vec3 position) : Entity(position)
 {
-    sprite.emplace(Sprite(
+    sprite.emplace(AnimatedSprite(
         {},
         { 1.0f, 0.0f, 0.0f },
         Sprite::ID::ENEMY
     ));
 
-    sprite->transform.scale = {
+    sprite->transform.scale = glm::vec3 {
         ENEMY_RADIUS,
         ENEMY_HEIGHT / 2.0f,
         ENEMY_RADIUS
-    };
+    } * 1.2f;
+
+    sprite->transform.position.y = sprite->transform.scale.y / 3.0f;
 
     JPH::Ref<JPH::BoxShape> shape = new JPH::BoxShape(
         { ENEMY_RADIUS, ENEMY_HEIGHT / 2.0f, ENEMY_RADIUS }
@@ -54,6 +61,41 @@ void Enemy::update(World& world, const float delta, const glm::vec3 view_directi
     // Update sprite
     sprite->face(view_direction * glm::vec3(1.0f, 0.0f, 1.0f));
 
+    // AI
+    const auto last_state = state;
+    think(world, delta);
+
+    if (last_state != state)
+        animation_time = 0.0f;
+
+    // Animation
+    animate(delta);
+
+    // Update physics
+    JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
+    body_interface.SetPosition(
+        body.value(),
+        JPH::RVec3(
+            transform.position.x,
+            transform.position.y,
+            transform.position.z
+        ),
+        JPH::EActivation::DontActivate
+    );
+}
+
+bool Enemy::is_dead() const
+{
+    return health <= 0.0f;
+}
+
+void Enemy::damage(const float damage)
+{
+    health -= damage;
+}
+
+void Enemy::think(World& world, const float delta)
+{
     if (state == State::Inactive)
     {
         if (can_see_player_from(world, transform.position))
@@ -77,16 +119,11 @@ void Enemy::update(World& world, const float delta, const glm::vec3 view_directi
 
     else if (state == State::Moving)
     {
-        if (repath_timer <= 0.0f)
+        if (path.empty() || path_index >= path.size())
         {
-            state = State::Activated;
+            state = State::Shooting;
             return;
         }
-
-        repath_timer -= delta;
-
-        if (path.empty() || path_index >= path.size())
-            return;
 
         // Get true length as likely to normalise anyway later
         glm::vec3 to_target = path[path_index] + glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f) - transform.position;
@@ -118,36 +155,42 @@ void Enemy::update(World& world, const float delta, const glm::vec3 view_directi
         );
     }
 
-    // Update physics
-    JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
-    body_interface.SetPosition(
-        body.value(),
-        JPH::RVec3(
-            transform.position.x,
-            transform.position.y,
-            transform.position.z
-        ),
-        JPH::EActivation::DontActivate
-    );
+    else if (state == State::Shooting)
+    {
+        if (repath_timer <= 0.0f)
+        {
+            state = State::Activated;
+            return;
+        }
+
+        repath_timer -= delta;
+    }
 }
 
-bool Enemy::is_dead() const
+void Enemy::animate(const float delta)
 {
-    return health <= 0.0f;
-}
+    animation_time += delta;
 
-void Enemy::damage(const float damage)
-{
-    health -= damage;
-}
+    if (animation_time >= ANIMATION_FRAME_TIME)
+    {
+        animation_time = 0;
+        animation_frame++;
+    }
 
-glm::vec3 Enemy::get_player_detect_pos(const World& world) const
-{
-    return world.player->position + glm::vec3 {
-        0.0f,
-        Player::PLAYER_EYE_HEIGHT / 2.0f,
-        0.0f
-    };
+    if (state == State::Inactive)
+    {
+        sprite->frame = animation_frame % IDLE_FRAMES;
+    }
+
+    else if (state == State::Moving)
+    {
+        sprite->frame = IDLE_FRAMES + (animation_frame % RUNNING_FRAMES);
+    }
+
+    else if (state == State::Shooting)
+    {
+        sprite->frame = IDLE_FRAMES + RUNNING_FRAMES + (animation_frame % SHOOTING_FRAMES);
+    }
 }
 
 glm::vec3 Enemy::get_cover_pos(const World& world) const
@@ -158,6 +201,7 @@ glm::vec3 Enemy::get_cover_pos(const World& world) const
     for (u32 i = 0; i < COVER_POINTS; i++)
     {
         bool found = false;
+        u32 limit = 0;
 
         while (!found)
         {
@@ -171,6 +215,12 @@ glm::vec3 Enemy::get_cover_pos(const World& world) const
             };
 
             found = can_see_player_from(world, points[i]);
+
+            if (limit++ > 10)
+            {
+                points[i] = world.player->position;
+                break;
+            }
         }
     }
 
@@ -180,10 +230,15 @@ glm::vec3 Enemy::get_cover_pos(const World& world) const
 bool Enemy::can_see_player_from(const World& world, const glm::vec3 position) const
 {
     // Find player's head, etc.
-    const glm::vec3 detect_pos = get_player_detect_pos(world);
-    const glm::vec3 to_player = glm::normalize(detect_pos - position);
+    const glm::vec3 pos = transform.position + glm::vec3(0.0f, ENEMY_HEIGHT / 2.0f, 0.0f);
+    const glm::vec3 detect_pos = world.player->position + glm::vec3 {
+        0.0f,
+        Player::PLAYER_EYE_HEIGHT / 2.0f,
+        0.0f
+    };
+    const glm::vec3 to_player = glm::normalize(detect_pos - pos);
     const auto hit = world.get_hit(
-        position,
+        pos,
         to_player,
         VIEW_DISTANCE,
         body.value()

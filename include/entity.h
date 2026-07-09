@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 #include "transform.h"
-#include "sprite.h"
+#include "animated_sprite.h"
 #include "model.h"
 
 class World;
@@ -18,7 +18,7 @@ public:
     virtual bool is_dead() const { return false; }
 
     Transform transform;
-    std::optional<Sprite> sprite;
+    std::optional<AnimatedSprite> sprite;
     std::optional<Model> model;
     std::optional<JPH::BodyID> body;
 };

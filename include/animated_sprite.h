@@ -24,13 +24,10 @@ public:
         };
     }
 
-    inline u32 get_frame() const { return frame; }
-
     void advance()
     {
         frame = (frame + 1) % SPRITE_NAMES[(size_t)id].second;
     }
 
-private:
     u32 frame = 0;
 };
