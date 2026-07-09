@@ -33,6 +33,7 @@ public:
     Weapon weapon;
 
     inline bool is_dead() const { return health < 0.0f; }
+    inline void heal(const float amount) { health += amount; }
 
     constexpr static inline float PLAYER_HEIGHT     = 72 * Map::METRES_PER_UNIT;
     constexpr static inline float PLAYER_EYE_HEIGHT = 64 * Map::METRES_PER_UNIT;

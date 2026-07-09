@@ -85,6 +85,7 @@ World::World(
 
     player = new Player(player_position, player_yaw, window, *this, audio);
     audio.play(Audio::ID::AMBIENCE);
+    dbg("TODO: remove heal shortcut");
 }
 
 void World::update(const float delta)
@@ -92,6 +93,12 @@ void World::update(const float delta)
     JPH::BodyInterface& body_interface = physics_system.GetBodyInterface();
 
     const glm::vec3 direction = -camera.direction_vector();
+
+    if (window.get_key_pressed(SDL_SCANCODE_H))
+    {
+        camera.roll = 0.0f;
+        player->heal(1000.0f);
+    }
 
     if (!debug_mode)
     {
