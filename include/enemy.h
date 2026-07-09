@@ -38,7 +38,8 @@ private:
     u32 animation_frame = 0;
 
     void think(World& world, const float delta);
-    void animate(const float delta);
+    void animate(World& world, const float delta);
+    void shoot(World& world);
     glm::vec3 get_cover_pos(const World& world) const;
     bool can_see_player_from(const World& world, const glm::vec3 position) const;
 };

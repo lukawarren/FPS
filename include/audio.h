@@ -12,14 +12,15 @@ public:
         AMBIENCE = 0,
         STEPS_BEGIN = 1,
         STEPS_FINAL = 24,
-        SHOOT,
+        SHOT_LIGHT,
+        SHOT_HEAVY,
         LIGHT,
         DOOR_OPEN,
         DOOR_CLOSE
     };
 
     // (path, loops) pairs
-    static inline constexpr std::array<std::pair<const char*, bool>, 29> AUDIO_NAMES =
+    static inline constexpr std::array<std::pair<const char*, bool>, 30> AUDIO_NAMES =
     {{
         { "Loop_SciFi Pack Vol 1_Ship Interior Muffled_v2.wav", true },
         { "metal_steps_01.wav", false },
@@ -47,6 +48,7 @@ public:
         { "metal_steps_23.wav", false },
         { "metal_steps_24.wav", false },
         { "Single_SciFi Pack Vol 1_Energy Shot_v2_04.wav", false },
+        { "Single_SciFi Pack Vol 1_Heavy Plasma Shot_04.wav", false },
         { "Sci-Fi Drone.wav", true },
         { "Sequence_SciFi Pack Vol 1_Mechanical Door LOOP to Open_Finish.wav", false },
         { "Sequence_SciFi Pack Vol 1_Mechanical Door LOOP to Closed_Finish.wav", false }

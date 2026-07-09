@@ -97,7 +97,7 @@ void World::update(const float delta)
     {
         // Need 1 collision step for every 60 FPS
         const float divisions_of_60 = std::max((1.0f / 60.0f) / delta, 1.0f);
-        player->update(delta);
+        if (!player->is_dead()) player->update(delta);
         const JPH::EPhysicsUpdateError error = physics_system.Update(delta, (int)divisions_of_60, &allocator, job_system);
 
         if (error != JPH::EPhysicsUpdateError::None)
@@ -135,13 +135,26 @@ void World::update(const float delta)
     // Camera
     if (!debug_mode)
     {
-        camera.pitch = player->head_pitch;
-        camera.yaw = player->head_yaw;
-        camera.position = {
-            player->position.x,
-            player->position.y - Player::PLAYER_HEIGHT / 2.0f + Player::PLAYER_EYE_HEIGHT + player->head_bob_offset,
-            player->position.z
-        };
+        if (player->is_dead())
+        {
+            camera.pitch = 0.0f;
+            camera.roll = 45.0f;
+            camera.position = {
+                player->position.x,
+                player->position.y - Player::PLAYER_HEIGHT / 2.0f + 0.1f,
+                player->position.z
+            };
+        }
+        else
+        {
+            camera.pitch = player->head_pitch;
+            camera.yaw = player->head_yaw;
+            camera.position = {
+                player->position.x,
+                player->position.y - Player::PLAYER_HEIGHT / 2.0f + Player::PLAYER_EYE_HEIGHT + player->head_bob_offset,
+                player->position.z
+            };
+        }
     }
     else update_debug_mode(delta);
 

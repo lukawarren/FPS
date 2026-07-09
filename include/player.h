@@ -21,6 +21,7 @@ public:
     );
 
     void update(const float delta);
+    void damage(const float amount);
 
     float head_pitch = 0.0f;
     float head_yaw = 0.0f;
@@ -30,6 +31,8 @@ public:
     JPH::Ref<JPH::CharacterVirtual> character;
     Flashlight flashlight;
     Weapon weapon;
+
+    inline bool is_dead() const { return health < 0.0f; }
 
     constexpr static inline float PLAYER_HEIGHT     = 72 * Map::METRES_PER_UNIT;
     constexpr static inline float PLAYER_EYE_HEIGHT = 64 * Map::METRES_PER_UNIT;
@@ -51,6 +54,8 @@ private:
     float last_bob_sign = 0.0f;
     float bob_time = 0.0f;
     glm::vec2 mouse_position;
+
+    float health = 100.0f;
 
     World& world;
     Audio& audio;

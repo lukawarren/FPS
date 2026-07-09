@@ -85,6 +85,11 @@ void Player::update(const float delta)
     draw_hud();
 }
 
+void Player::damage(const float amount)
+{
+    health -= amount;
+}
+
 void Player::update_audio(const glm::vec3 original_position, const bool grounded_this_frame, const float delta)
 {
     if (is_walking() && glm::length2(position - original_position) > 0.001f)
@@ -132,7 +137,8 @@ void Player::draw_hud() const
         IM_COL32_WHITE
     );
 
-    draw->AddText({ HUD_PADDING, offset_y }, IM_COL32_WHITE, "Health: 100");
+    const std::string health_text = "Health: " + std::to_string(health);
+    draw->AddText({ HUD_PADDING, offset_y }, IM_COL32_WHITE, health_text.c_str());
 
     ImVec2 ammo_size = ImGui::CalcTextSize("Ammo: 25");
     draw->AddText({ window.size.x - HUD_PADDING - ammo_size.x, offset_y }, IM_COL32_WHITE, "Ammo: 25");
@@ -299,7 +305,7 @@ void Player::on_fire()
     JPH::uint64 data = body_interface.GetUserData(hit->body_id.value());
 
     audio.play(
-        Audio::ID::SHOOT,
+        Audio::ID::SHOT_HEAVY,
         0.9f + (rand() % 200) / 1000.0f
     );
 

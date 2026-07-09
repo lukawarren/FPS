@@ -3,7 +3,7 @@
 #include "world.h"
 #include "render/debug_renderer.h"
 
-constexpr static inline float SPEED = 4.0f;
+constexpr static inline float SPEED = 8.0f;
 
 constexpr static inline float WAYPOINT_THRESHOLD    = 0.05f;
 
@@ -17,6 +17,9 @@ constexpr static inline u32   IDLE_FRAMES           = 134;
 constexpr static inline u32   RUNNING_FRAMES        = 41;
 constexpr static inline u32   SHOOTING_FRAMES       = 35;
 constexpr static inline float ANIMATION_FRAME_TIME  = 1.0f / 60.0f;
+
+constexpr static inline float SHOOT_CHANCE          = 0.5f;
+constexpr static inline float SHOOT_DAMAGE          = 5.0f;
 
 Enemy::Enemy(World& world, const glm::vec3 position) : Entity(position)
 {
@@ -61,15 +64,19 @@ void Enemy::update(World& world, const float delta, const glm::vec3 view_directi
     // Update sprite
     sprite->face(view_direction * glm::vec3(1.0f, 0.0f, 1.0f));
 
-    // AI
-    const auto last_state = state;
-    think(world, delta);
+    if (!world.player->is_dead())
+    {
+        // AI
+        const auto last_state = state;
+        think(world, delta);
 
-    if (last_state != state)
-        animation_time = 0.0f;
+        if (last_state != state)
+            animation_time = 0.0f;
+    }
+    else state = State::Inactive;
 
     // Animation
-    animate(delta);
+    animate(world, delta);
 
     // Update physics
     JPH::BodyInterface& body_interface = world.physics_system.GetBodyInterface();
@@ -167,7 +174,7 @@ void Enemy::think(World& world, const float delta)
     }
 }
 
-void Enemy::animate(const float delta)
+void Enemy::animate(World& world, const float delta)
 {
     animation_time += delta;
 
@@ -185,11 +192,33 @@ void Enemy::animate(const float delta)
     else if (state == State::Moving)
     {
         sprite->frame = IDLE_FRAMES + (animation_frame % RUNNING_FRAMES);
+
+        if ((animation_frame % RUNNING_FRAMES) == 0)
+            shoot(world);
     }
 
     else if (state == State::Shooting)
     {
         sprite->frame = IDLE_FRAMES + RUNNING_FRAMES + (animation_frame % SHOOTING_FRAMES);
+
+        if ((animation_frame % SHOOTING_FRAMES) == 0)
+            shoot(world);
+    }
+}
+
+void Enemy::shoot(World& world)
+{
+    world.audio.play_3d(
+        Audio::ID::SHOT_LIGHT,
+        { transform.position.x, transform.position.y, transform.position.z }
+    );
+
+    float chance = (float)rand() / (float)RAND_MAX;
+    if (chance > SHOOT_CHANCE) return;
+
+    if (can_see_player_from(world, transform.position))
+    {
+        world.player->damage(SHOOT_DAMAGE);
     }
 }
 

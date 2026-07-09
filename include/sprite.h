@@ -39,7 +39,7 @@ public:
     static inline constexpr std::array<std::pair<const char*, std::pair<u32, u32>>, 3> SPRITE_NAMES =
     {{
         { "bullet", std::pair<u32, u32>{ 0,     0   } },
-        { "enemy",  std::pair<u32, u32>{ 15,    14  } },
+        { "enemy",  std::pair<u32, u32>{ 15,    15  } },
         { "fire",   std::pair<u32, u32>{ 0,     0   } }
     }};
 
