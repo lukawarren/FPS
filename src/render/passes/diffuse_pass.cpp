@@ -9,7 +9,7 @@ DiffusePass::DiffusePass(
     device(device),
     pipeline_factory(pipeline_factory),
     texture_manager(texture_manager)
-{}
+{ dbg("TODO: sort entities by texture, etc."); }
 
 void DiffusePass::execute(
     SDL_GPUCommandBuffer* command_buffer,
@@ -87,7 +87,6 @@ void DiffusePass::execute(
     models.at(world.player->weapon.model).first->draw(render_pass);
 
     // Draw entities - TODO: sort
-    models.at(Model::ID::DOOR).second->bind(render_pass, texture_manager.sampler);
     for (const auto& e : world.entities)
     {
         glm::mat4 model = e->transform.matrix();
@@ -96,6 +95,7 @@ void DiffusePass::execute(
         {
             model *= e->model->transform.matrix();
             render_pass.push_model_matrix(model);
+            models.at(e->model->id).second->bind(render_pass, texture_manager.sampler);
             models.at(e->model->id).first->bind(render_pass);
             models.at(e->model->id).first->draw(render_pass);
         }

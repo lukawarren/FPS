@@ -10,7 +10,8 @@ public:
     enum class ID
     {
         WEAPON_5 = 0,
-        DOOR
+        DOOR,
+        BIG_DOOR
     };
 
     Model(
@@ -23,10 +24,11 @@ public:
         transform.position = position;
     }
 
-    static inline constexpr std::array<const char*, 2> MODEL_NAMES =
+    static inline constexpr std::array<const char*, 3> MODEL_NAMES =
     {
         "weapon9",
-        "door"
+        "door",
+        "big_door"
     };
 
     static std::pair<Mesh*, Texture*> load(

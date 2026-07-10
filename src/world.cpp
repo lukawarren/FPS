@@ -28,7 +28,7 @@ World::World(
         if (class_name == "light_spotlight")
         {
             const glm::vec3 position = entity.parse_vec3("origin");
-            const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(181.0f, 205.0f, 255.0f), false);
+            const glm::vec3 colour = entity.parse_vec3("colour", glm::vec3(247.0f, 241.0f, 150.0f), false);
             const float intensity = entity.parse_float("intensity", 10.0f);
             const glm::vec3 angles = entity.parse_angles("angles");
             const float near = entity.parse_float("near", 0.01f);
@@ -38,7 +38,7 @@ World::World(
             spotlights.emplace_back(
                 position - angles * 8.0f * Map::METRES_PER_UNIT,
                 angles,
-                glm::normalize(colour / 255.0f),
+                colour / 255.0f,
                 intensity,
                 near,
                 far,
@@ -80,8 +80,9 @@ World::World(
         {
             const glm::vec3 position = entity.parse_vec3("origin");
             const glm::vec3 rotation = entity.parse_angle("angle");
+            const float size = entity.parse_float("size");
             entities.emplace_back(std::make_unique<Door>(
-                *this, position, rotation
+                *this, position, rotation, size == 1.0f
             ));
         }
     }

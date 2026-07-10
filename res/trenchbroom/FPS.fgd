@@ -19,7 +19,14 @@
 [
 ]
 
-@PointClass model("models/door.obj") = func_door : "A sliding door"
+@PointClass model({{
+    size == "1" -> { "path": "models/big_door.obj" },
+                   { "path": "models/door.obj" }
+}}) = func_door : "A sliding door"
 [
-
+    size(Choices) : "Size of door" : 0 =
+	[
+		0 : "small"
+		1 : "big"
+	]
 ]
