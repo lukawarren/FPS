@@ -1,6 +1,6 @@
 #include "flashlight.h"
 
-Flashlight::Flashlight() : Spotlight({}, {}, glm::vec3(30.0f), 0.01f, 10.0f, 45.0f)
+Flashlight::Flashlight() : Spotlight({}, {}, glm::vec3(1.0f), 30.0f, 0.01f, 10.0f, 45.0f)
 {}
 
 void Flashlight::update(

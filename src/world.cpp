@@ -38,7 +38,8 @@ World::World(
             spotlights.emplace_back(
                 position - angles * 8.0f * Map::METRES_PER_UNIT,
                 angles,
-                glm::normalize(colour / 255.0f) * intensity,
+                glm::normalize(colour / 255.0f),
+                intensity,
                 near,
                 far,
                 glm::radians(angle)
@@ -365,15 +366,31 @@ void World::update_debug_mode(const float delta)
     }
 
     ImGui::Begin("World", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
-
     ImGui::Checkbox("Enemy AI", &enable_ai);
-
     if (ImGui::Button("Heal"))
     {
         camera.roll = 0.0f;
         player->health = 100.0f;
     }
+    ImGui::End();
 
+    ImGui::Begin("Lights", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+    for (size_t i = 0; i < spotlights.size(); i++)
+    {
+        const std::string label = "Light " + std::to_string(i);
+        const std::string colour = label + " colour";
+        const std::string intensity = label + " intensity";
+        const std::string teleport = "Teleport to light " + std::to_string(i);
+
+        ImGui::ColorEdit3(colour.c_str(), glm::value_ptr(spotlights[i].colour));
+        ImGui::DragFloat(intensity.c_str(), &spotlights[i].intensity, 1.0f, 0.0f, 1000.0f);
+        if (ImGui::Button(teleport.c_str()))
+        {
+            camera.position = spotlights[i].position + spotlights[i].direction * 3.0f;
+        }
+
+        ImGui::Separator();
+    }
     ImGui::End();
 }
 

@@ -5,11 +5,12 @@ Spotlight::Spotlight(
     const glm::vec3 position,
     const glm::vec3 direction,
     const glm::vec3 colour,
+    const float intensity,
     const float near,
     const float far,
     const float angle
 ) : position(position), direction(direction), colour(colour),
-    near(near), far(far), angle(angle)
+    intensity(intensity), near(near), far(far), angle(angle)
 {}
 
 glm::mat4 Spotlight::get_matrix() const
@@ -33,7 +34,7 @@ Spotlight::UniformBuffer Spotlight::get_uniform_buffer(const glm::mat4& matrix) 
     return {
         .shadow = matrix,
         .position = glm::vec4(position, 0.0f),
-        .colour = glm::vec4(colour, 0.0f),
+        .colour = glm::vec4(colour * intensity, 1.0f),
         .direction = glm::vec4(direction, 0.0f),
         .params = { std::cos(angle * 0.85f), std::cos(angle), far, 1.0f }
     };

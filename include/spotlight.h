@@ -9,6 +9,7 @@ public:
         const glm::vec3 position,
         const glm::vec3 direction,
         const glm::vec3 colour,
+        const float intensity,
         const float near,
         const float far,
         const float angle
@@ -17,6 +18,7 @@ public:
     glm::vec3 position;
     glm::vec3 direction;
     glm::vec3 colour;
+    float intensity;
     float near;
     float far;
     float angle;
