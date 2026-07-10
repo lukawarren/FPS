@@ -10,7 +10,7 @@ struct Spotlight
 #define GAMMA 2.2f
 #define AMBIENT 0.0f
 #define MAX_SPOTLIGHTS 12
-#define POINT_INTENSITY 0.1f
+#define POINT_INTENSITY 0.03f
 #define BIAS (0.5f / 10000.0f)
 
 cbuffer UniformBlock : register(b0, space3)
@@ -35,12 +35,11 @@ float sample_shadow(
 
     float shadow = 0.0f;
 
-    // If sample is outside the texture, treat as fully lit
+    // If sample is outside the texture, treat as dark
     bool in_bounds = (proj_coords.x >= 0.0 && proj_coords.x <= 1.0 &&
                         proj_coords.y >= 0.0 && proj_coords.y <= 1.0);
-
     if (!in_bounds)
-        return 0.0f;
+        return 1.0f;
 
     float closest = shadow_map_texture.Sample(
         shadow_map_sampler,
