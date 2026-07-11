@@ -67,7 +67,6 @@ float4 main(VertexOutput input) : SV_TARGET
     float2 panini_uv = warped_pos * 0.5f + 0.5f;
     panini_uv = clamp(panini_uv, 0.0f, 1.0f);
 
-    // 6. Sample your textures using the new Panini UVs
     float3 render = render_texture.Sample(render_sampler, panini_uv).rgb;
     float3 bloom = bloom_texture.Sample(bloom_sampler, panini_uv).rgb;
 
