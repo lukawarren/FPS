@@ -82,7 +82,7 @@ inline std::string AUDIO_ROOT = "../res/audio/";
 
 struct QualitySettings
 {
-    u32 inverse_render_scale = 1;
+    u32 inverse_render_scale = 3;
     u32 shadow_map_width = 1024;
     u32 shadow_map_height = 1024;
     u32 bloom_downsamples = 3;
