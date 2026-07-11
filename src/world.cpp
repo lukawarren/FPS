@@ -383,7 +383,7 @@ void World::update_debug_mode(const float delta)
     ImGui::DragFloat("Bloom strength", &renderer.post_processing_settings().bloom_strength, 0.001f, 0.0f, 1.0f);
     ImGui::DragFloat("Exposure", &renderer.post_processing_settings().exposure, 1.0f, 0.0f, 1000.0f);
     ImGui::DragFloat("Gamma", &renderer.post_processing_settings().gamma, 0.01f, 0.0f, 5.0f);
-    ImGui::DragFloat("Panini Strength", &renderer.post_processing_settings().panini_strength, 1.0f, 0.0f, 10.0f);
+    ImGui::DragFloat("Panini Strength", &renderer.post_processing_settings().panini_strength, 0.1f, 0.0f, 10.0f);
     ImGui::End();
     camera.fov = glm::radians(fov);
 

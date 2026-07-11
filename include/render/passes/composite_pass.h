@@ -23,7 +23,7 @@ public:
     struct PostProcessingSettings
     {
         float bloom_strength = 0.02f;
-        float exposure = 100.0f;
+        float exposure = 250.0f;
         float gamma = 2.2f;
         float panini_strength = 1.0f;
 
@@ -35,6 +35,7 @@ public:
 
 private:
     Device& device;
+
     PipelineFactory& pipeline_factory;
     TextureManager& texture_manager;
     Quad& quad;
