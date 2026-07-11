@@ -26,6 +26,11 @@ public:
 
     float delta;
 
+    inline CompositePass::PostProcessingSettings& post_processing_settings()
+    {
+        return composite_pass.settings;
+    }
+
 private:
     // Per-light data gathered once per frame and shared between the shadow
     // pass and the diffuse pass.

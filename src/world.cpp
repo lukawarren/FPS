@@ -1,4 +1,5 @@
 #include "world.h"
+#include "render/renderer.h"
 #include "render/debug_renderer.h"
 #include "enemy.h"
 #include "door.h"
@@ -10,8 +11,9 @@ World::World(
     SDL_GPUDevice* device,
     SDL_GPUCopyPass* copy_pass,
     Window& window,
+    Renderer& renderer,
     Audio& audio
-) : window(window), audio(audio)
+) : window(window), renderer(renderer), audio(audio)
 {
     map = new Map(filename, device, copy_pass);
     setup_physics();
@@ -374,6 +376,16 @@ void World::update_debug_mode(const float delta)
         player->health = 100.0f;
     }
     ImGui::End();
+
+    static float fov = 120.0f;
+    ImGui::Begin("Post Processing", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
+    ImGui::DragFloat("FOV", &fov, 1.0f, 0.0f, 180.0f);
+    ImGui::DragFloat("Bloom strength", &renderer.post_processing_settings().bloom_strength, 0.001f, 0.0f, 1.0f);
+    ImGui::DragFloat("Exposure", &renderer.post_processing_settings().exposure, 1.0f, 0.0f, 1000.0f);
+    ImGui::DragFloat("Gamma", &renderer.post_processing_settings().gamma, 0.01f, 0.0f, 5.0f);
+    ImGui::DragFloat("Panini Strength", &renderer.post_processing_settings().panini_strength, 1.0f, 0.0f, 10.0f);
+    ImGui::End();
+    camera.fov = glm::radians(fov);
 
     ImGui::Begin("Lights", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
     for (size_t i = 0; i < spotlights.size(); i++)

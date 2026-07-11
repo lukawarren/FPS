@@ -80,7 +80,7 @@ public:
     float pitch = 0.0f;
     float yaw = 0.0f;
     float roll = 0.0f;
-    float fov = glm::radians(90.0f);
+    float fov = glm::radians(120.0f);
 
     static inline float Z_NEAR = 0.01f;
     static inline float Z_FAR = 1000.0f;

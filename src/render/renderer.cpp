@@ -42,7 +42,7 @@ Renderer::Renderer(
     }
 
     // Load world
-    world = new World("map6.map", device.device, copy_pass, *device.window, audio);
+    world = new World("map6.map", device.device, copy_pass, *device.window, *this, audio);
 
     SDL_EndGPUCopyPass(copy_pass);
 

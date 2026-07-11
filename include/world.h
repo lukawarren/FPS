@@ -10,6 +10,8 @@
 #include "entity.h"
 #include "hit.h"
 
+class Renderer;
+
 class World
 {
 public:
@@ -18,6 +20,7 @@ public:
         SDL_GPUDevice* device,
         SDL_GPUCopyPass* copy_pass,
         Window& window,
+        Renderer& renderer,
         Audio& audio
     );
     ~World();
@@ -35,6 +38,7 @@ public:
     Camera camera;
     Player* player = nullptr;
     Map* map = nullptr;
+    Renderer& renderer;
     Audio& audio;
 
     // Lighting

@@ -20,6 +20,19 @@ public:
         SDL_GPUTexture* swapchain_texture
     );
 
+    struct PostProcessingSettings
+    {
+        float bloom_strength = 0.02f;
+        float exposure = 100.0f;
+        float gamma = 2.2f;
+        float panini_strength = 1.0f;
+
+        glm::vec4 get_uniform_buffer() const
+        {
+            return { bloom_strength, exposure, gamma, panini_strength };
+        }
+    } settings = {};
+
 private:
     Device& device;
     PipelineFactory& pipeline_factory;

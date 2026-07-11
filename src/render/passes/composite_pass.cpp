@@ -49,6 +49,14 @@ void CompositePass::execute(SDL_GPUCommandBuffer* command_buffer, SDL_GPUTexture
         }
     };
 
+    glm::vec4 settings_buffer = settings.get_uniform_buffer();
+    SDL_PushGPUFragmentUniformData(
+        command_buffer,
+        0,
+        &settings_buffer,
+        sizeof(settings_buffer)
+    );
+
     SDL_BindGPUFragmentSamplers(render_pass, 0, &bindings[0], (u32)bindings.size());
 
     quad.bind(render_pass);
