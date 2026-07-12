@@ -30,3 +30,14 @@
 		1 : "big"
 	]
 ]
+
+@SolidClass = trigger : "A trigger"
+[
+    target_name(target_destination): "Name" : : "Target entity."
+    count(int) : "Count" : "1" : "Number of times trigger must be entered before firing."
+]
+
+@SolidClass = spawner : "Spawns enemies in a given area"
+[
+    name(target_source): "Name" : : "Name of entity."
+]

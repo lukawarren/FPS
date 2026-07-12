@@ -9,6 +9,12 @@ static bool is_transparent_texture(const std::string& name)
     return name == "zortchskin/rustwallmask";
 }
 
+static bool is_brush_entity(const std::string& name)
+{
+    return name == "\"classname\" \"trigger\"" || name == "\"classname\" \"spawner\"";
+}
+
+
 Map::Map(const std::string& filename, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
 {
     // Setup CSG "worlds" — solid geometry and transparent geometry are kept
@@ -121,18 +127,26 @@ void Map::parse_entity(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopy
     };
 
     Entity entity = {};
+    std::pair<glm::vec3, glm::vec3> brush_entity_bounds;
 
     std::string line;
+    bool brush_entity = false;
     while (std::getline(stream, line))
     {
         // Comment
         if (line.size() >= 2 && line[0] == '/' && line[1] == '/')
             continue;
 
+        if (is_brush_entity(line))
+            brush_entity = true;
+
         // Brush data
         if (line == "{")
         {
-            parse_brush(stream, device, copy_pass);
+            const auto brush_bounds = parse_brush(stream, device, copy_pass, brush_entity);
+            if (brush_bounds.has_value())
+                brush_entity_bounds = brush_bounds.value();
+
             continue;
         }
 
@@ -145,10 +159,23 @@ void Map::parse_entity(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopy
         entity.properties[name] = value;
     }
 
-    entities.push_back(entity);
+    if (brush_entity)
+    {
+        BrushEntity b = {};
+        b.properties = entity.properties;
+        b.min_bounds = brush_entity_bounds.first;
+        b.max_bounds = brush_entity_bounds.second;
+        brush_entities.push_back(b);
+    }
+    else entities.push_back(entity);
 }
 
-void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)
+std::optional<std::pair<glm::vec3, glm::vec3>> Map::parse_brush(
+    std::ifstream& stream,
+    SDL_GPUDevice* device,
+    SDL_GPUCopyPass* copy_pass,
+    const bool brush_entity
+)
 {
     std::string line;
     std::vector<csg::plane_t> planes;
@@ -176,22 +203,51 @@ void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyP
         // End of brush
         if (line == "}")
         {
-            // Decide which world this brush belongs to based on its textures.
-            bool is_transparent = false;
-            for (size_t idx : texture_info_indices)
+            if (brush_entity)
             {
-                if (is_transparent_texture(texture_infos[idx].name))
-                {
-                    is_transparent = true;
-                    break;
-                }
-            }
+                csg::world_t* world = new csg::world_t();
+                csg::brush_t* brush = world->add();
+                brush->set_planes(planes);
 
-            csg::brush_t* brush = is_transparent ? transparent_world->add() : solid_world->add();
-            brush->set_volume_operation(csg::make_fill_operation(VOLUME_SOLID));
-            brush->userdata = texture_info_indices;
-            brush->set_planes(planes);
-            return;
+                world->rebuild();
+                csg::box_t box = brush->get_box();
+
+                // Swap Y and Z
+                float z = box.min.z;
+                box.min.z = box.min.y;
+                box.min.y = z;
+                z = box.max.z;
+                box.max.z = box.max.y;
+                box.max.y = z;
+
+                const auto bounds = std::pair<glm::vec3, glm::vec3> {
+                    box.min * METRES_PER_UNIT,
+                    box.max * METRES_PER_UNIT
+                };
+
+                world->remove(brush);
+                delete world;
+                return bounds;
+            }
+            else
+            {
+                // Decide which world this brush belongs to based on its textures.
+                bool is_transparent = false;
+                for (size_t idx : texture_info_indices)
+                {
+                    if (is_transparent_texture(texture_infos[idx].name))
+                    {
+                        is_transparent = true;
+                        break;
+                    }
+                }
+
+                csg::brush_t* brush = is_transparent ? transparent_world->add() : solid_world->add();
+                brush->set_volume_operation(csg::make_fill_operation(VOLUME_SOLID));
+                brush->userdata = texture_info_indices;
+                brush->set_planes(planes);
+                return std::nullopt;
+            }
         }
 
         else
@@ -253,6 +309,8 @@ void Map::parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyP
             texture_info_indices.push_back(texture_infos.size() - 1);
         }
     }
+
+    return std::nullopt;
 }
 
 void Map::build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass)

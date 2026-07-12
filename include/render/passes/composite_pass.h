@@ -25,7 +25,7 @@ public:
         float bloom_strength = 0.02f;
         float exposure = 250.0f;
         float gamma = 2.2f;
-        float panini_strength = 1.0f;
+        float panini_strength = 0.0f;
 
         glm::vec4 get_uniform_buffer() const
         {

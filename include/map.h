@@ -46,10 +46,17 @@ public:
         ) const;
     };
 
+    struct BrushEntity : public Entity
+    {
+        glm::vec3 min_bounds;
+        glm::vec3 max_bounds;
+    };
+
     std::vector<glm::vec3> find_path(const glm::vec3& start, const glm::vec3& end) const;
 
     std::vector<DrawCall> draw_calls;
     std::vector<Entity> entities;
+    std::vector<BrushEntity> brush_entities;
     JPH::Ref<JPH::Shape> physics_shape;
 
     constexpr static inline float METRES_PER_UNIT = 0.0254;
@@ -71,8 +78,17 @@ private:
         std::vector<unsigned int> indices;
     };
 
-    void parse_entity(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass);
-    void parse_brush(std::ifstream& stream, SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass);
+    void parse_entity(
+        std::ifstream& stream,
+        SDL_GPUDevice* device,
+        SDL_GPUCopyPass* copy_pass
+    );
+    std::optional<std::pair<glm::vec3, glm::vec3>> parse_brush(
+        std::ifstream& stream,
+        SDL_GPUDevice* device,
+        SDL_GPUCopyPass* copy_pass,
+        const bool brush_entity
+    );
     void build_meshes(SDL_GPUDevice* device, SDL_GPUCopyPass* copy_pass);
     void calculate_uvs(
         std::vector<float>& texture_coordinates,

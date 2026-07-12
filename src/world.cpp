@@ -3,6 +3,8 @@
 #include "render/debug_renderer.h"
 #include "enemy.h"
 #include "door.h"
+#include "trigger.h"
+#include "spawner.h"
 
 static bool enable_ai = false;
 
@@ -20,6 +22,15 @@ World::World(
 
     glm::vec3 player_position = {};
     float player_yaw = 0.0f;
+
+    std::unordered_map<std::string, Entity*> named_entities;
+    const auto add_entity = [&](const Map::Entity& map_entity, std::unique_ptr<Entity> entity)
+    {
+        if (map_entity.properties.count("name") != 0)
+            named_entities[map_entity.properties.at("name")] = entity.get();
+
+        entities.emplace_back(std::move(entity));
+    };
 
     // Extract entities
     for (const auto& entity : map->entities)
@@ -73,7 +84,7 @@ World::World(
                 0.0f
             };
 
-            entities.emplace_back(std::make_unique<Enemy>(
+            add_entity(entity, std::make_unique<Enemy>(
                 *this, position
             ));
         }
@@ -83,13 +94,49 @@ World::World(
             const glm::vec3 position = entity.parse_vec3("origin");
             const glm::vec3 rotation = entity.parse_angle("angle");
             const float size = entity.parse_float("size");
-            entities.emplace_back(std::make_unique<Door>(
+            add_entity(entity, std::make_unique<Door>(
                 *this, position, rotation, size == 1.0f
             ));
         }
     }
 
     player = new Player(player_position, player_yaw, window, *this, audio);
+
+    // Brush entities
+    for (const auto& entity : map->brush_entities)
+    {
+        if (entity.properties.count("classname") == 0) continue;
+        const std::string& class_name = entity.properties.at("classname");
+
+        if (class_name == "spawner")
+        {
+            add_entity(entity, std::make_unique<Spawner>(
+                *this, entity.min_bounds, entity.max_bounds
+            ));
+        }
+    }
+
+    // Brush entities that reference others
+    for (const auto& entity : map->brush_entities)
+    {
+        if (entity.properties.count("classname") == 0) continue;
+        const std::string& class_name = entity.properties.at("classname");
+
+        if (class_name == "trigger")
+        {
+            if (entity.properties.count("target_name") == 0) continue;
+            if (named_entities.count(entity.properties.at("target_name")) == 0) continue;
+
+            add_entity(entity, std::make_unique<Trigger>(
+                *this,
+                entity.min_bounds,
+                entity.max_bounds,
+                *named_entities.at(entity.properties.at("target_name")),
+                (int)entity.parse_float("count", 1.0f)
+            ));
+        }
+    }
+
     audio.play(Audio::ID::AMBIENCE);
 }
 
@@ -377,7 +424,7 @@ void World::update_debug_mode(const float delta)
     }
     ImGui::End();
 
-    static float fov = 120.0f;
+    static float fov = 100.0f;
     ImGui::Begin("Post Processing", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
     ImGui::DragFloat("FOV", &fov, 1.0f, 0.0f, 180.0f);
     ImGui::DragFloat("Bloom strength", &renderer.post_processing_settings().bloom_strength, 0.001f, 0.0f, 1.0f);
