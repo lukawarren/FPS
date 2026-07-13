@@ -16,11 +16,12 @@ public:
         SHOT_HEAVY,
         LIGHT,
         DOOR_OPEN,
-        DOOR_CLOSE
+        DOOR_CLOSE,
+        ENEMY_SPAWN
     };
 
     // (path, loops) pairs
-    static inline constexpr std::array<std::pair<const char*, bool>, 30> AUDIO_NAMES =
+    static inline constexpr std::array<std::pair<const char*, bool>, 31> AUDIO_NAMES =
     {{
         { "Loop_SciFi Pack Vol 1_Ship Interior Muffled_v2.wav", true },
         { "metal_steps_01.wav", false },
@@ -51,7 +52,8 @@ public:
         { "Single_SciFi Pack Vol 1_Heavy Plasma Shot_04.wav", false },
         { "Sci-Fi Drone.wav", true },
         { "Sequence_SciFi Pack Vol 1_Mechanical Door LOOP to Open_Finish.wav", false },
-        { "Sequence_SciFi Pack Vol 1_Mechanical Door LOOP to Closed_Finish.wav", false }
+        { "Sequence_SciFi Pack Vol 1_Mechanical Door LOOP to Closed_Finish.wav", false },
+        { "Single_SciFi Pack Vol 1_PickUp_01.wav", false }
     }};
 
     void play(const ID id, const float pitch = 1.0f);
@@ -60,6 +62,7 @@ public:
         const ID id,
         const ma_vec3f position,
         const float pitch = 1.0f,
+        const float volume = 1.0f,
         const float min_distance = 1.0f,
         const float max_distance = 500.0f
     );

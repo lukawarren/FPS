@@ -164,6 +164,7 @@ void Audio::play_3d(
     const ID id,
     const ma_vec3f position,
     const float pitch,
+    const float volume,
     const float min_distance,
     const float max_distance
 )
@@ -184,6 +185,7 @@ void Audio::play_3d(
     ma_sound_set_max_distance(sound, max_distance);
     ma_sound_set_position(sound, position.x, position.y, position.z);
     ma_sound_set_looping(sound, AUDIO_NAMES[(size_t)id].second);
+    ma_sound_set_volume(sound, volume);
 
     ma_sound_start(sound);
 

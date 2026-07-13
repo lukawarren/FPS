@@ -62,8 +62,7 @@ World::World(
                 Audio::ID::LIGHT,
                 { position.x, position.y, position.z },
                 1.0f,
-                0.01f,
-                5.0f
+                0.1f
             );
         }
 

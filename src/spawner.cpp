@@ -27,4 +27,14 @@ void Spawner::on_activate(World& world)
             position
         ));
     }
+
+    glm::vec3 centre = (min_bounds + max_bounds) / 2.0f;
+    centre.y = min_bounds.y + Enemy::ENEMY_HEIGHT / 2.0f;
+
+    world.audio.play_3d(
+        Audio::ID::ENEMY_SPAWN,
+        { centre.x, centre.y, centre.z },
+        1.0f,
+        10.0f
+    );
 }
