@@ -14,6 +14,8 @@ public:
         transform.position = position;
     }
 
+    virtual ~Entity() = default;
+
     virtual void update(World& world, const float delta) = 0;
     virtual void on_activate(World& world) { (void)world; }
     virtual bool is_dead() const { return false; }
