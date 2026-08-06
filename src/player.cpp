@@ -288,6 +288,15 @@ void Player::handle_input(const float delta)
     update_mouse_look();
     update_view_juice(movement, delta);
 
+    for (size_t i = 0; i < Model::WEAPON_COUNT; i++)
+    {
+        if (window.get_key_pressed((SDL_Scancode)(SDL_SCANCODE_1 + i)))
+        {
+            weapon.model = (Model::ID)((size_t)Model::ID::WEAPON_1 + i);
+            break;
+        }
+    }
+
     if (window.get_key_pressed(SDL_SCANCODE_F))
         flashlight.enabled = !flashlight.enabled;
 }
