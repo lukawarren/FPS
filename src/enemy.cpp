@@ -13,13 +13,14 @@ constexpr static inline float COVER_MIN_RADIUS      = 2.0f;
 constexpr static inline float COVER_MAX_RADIUS      = 5.0f;
 constexpr static inline u32   COVER_POINTS          = 10;
 constexpr static inline float REPATH_TIME           = 5.0f;
+constexpr static inline float STILL_RADIUS          = 10.0f;
 
 constexpr static inline u32   IDLE_FRAMES           = 134;
 constexpr static inline u32   RUNNING_FRAMES        = 41;
 constexpr static inline u32   SHOOTING_FRAMES       = 35;
 constexpr static inline float ANIMATION_FRAME_TIME  = 1.0f / 60.0f;
 
-constexpr static inline float DETECT_DELAY          = 0.5f;
+constexpr static inline float DETECT_DELAY          = 0.1f;
 constexpr static inline float SHOOT_CHANCE          = 0.5f;
 constexpr static inline float SHOOT_DAMAGE          = 5.0f;
 
@@ -107,8 +108,18 @@ void Enemy::think(World& world, const float delta)
         const auto hit = get_hit_from(world, transform.position, true);
         if (hit.has_value() && did_hit_player(world, *hit))
         {
-            state = State::Delayed;
-            delayed_timer = DETECT_DELAY;
+            const glm::vec3 to_player = world.player->position - transform.position;
+
+            if (glm::length2(to_player) <= STILL_RADIUS * STILL_RADIUS)
+            {
+                state = State::Shooting;
+                repath_timer = REPATH_TIME * ((rand() / (float)RAND_MAX) + 0.5f);
+            }
+            else
+            {
+                state = State::Delayed;
+                delayed_timer = DETECT_DELAY;
+            }
         }
     }
 
@@ -165,11 +176,6 @@ void Enemy::think(World& world, const float delta)
         }
 
         glm::vec3 x = path[path.size() - 1];
-        DebugRenderer::debug_renderer->DrawMarker(
-            { x.x, x.y, x.z },
-            {},
-            1.0f
-        );
     }
 
     else if (state == State::Shooting)
